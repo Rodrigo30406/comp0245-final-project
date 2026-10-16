@@ -1,0 +1,28 @@
+# Python and local environments
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints/
+.venv/
+venv/
+.env
+.env.*
+!.env.example
+
+# Simulator assets supplied by RoboEnv
+models/
+configs/
+
+# Generated datasets and trained weights
+data/
+datasets/
+checkpoints/
+runs/
+wandb/
+*.pt
+*.pth
+*.ckpt
+
+# Editor and OS files
+.vscode/
+.idea/
+.DS_Store
