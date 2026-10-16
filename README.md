@@ -8,7 +8,6 @@ and wheel commands from the robot state and target.
 
 - `docs/COMP0245-Assignment-2026-2.pdf`: assignment slides.
 - `final/robotnik_arm_task/`: lecturer's final assignment starter code and running instructions.
-- `week1/` and `week2/`: lecturer's lab material, retained for reference.
 
 ## Run the starter simulation
 
@@ -54,22 +53,14 @@ is 6 November 2026, with a required in-person demonstration during 30 October–
 Starter code comes from:
 https://github.com/VModugno/LAB_SESSION_COMP_0245_2026_PUBLIC
 
-The lecturer's Git history is retained. At setup, the Python source is unchanged
-from upstream commit `cae4fb69386872ae73c601ce77e182aad7abe284`; only this README,
-the root `.gitignore`, and the assignment PDF were added or updated. As the project
-progresses, document the group's new or modified code, data collection, training,
-evaluation, and reproduction commands here, as required by the assignment.
+The lecturer's Git history is retained. The final assignment Python source is
+unchanged from upstream commit `cae4fb69386872ae73c601ce77e182aad7abe284`.
+This project adds the assignment slides, root `.gitignore`, and project
+documentation. The independent `week1/` and `week2/` lab exercises were removed
+to keep this repository focused on the final assignment; they remain available
+in upstream and Git history. The final assignment depends on RoboEnv's
+`simulation_and_control` library, not on those lab folders.
 
----
-
-## Original upstream README
-
-# LAB_SESSION_COMP_0245_2026_PUBLIC
-
-this repository is used to release the lab sessions for COMP0245 machine learning for robotics for the year 2026-2027 of the master in robotics and ai
-
-due to the block module structure the lab sessions are organised in weekly folders such as week1, which contains the material for the lab sessions of that week
-
-each weekly folder contains a README with the instructions for the lab session and the code used during the session
-
-the configs and models used during the labs are intentionally not part of this repository, refer to the instructions in each weekly README to obtain them
+As the project progresses, document the group's new or modified code, data
+collection, training, evaluation, and reproduction commands here, as required by
+the assignment.
