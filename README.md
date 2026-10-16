@@ -7,6 +7,7 @@ and wheel commands from the robot state and target.
 ## Project files
 
 - `docs/COMP0245-Assignment-2026-2.pdf`: assignment slides.
+- [Research plan (Spanish)](docs/PLAN_DE_INVESTIGACION.md): methodology, data design, model comparisons, evaluation protocol, and bibliography.
 - `final/robotnik_arm_task/`: lecturer's final assignment starter code and running instructions.
 
 ## Run the starter simulation
@@ -55,10 +56,10 @@ https://github.com/VModugno/LAB_SESSION_COMP_0245_2026_PUBLIC
 
 The lecturer's Git history is retained. The final assignment Python source is
 unchanged from upstream commit `cae4fb69386872ae73c601ce77e182aad7abe284`.
-This project adds the assignment slides, root `.gitignore`, and project
-documentation. The independent `week1/` and `week2/` lab exercises were removed
-to keep this repository focused on the final assignment; they remain available
-in upstream and Git history. The final assignment depends on RoboEnv's
+This project adds the assignment slides, research plan, root `.gitignore`, and
+project documentation. The independent `week1/` and `week2/` lab exercises were
+removed to keep this repository focused on the final assignment; they remain
+available in upstream and Git history. The final assignment depends on RoboEnv's
 `simulation_and_control` library, not on those lab folders.
 
 As the project progresses, document the group's new or modified code, data
