@@ -218,3 +218,22 @@ the launcher run from an unrelated directory all pass 57/57.
 
 Not verified: datasets, runs and models are local and ignored by Git, so no
 number in the research log was recomputed here.
+
+## 6. Status after the 27 October experiments
+
+The proposals above were executed on 27 October 2026 (overnight run plus a
+morning replication batch). Full log, every number and its run directory:
+`docs/NIGHT_RUN_20261027.md`; the pre-registered ablation protocol and its
+result: `docs/PRIVILEGED_ABLATION.md`. Datasets, splits and run directories
+stay local (ignored by Git); the recipes and code that produce them are
+committed.
+
+| Proposal | Outcome |
+|---|---|
+| P1 privileged ablation | Confirmed. Hidden phase + `nav.done` + integrated `q_des` reduce offline error by 38 %; error concentrates after `nav.done`. |
+| P2 DART | Implemented (`action_noise` in collection config). Low noise (σ 0.5 rad/s, 1.0 N·m, held 50 ms) removes saturation and runaway in every architecture; medium noise is too strong. |
+| P3 egocentric features | Implemented (`learning/egocentric.py`, 25 inputs = 14 joint + 10 relative geometry + episode clock). Necessary for every policy that arrives; the 21 raw inputs never arrive, with or without memory or DART. Rodrigo's lecturer asks that the 21 prescribed inputs be kept and extended, not replaced: an "all inputs" variant (21 + 10 + clock = 32) is the next experiment. |
+| P5 closed-loop selection | Decisive. Offline NRMSE does not rank policies (best closed-loop policy has one of the worst offline errors). Every model was evaluated closed loop on 205 validation goals. |
+| P6 reserved test set | Two frozen banks of 64 goals (nominal and random start), never used. |
+| P8 recurrent policy | GRU with memory updated every 20 ms and a head reacting every 1 ms, on egocentric inputs and DART-low data, is the best recipe over 5 seeds: 123–154 of 205 stable arrivals at 5 cm versus 23–100 for the equivalent MLP. Memory updated every 1 ms fails (hidden-state drift). |
+| Open problem | Holding: every learned policy arrives and then leaves; none ends within 1 cm at 40 s. The post-arrival regime is where the expert relies on its latched `nav.done`. Candidate fixes: an "arrived" latch as a deployable input, an auxiliary phase head, DAgger. |

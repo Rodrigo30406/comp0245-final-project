@@ -32,8 +32,10 @@ class Episode:
         self.initial_base = initial_base
         if horizon_steps is not None and (type(horizon_steps) is not int or horizon_steps < 1):
             raise ValueError("horizon_steps must be a positive integer")
-        if horizon_steps is None and (policy is not None or action_filter is not None):
-            raise ValueError("External policies/filters require an explicit evaluation horizon")
+        if horizon_steps is None and policy is not None:
+            raise ValueError("External policies require an explicit evaluation horizon")
+        # An action_filter on the expert (declared perturbation, e.g. DART noise) keeps the
+        # lecturer's controller memory and stop rules; 'raw_action' is the clean expert label.
         self.policy = policy
         self.horizon_steps = horizon_steps
         self.action_filter = action_filter

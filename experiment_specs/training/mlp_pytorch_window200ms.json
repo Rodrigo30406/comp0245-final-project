@@ -1,0 +1,36 @@
+{
+  "name": "stratified1024_window200ms_pytorch",
+  "model": "mlp",
+  "split_seed": 20261025,
+  "validation_fraction": 0.2,
+  "normalization": "standard_scaler_training_only",
+  "sample_weighting": "uniform_transition",
+  "primary_metric": "episode_macro_balanced_nrmse",
+  "keep_expert_failures": true,
+  "mlp": {
+    "hidden_layer_sizes": [
+      128,
+      128
+    ],
+    "learning_rate": 0.001,
+    "alpha": 0.0001,
+    "batch_size": 1024,
+    "seed": 20261025,
+    "max_epochs": null,
+    "patience": 8,
+    "min_delta": 0.0001
+  },
+  "backend": "pytorch",
+  "torch": {
+    "device": "cuda",
+    "data_placement": "auto",
+    "validation_batch_size": 16384,
+    "deterministic": true
+  },
+  "observation_window": {
+    "snapshots": 11,
+    "stride_steps": 20,
+    "dt_s": 0.001,
+    "padding": "repeat_initial_state"
+  }
+}

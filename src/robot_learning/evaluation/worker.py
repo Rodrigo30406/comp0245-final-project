@@ -42,7 +42,14 @@ def run_rollout(directory, job):
             path = directory/spec['artifact']
             if sha256(path) != spec['sha256']:
                 raise ValueError('Changed model artifact')
-            model = (MLPPolicy if spec['kind'] == 'mlp_regressor' else LinearPolicy).load(path)
+            if spec['kind'] == 'egocentric_mlp_regressor':
+                from robot_learning.learning.egocentric import EgocentricPolicy
+                model = EgocentricPolicy.load(path)
+            elif spec['kind'] == 'gru_regressor':
+                from robot_learning.learning.gru_policy import GRUPolicy
+                model = GRUPolicy.load(path)
+            else:
+                model = (MLPPolicy if spec['kind'] == 'mlp_regressor' else LinearPolicy).load(path)
             def policy(observation):
                 nonlocal prediction_ns, count
                 start = time.perf_counter_ns()

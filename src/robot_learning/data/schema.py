@@ -2,7 +2,7 @@
 
 FIELDS = {
     "observation": (21, "float32"), "next_observation": (21, "float32"),
-    "action": (11, "float32"), "previous_action": (11, "float32"),
+    "action": (11, "float32"), "applied_action": (11, "float32"), "previous_action": (11, "float32"),
     "previous_action_valid": (None, "bool"),
     "time": (None, "float64"), "next_time": (None, "float64"), "step": (None, "int64"),
     "base_position": (3, "float32"), "base_orientation_xyzw": (4, "float32"),
@@ -34,6 +34,10 @@ def dataset_schema():
                   "arm_torques": "N*m", "time": "simulated seconds"},
         "frames": "base position, EE, shoulder, target and base velocities are world-frame; quaternion XYZW",
         "alignment": "observation/time -> action -> next_observation/next_time, exactly one physics step apart",
+        "perturbation": "action is the expert's clean command (the imitation label). applied_action is what the "
+                        "simulator executed: identical unless the collection declares action_noise (DART-style), "
+                        "in which case applied_action = action + held Gaussian noise and previous_action is the "
+                        "previously applied command.",
         "subsampling": "record_every_steps selects transitions; it does not change the control period. "
                        "previous_action is the immediately preceding physics-step action, not the last stored row.",
         "joint_order": "4 wheels + 7 arm + 6 fingers; exact names in episode metadata",

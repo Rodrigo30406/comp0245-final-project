@@ -14,8 +14,29 @@ DEFAULTS = {
     "record_every_steps": 1,
     "target_box": {"x": [-2.0, 2.0], "y": [-2.0, 2.0], "z": [0.3, 0.8]},
     "targets": None, "initial_base": {"mode": "nominal"},
+    "action_noise": None,
     **episode_defaults(),
 }
+
+NOISE_KEYS = {"wheel_std", "torque_std", "hold_steps", "seed"}
+
+
+def validate_action_noise(noise):
+    """DART-style perturbation of the APPLIED expert command; labels stay clean."""
+    if noise is None:
+        return None
+    if not isinstance(noise, dict) or set(noise) != NOISE_KEYS:
+        raise ValueError(f"action_noise needs exactly {sorted(NOISE_KEYS)}")
+    for key in ("wheel_std", "torque_std"):
+        if type(noise[key]) not in (int, float) or not np.isfinite(noise[key]) or noise[key] < 0:
+            raise ValueError(f"action_noise.{key} must be a finite nonnegative number")
+    if type(noise["hold_steps"]) is not int or noise["hold_steps"] < 1:
+        raise ValueError("action_noise.hold_steps must be a positive integer")
+    if type(noise["seed"]) is not int or noise["seed"] < 0:
+        raise ValueError("action_noise.seed must be a nonnegative integer")
+    if noise["wheel_std"] == 0 and noise["torque_std"] == 0:
+        raise ValueError("action_noise with zero deviations is not a perturbation; use null")
+    return noise
 
 
 def resolve_config(requested):
@@ -50,6 +71,7 @@ def resolve_config(requested):
             raise ValueError("targets must have exactly one XYZ entry per episode")
         for target in cfg["targets"]:
             vector(target, 3, "targets")
+    validate_action_noise(cfg["action_noise"])
     initial = cfg["initial_base"]
     if not isinstance(initial, dict) or set(initial) - {"mode", "x", "y", "yaw"}:
         raise ValueError("Invalid initial_base fields")

@@ -11,6 +11,27 @@ from robot_learning.simulation.episode import Episode
 from .storage import Recorder, read_json, sha256, utc_now, write_json
 
 
+def make_perturbation(noise, scenario_seed):
+    """Held Gaussian noise on the applied command; None reproduces the lecturer's loop exactly.
+
+    Wheels get one draw per side, expanded [right, left, left, right] so the applied
+    command keeps skid-steer pair identity. Deterministic per (noise seed, scenario seed).
+    """
+    if noise is None:
+        return None
+    rng = np.random.default_rng(np.random.SeedSequence([noise["seed"], scenario_seed]))
+    state = {"calls": 0, "offset": np.zeros(11)}
+
+    def perturb(action):
+        if state["calls"] % noise["hold_steps"] == 0:
+            wheels = rng.normal(0.0, noise["wheel_std"], 2) if noise["wheel_std"] > 0 else np.zeros(2)
+            torques = rng.normal(0.0, noise["torque_std"], 7) if noise["torque_std"] > 0 else np.zeros(7)
+            state["offset"] = np.concatenate((wheels[[0, 1, 1, 0]], torques))
+        state["calls"] += 1
+        return np.asarray(action, dtype=float) + state["offset"]
+    return perturb
+
+
 def run_episode(directory, scenario, cfg, robo_root):
     episode_id = scenario["episode_id"]
     data_path = directory / "episodes" / f"{episode_id}.npz"
@@ -25,7 +46,9 @@ def run_episode(directory, scenario, cfg, robo_root):
     recorder = Recorder(1 + cfg["max_steps"] // cfg["record_every_steps"])
     state = None
     try:
-        with Episode(scenario["target"], cfg, robo_root, scenario["initial_base"]) as episode:
+        perturbation = make_perturbation(cfg.get("action_noise"), scenario["seed"])
+        with Episode(scenario["target"], cfg, robo_root, scenario["initial_base"],
+                     action_filter=perturbation) as episode:
             state = episode.state
             dt = episode.dt
             target = episode.target
@@ -37,12 +60,14 @@ def run_episode(directory, scenario, cfg, robo_root):
                             actual_initial_joint_position=state["q"].tolist(),
                             physics_engine_parameters=episode.client.getPhysicsEngineParameters(),
                             base_goal_xy=episode.goal.tolist(), base_goal_bearing=episode.goal_bearing,
-                            base_controller=cfg["base_controller"], arm_controller=cfg["arm_controller"])
+                            base_controller=cfg["base_controller"], arm_controller=cfg["arm_controller"],
+                            action_noise=cfg.get("action_noise"))
             previous_action = np.zeros(11)
             previous_qd = state["qd"].copy()
             for transition in episode.transitions():
                 current, state = transition["current"], transition["next"]
-                step, action = transition["step"], transition["action"]
+                step, applied = transition["step"], transition["action"]
+                action = transition["raw_action"]  # clean expert command: the imitation label
                 torque = action[4:]
                 if step % cfg["record_every_steps"] == 0:
                     offset = target - current["shoulder"]
@@ -50,7 +75,8 @@ def run_episode(directory, scenario, cfg, robo_root):
                     auxiliary = current["shoulder"] + offset * min(1.0, episode.arm_params.reach_limit / max(length, 1e-15))
                     recorder.append({
                         "observation": current["observation"], "next_observation": state["observation"],
-                        "action": action, "previous_action": previous_action, "previous_action_valid": step > 0,
+                        "action": action, "applied_action": applied,
+                        "previous_action": previous_action, "previous_action_valid": step > 0,
                         "time": current["time"], "next_time": state["time"], "step": step,
                         "base_position": current["base"], "base_orientation_xyzw": current["orientation"],
                         "base_bearing": current["yaw"], "base_linear_velocity": current["velocity"],
@@ -63,7 +89,7 @@ def run_episode(directory, scenario, cfg, robo_root):
                         "expert_q_des_arm": transition["q_des"], "expert_qd_des_arm": transition["qd_des"],
                         "torque_saturated": np.abs(torque) >= episode.arm_params.max_torque - 1e-8,
                     })
-                previous_action = action.copy()
+                previous_action = applied.copy()
                 previous_qd = current["qd"].copy()
             metadata.update(status="complete", **episode.result())
     except BaseException as error:
