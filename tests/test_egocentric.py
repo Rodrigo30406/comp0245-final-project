@@ -16,7 +16,8 @@ from robot_learning.data.schema import dataset_schema
 from robot_learning.data.storage import write_json, sha256
 from robot_learning.learning.model import expand_actions
 from robot_learning.learning.egocentric import (
-    encode, FEATURE_NAMES, EgocentricPolicy, VARIANT, validate_spec, spec_from_episode_config)
+    encode, FEATURE_NAMES, VARIANTS, EgocentricPolicy, VARIANT, validate_spec, spec_from_episode_config)
+from robot_learning.learning.model import INPUT_NAMES
 
 TORCH_AVAILABLE = importlib.util.find_spec('torch') is not None
 SPEC = {"variant": VARIANT, "standoff_heights": [0.1, 0.5, 1.1, 1.25],
@@ -67,6 +68,41 @@ class FeatureGeometryTests(unittest.TestCase):
             validate_spec({**SPEC, "standoff_heights": [1.0, 0.5, 1.1, 1.25]})
         cfg = {"standoff": {"heights": SPEC["standoff_heights"], "distances": SPEC["standoff_distances"]}}
         validate_spec(spec_from_episode_config(cfg, 0.001, 40.0))
+
+
+class ExtendedVariantTests(unittest.TestCase):
+    """The lecturer's 21 explicit inputs kept and extended, never replaced."""
+
+    def test_extended_variants_are_raw_inputs_plus_derived_columns(self):
+        rng = np.random.default_rng(0)
+        x = np.stack([observation(rng.normal(size=2), rng.uniform(-np.pi, np.pi), rng.uniform(.5, 2, 3),
+                                  rng.normal(size=7), rng.normal(size=7)) for _ in range(6)])
+        t = rng.uniform(0, 40, 6)
+        ego = encode(x, t, SPEC)
+        plus = encode(x, t, {**SPEC, "variant": "raw21_egocentric_clock_v1"})
+        clock = encode(x, t, {**SPEC, "variant": "raw21_clock_v1"})
+        self.assertEqual(plus.shape, (6, 32)); self.assertEqual(clock.shape, (6, 22))
+        self.assertEqual(VARIANTS["raw21_egocentric_clock_v1"][:21], list(INPUT_NAMES))
+        np.testing.assert_array_equal(plus[:, :21], x); np.testing.assert_array_equal(clock[:, :21], x)
+        np.testing.assert_array_equal(plus[:, 21:31], ego[:, :10])  # the 10 relative geometry columns
+        np.testing.assert_array_equal(plus[:, 31], ego[:, 24]); np.testing.assert_array_equal(clock[:, 21], ego[:, 24])
+        with self.assertRaises(ValueError):
+            validate_spec({**SPEC, "variant": "raw21"})
+
+    def test_extended_variant_policy_roundtrip_keeps_variant(self):
+        spec = {**SPEC, "variant": "raw21_egocentric_clock_v1"}
+        rng = np.random.default_rng(1)
+        policy = EgocentricPolicy(spec, np.zeros(32), np.ones(32), np.zeros(9), np.ones(9),
+                                  [rng.normal(size=(32, 5)), rng.normal(size=(5, 9))], [np.zeros(5), np.zeros(9)])
+        self.assertEqual(policy.input_features, 32)
+        x = np.stack([observation(rng.normal(size=2), 0.3, [1.0, 1.0, 0.6]) for _ in range(4)])
+        with tempfile.TemporaryDirectory() as tmp:
+            policy.save(Path(tmp) / "m.npz"); loaded = EgocentricPolicy.load(Path(tmp) / "m.npz")
+        self.assertEqual(loaded.spec["variant"], "raw21_egocentric_clock_v1")
+        np.testing.assert_array_equal(loaded.predict(x), policy.predict(x))
+        with self.assertRaises(ValueError):  # 25-wide weights do not fit a 32-input variant
+            EgocentricPolicy(spec, np.zeros(25), np.ones(25), np.zeros(9), np.ones(9),
+                             [rng.normal(size=(25, 5)), rng.normal(size=(5, 9))], [np.zeros(5), np.zeros(9)])
 
 
 class PolicyTests(unittest.TestCase):

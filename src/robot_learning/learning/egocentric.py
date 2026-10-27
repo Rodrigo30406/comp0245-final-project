@@ -33,12 +33,21 @@ FEATURE_NAMES = (["goal_in_base_x", "goal_in_base_y", "goal_distance_xy",
                  [f"arm_q_{i}" for i in range(1, 8)] + [f"arm_qd_{i}" for i in range(1, 8)] +
                  ["episode_clock_fraction"])
 VARIANT = "egocentric_clock_v1"
+GEOMETRY_NAMES = FEATURE_NAMES[:10]
+CLOCK_NAME = "episode_clock_fraction"
+# Input layouts. The lecturer's 21 explicit inputs may be kept and extended (not replaced):
+#   egocentric_clock_v1       : 10 relative geometry + 14 joint + clock (25); replaces the 7 absolute pose/target inputs
+#   raw21_clock_v1            : the 21 explicit inputs + clock (22)
+#   raw21_egocentric_clock_v1 : the 21 explicit inputs + 10 relative geometry + clock (32)
+VARIANTS = {VARIANT: list(FEATURE_NAMES),
+            "raw21_clock_v1": list(INPUT_NAMES) + [CLOCK_NAME],
+            "raw21_egocentric_clock_v1": list(INPUT_NAMES) + list(GEOMETRY_NAMES) + [CLOCK_NAME]}
 KIND = "egocentric_mlp_regressor"
 
 
 def validate_spec(spec):
     keys = {"variant", "standoff_heights", "standoff_distances", "horizon_s", "dt_s"}
-    if set(spec) != keys or spec["variant"] != VARIANT:
+    if set(spec) != keys or spec["variant"] not in VARIANTS:
         raise ValueError("Invalid egocentric feature specification")
     h = np.asarray(spec["standoff_heights"], dtype=float); d = np.asarray(spec["standoff_distances"], dtype=float)
     if h.ndim != 1 or h.shape != d.shape or len(h) < 2 or np.any(np.diff(h) <= 0) or not np.isfinite(np.r_[h, d]).all():
@@ -48,8 +57,10 @@ def validate_spec(spec):
             raise ValueError(f"{key} must be positive")
 
 
-def spec_from_episode_config(cfg, dt_s, horizon_s):
-    return {"variant": VARIANT, "standoff_heights": list(map(float, cfg["standoff"]["heights"])),
+def spec_from_episode_config(cfg, dt_s, horizon_s, variant=VARIANT):
+    if variant not in VARIANTS:
+        raise ValueError(f"Unknown input variant {variant!r}; expected one of {sorted(VARIANTS)}")
+    return {"variant": variant, "standoff_heights": list(map(float, cfg["standoff"]["heights"])),
             "standoff_distances": list(map(float, cfg["standoff"]["distances"])),
             "horizon_s": float(horizon_s), "dt_s": float(dt_s)}
 
@@ -59,7 +70,7 @@ def wrap(angle):
 
 
 def encode(observations, times, spec):
-    """(N, 21) raw observations and (N,) seconds since episode start -> (N, 25) features.
+    """(N, 21) raw observations and (N,) seconds since episode start -> (N, F) features of spec["variant"].
 
     Reproduces the expert's goal construction from `Episode._initialize`: bearing from the
     world origin to the target, standoff interpolated on target height, goal behind the
@@ -87,12 +98,21 @@ def encode(observations, times, spec):
     bearing_error = wrap(goal_bearing - yaw)
     target_b = to_base(target[:, :2] - base_xy)
     clock = t / spec["horizon_s"]
-    features = np.concatenate([
+    geometry = np.concatenate([
         goal_b, distance[:, None], np.cos(heading_error)[:, None], np.sin(heading_error)[:, None],
         np.cos(bearing_error)[:, None], np.sin(bearing_error)[:, None],
-        target_b, (target[:, 2] - base_z)[:, None], q, qd, clock[:, None]], axis=1)
-    if features.shape[1] != len(FEATURE_NAMES):
-        raise AssertionError("Feature layout drifted from FEATURE_NAMES")
+        target_b, (target[:, 2] - base_z)[:, None]], axis=1)
+    variant = spec["variant"]
+    if variant == VARIANT:
+        features = np.concatenate([geometry, q, qd, clock[:, None]], axis=1)
+    elif variant == "raw21_clock_v1":
+        features = np.concatenate([x, clock[:, None]], axis=1)
+    elif variant == "raw21_egocentric_clock_v1":
+        features = np.concatenate([x, geometry, clock[:, None]], axis=1)
+    else:
+        raise ValueError(f"Unknown input variant {variant!r}")
+    if features.shape[1] != len(VARIANTS[variant]):
+        raise AssertionError("Feature layout drifted from VARIANTS")
     return features
 
 
@@ -105,7 +125,8 @@ class EgocentricPolicy:
         self.x_mean = np.asarray(x_mean); self.x_scale = np.asarray(x_scale)
         self.y_mean = np.asarray(y_mean); self.y_scale = np.asarray(y_scale)
         self.weights = [np.asarray(w) for w in weights]; self.biases = [np.asarray(b) for b in biases]
-        n = len(FEATURE_NAMES)
+        self.names = list(VARIANTS[spec["variant"]])
+        n = len(self.names)
         if any(v.shape != (k,) for v, k in [(self.x_mean, n), (self.x_scale, n), (self.y_mean, 9), (self.y_scale, 9)]):
             raise ValueError("Invalid normalization shapes")
         if len(self.weights) < 2 or len(self.biases) != len(self.weights):
@@ -125,10 +146,10 @@ class EgocentricPolicy:
 
     @property
     def input_features(self):
-        return len(FEATURE_NAMES)
+        return len(self.names)
 
     def arrays(self):
-        result = {"x_mean": self.x_mean, "x_scale": self.x_scale, "y_mean": self.y_mean, "y_scale": self.y_scale,
+        result = {"variant": np.array(self.spec["variant"]), "x_mean": self.x_mean, "x_scale": self.x_scale, "y_mean": self.y_mean, "y_scale": self.y_scale,
                   "standoff_heights": np.asarray(self.spec["standoff_heights"], dtype=np.float64),
                   "standoff_distances": np.asarray(self.spec["standoff_distances"], dtype=np.float64),
                   "clock": np.array([self.spec["horizon_s"], self.spec["dt_s"]], dtype=np.float64)}
@@ -169,7 +190,7 @@ class EgocentricPolicy:
     def load(cls, path):
         with np.load(path, allow_pickle=False) as data:
             count = sum(k.startswith("weight_") for k in data.files)
-            spec = {"variant": VARIANT, "standoff_heights": data["standoff_heights"].tolist(),
+            spec = {"variant": str(data["variant"]) if "variant" in data.files else VARIANT, "standoff_heights": data["standoff_heights"].tolist(),
                     "standoff_distances": data["standoff_distances"].tolist(),
                     "horizon_s": float(data["clock"][0]), "dt_s": float(data["clock"][1])}
             return cls(spec, data["x_mean"], data["x_scale"], data["y_mean"], data["y_scale"],
@@ -196,9 +217,12 @@ def load_group(directory, records, spec):
             list(zip(np.r_[0, np.cumsum(rows)[:-1]].tolist(), np.cumsum(rows).tolist())))
 
 
-def train(dataset, split_path, config_path, output, horizon_s=40.0, device_name="cuda"):
+def train(dataset, split_path, config_path, output, horizon_s=40.0, device_name="cuda", variant=VARIANT):
     os.environ.setdefault("CUBLAS_WORKSPACE_CONFIG", ":4096:8")
     import torch
+    if variant not in VARIANTS:
+        raise ValueError(f"Unknown input variant {variant!r}; expected one of {sorted(VARIANTS)}")
+    names = list(VARIANTS[variant])
     dataset = Path(dataset).resolve(); output = Path(output).resolve(); split_path = Path(split_path).resolve()
     config = read_json(config_path); hp = config["mlp"]
     if config.get("model") != "mlp" or config.get("backend") != "pytorch":
@@ -211,12 +235,12 @@ def train(dataset, split_path, config_path, output, horizon_s=40.0, device_name=
     source_cfg = read_json(dataset / "config.json")
     episode_cfg = resolve_episode_config({k: v for k, v in source_cfg.items() if k in episode_defaults()})
     dt = read_json(dataset / "episodes" / f"{records[0]['episode_id']}.json")["dt"]
-    spec = spec_from_episode_config(episode_cfg, dt, horizon_s); validate_spec(spec)
+    spec = spec_from_episode_config(episode_cfg, dt, horizon_s, variant); validate_spec(spec)
     device = torch.device(device_name)
     torch.manual_seed(hp["seed"]); torch.use_deterministic_algorithms(True)
     torch.set_float32_matmul_precision("highest"); torch.backends.cuda.matmul.allow_tf32 = False
     output.mkdir(parents=True, exist_ok=False)
-    write_json(output / "config.json", {**config, "input_features": VARIANT, "clock_horizon_s": horizon_s})
+    write_json(output / "config.json", {**config, "input_features": variant, "clock_horizon_s": horizon_s})
     shutil.copy2(split_path, output / "split.json")
     source_paths = sorted((PROJECT_ROOT / "src/robot_learning/learning").glob("*.py"))
     source_hashes = {str(p.relative_to(PROJECT_ROOT)): sha256(p) for p in source_paths}
@@ -228,7 +252,7 @@ def train(dataset, split_path, config_path, output, horizon_s=40.0, device_name=
                                    ["dataset.json", "config.json", "scenarios.json", "schema.json", "provenance.json"]},
                 "source_hashes": source_hashes, "project": git_info(PROJECT_ROOT),
                 "versions": {name: importlib.metadata.version(name) for name in ["numpy", "scipy", "torch"]},
-                "python": sys.version, "command": sys.argv, "input_names": FEATURE_NAMES,
+                "python": sys.version, "command": sys.argv, "input_names": names,
                 "raw_observation_names": INPUT_NAMES, "output_names": OUTPUT_NAMES,
                 "feature_spec": spec, "backend": "pytorch",
                 "test_set": "none; development train/validation only",
@@ -243,7 +267,7 @@ def train(dataset, split_path, config_path, output, horizon_s=40.0, device_name=
         xn = ((x - x_mean) / x_scale).astype(np.float32); yn = ((y - y_mean) / y_scale).astype(np.float32)
         vxn = ((vx - x_mean) / x_scale).astype(np.float32)
         tx = torch.from_numpy(xn).to(device); ty = torch.from_numpy(yn).to(device); tvx = torch.from_numpy(vxn).to(device)
-        widths = [len(FEATURE_NAMES), *hp["hidden_layer_sizes"], 9]
+        widths = [len(names), *hp["hidden_layer_sizes"], 9]
         layers = []
         for i, (a, b) in enumerate(zip(widths[:-1], widths[1:])):
             layers.append(torch.nn.Linear(a, b))
@@ -315,10 +339,10 @@ def train(dataset, split_path, config_path, output, horizon_s=40.0, device_name=
         policy.reset()
         if any(sha256(PROJECT_ROOT / p) != d for p, d in source_hashes.items()):
             raise ValueError("Training source changed during execution")
-        info = {"kind": KIND, "variant": VARIANT, "backend": "pytorch", "training_device": str(device),
+        info = {"kind": KIND, "variant": variant, "backend": "pytorch", "training_device": str(device),
                 "hidden_layer_sizes": hp["hidden_layer_sizes"], "activation": "relu", "output_activation": "identity",
                 "regression_parameters": sum(p.numel() for p in network.parameters()), "weight_dtype": "float32",
-                "input_features": len(FEATURE_NAMES), "input_names": FEATURE_NAMES, "independent_outputs": 9,
+                "input_features": len(names), "input_names": names, "independent_outputs": 9,
                 "feature_spec": spec,
                 "feature_provenance": "Deterministic functions of the 21 baseline inputs, the expert standoff table and the controller clock; no expert memory or actions",
                 "epochs_completed": epoch, "best_epoch": best_epoch,
@@ -326,7 +350,7 @@ def train(dataset, split_path, config_path, output, horizon_s=40.0, device_name=
                 "stop_reason": "patience" if stale >= hp["patience"] else "max_epochs",
                 "checkpoint_selection": "minimum validation episode-macro balanced NRMSE",
                 "training_loss": "half output-sum MSE gradients with alpha/(2*batch_rows) weight L2; sklearn convention",
-                "constant_training_inputs": [FEATURE_NAMES[i] for i in np.flatnonzero(x.std(axis=0) == 0)],
+                "constant_training_inputs": [names[i] for i in np.flatnonzero(x.std(axis=0) == 0)],
                 "inference_single_observation_us": {"median": float(np.median(timings) / 1000),
                                                     "p95": float(np.percentile(timings, 95) / 1000), "samples": len(timings)},
                 "output_limits": "none applied; the evaluator clips to the declared envelope",
@@ -356,8 +380,10 @@ def main(argv=None):
     parser.add_argument("--output-dir", required=True)
     parser.add_argument("--horizon-s", type=float, default=40.0, help="Clock normalization; the evaluation horizon")
     parser.add_argument("--device", default="cuda")
+    parser.add_argument("--inputs", default=VARIANT, choices=sorted(VARIANTS),
+                        help="egocentric_clock_v1 (25) | raw21_clock_v1 (21 explicit + clock) | raw21_egocentric_clock_v1 (21 + 10 + clock)")
     args = parser.parse_args(argv)
-    _, metrics = train(args.dataset, args.split, args.config, args.output_dir, args.horizon_s, args.device)
+    _, metrics = train(args.dataset, args.split, args.config, args.output_dir, args.horizon_s, args.device, args.inputs)
     for name, result in metrics.items():
         print(f"{name}: episode-macro balanced NRMSE={result['model']['episode_macro']['balanced_nrmse']:.6f}; "
               f"mean baseline={result['mean_baseline']['episode_macro']['balanced_nrmse']:.6f}")

@@ -31,13 +31,13 @@ from robot_learning.data.storage import read_json, write_json, sha256, utc_now, 
 from robot_learning.settings import PROJECT_ROOT
 from robot_learning.simulation.config import episode_defaults, resolve_episode_config
 from .dataset import inventory, load_episode, validate_partition, inventory_fingerprint
-from .egocentric import (FEATURE_NAMES, encode, validate_spec, spec_from_episode_config,
+from .egocentric import (FEATURE_NAMES, VARIANTS, encode, validate_spec, spec_from_episode_config,
                          load_episode_features, VARIANT)
 from .metrics import errors, aggregate
 from .model import INPUT_NAMES, OUTPUT_NAMES, expand_actions
 
 KIND = "gru_regressor"
-MODES = {"raw21": list(INPUT_NAMES), "egocentric_clock_v1": list(FEATURE_NAMES)}
+MODES = {"raw21": list(INPUT_NAMES), **{variant: list(names) for variant, names in VARIANTS.items()}}
 
 
 def input_names(mode):
@@ -47,7 +47,7 @@ def input_names(mode):
 
 
 def features_for(mode, observations, times, spec):
-    """raw21: the slide's explicit interface unchanged; egocentric_clock_v1: see egocentric.py."""
+    """raw21: the slide's explicit interface unchanged; any other mode: a variant of egocentric.py."""
     x = np.asarray(observations, dtype=np.float64)
     if mode == "raw21":
         if x.ndim != 2 or x.shape[1] != 21 or not np.isfinite(x).all():
@@ -76,6 +76,8 @@ class GRUPolicy:
         if type(stride_steps) is not int or stride_steps < 1:
             raise ValueError("stride_steps must be a positive integer")
         self.spec = spec; self.mode = mode; self.names = input_names(mode); self.stride = stride_steps
+        if mode != "raw21" and spec["variant"] != mode:
+            raise ValueError("Feature specification variant must match the input mode")
         f64 = lambda a: np.asarray(a, dtype=np.float64)
         self.x_mean, self.x_scale, self.y_mean, self.y_scale = f64(x_mean), f64(x_scale), f64(y_mean), f64(y_scale)
         self.w_ih, self.w_hh, self.b_ih, self.b_hh = f64(w_ih), f64(w_hh), f64(b_ih), f64(b_hh)
@@ -147,10 +149,11 @@ class GRUPolicy:
     @classmethod
     def load(cls, path):
         with np.load(path, allow_pickle=False) as d:
-            spec = {"variant": VARIANT, "standoff_heights": d["standoff_heights"].tolist(),
+            mode = str(d["feature_mode"])
+            spec = {"variant": mode if mode != "raw21" else VARIANT, "standoff_heights": d["standoff_heights"].tolist(),
                     "standoff_distances": d["standoff_distances"].tolist(),
                     "horizon_s": float(d["clock"][0]), "dt_s": float(d["clock"][1])}
-            return cls(spec, str(d["feature_mode"]), d["x_mean"], d["x_scale"], d["y_mean"], d["y_scale"],
+            return cls(spec, mode, d["x_mean"], d["x_scale"], d["y_mean"], d["y_scale"],
                        d["w_ih"], d["w_hh"], d["b_ih"], d["b_hh"], d["w1"], d["b1"], d["w2"], d["b2"],
                        stride_steps=int(d["clock"][2]))
 
@@ -221,7 +224,7 @@ def train(dataset, split_path, config_path, output, horizon_s=40.0, device_name=
     source_cfg = read_json(dataset / "config.json")
     episode_cfg = resolve_episode_config({k: v for k, v in source_cfg.items() if k in episode_defaults()})
     dt = read_json(dataset / "episodes" / f"{records[0]['episode_id']}.json")["dt"]
-    spec = spec_from_episode_config(episode_cfg, dt, horizon_s)
+    spec = spec_from_episode_config(episode_cfg, dt, horizon_s, mode if mode != "raw21" else VARIANT)
     device = torch.device(device_name); torch.manual_seed(hp["seed"])
     output.mkdir(parents=True, exist_ok=False)
     chunk_rows = chunk_steps * stride  # physics rows per TBPTT chunk
@@ -378,7 +381,8 @@ def main(argv=None):
     parser.add_argument("--chunk-steps", type=int, default=1000, help="TBPTT chunk length in memory updates")
     parser.add_argument("--episodes-per-batch", type=int, default=8)
     parser.add_argument("--inputs", default="egocentric_clock_v1", choices=sorted(MODES),
-                        help="raw21: the assignment's explicit interface; egocentric_clock_v1: declared feature variant")
+                        help="raw21: the assignment's explicit interface; otherwise an input variant of egocentric.py "
+                             "(egocentric_clock_v1, raw21_clock_v1, raw21_egocentric_clock_v1)")
     parser.add_argument("--stride", type=int, default=1, help="Memory update period in physics steps; the head reacts every step")
     args = parser.parse_args(argv)
     _, metrics = train(args.dataset, args.split, args.config, args.output_dir, args.horizon_s, args.device,

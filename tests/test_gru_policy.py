@@ -22,7 +22,8 @@ TORCH_AVAILABLE = importlib.util.find_spec('torch') is not None
 def random_policy(hidden=8, seed=0, mode='egocentric_clock_v1', stride=1, width=6):
     from robot_learning.learning.gru_policy import GRUPolicy, input_names
     rng = np.random.default_rng(seed); F = len(input_names(mode))
-    return GRUPolicy(SPEC, mode, np.zeros(F), np.ones(F), np.zeros(9), np.ones(9),
+    spec = SPEC if mode in ('raw21', SPEC['variant']) else {**SPEC, 'variant': mode}
+    return GRUPolicy(spec, mode, np.zeros(F), np.ones(F), np.zeros(9), np.ones(9),
                      rng.normal(scale=.3, size=(3 * hidden, F)), rng.normal(scale=.3, size=(3 * hidden, hidden)),
                      rng.normal(scale=.1, size=3 * hidden), rng.normal(scale=.1, size=3 * hidden),
                      rng.normal(scale=.3, size=(width, hidden + F)), np.zeros(width),
@@ -61,7 +62,8 @@ class PolicyStateTests(unittest.TestCase):
 
     def test_save_load_roundtrip_both_input_modes(self):
         from robot_learning.learning.gru_policy import GRUPolicy
-        for mode, width in [('egocentric_clock_v1', len(FEATURE_NAMES)), ('raw21', 21)]:
+        for mode, width in [('egocentric_clock_v1', len(FEATURE_NAMES)), ('raw21', 21),
+                            ('raw21_egocentric_clock_v1', 32), ('raw21_clock_v1', 22)]:
             policy = random_policy(mode=mode)
             self.assertEqual(policy.input_features, width)
             with tempfile.TemporaryDirectory() as tmp:
@@ -88,6 +90,13 @@ class PolicyStateTests(unittest.TestCase):
         self.assertFalse(np.allclose(a1, a3))
         with tempfile.TemporaryDirectory() as tmp:
             policy.save(Path(tmp) / 'm.npz'); self.assertEqual(GRUPolicy.load(Path(tmp) / 'm.npz').stride, 5)
+
+    def test_spec_variant_must_match_mode(self):
+        from robot_learning.learning.gru_policy import GRUPolicy
+        with self.assertRaises(ValueError):
+            GRUPolicy(SPEC, 'raw21_egocentric_clock_v1', np.zeros(32), np.ones(32), np.zeros(9), np.ones(9),
+                      np.zeros((24, 32)), np.zeros((24, 8)), np.zeros(24), np.zeros(24), np.zeros((6, 40)), np.zeros(6),
+                      np.zeros((9, 6)), np.zeros(9))
 
     def test_raw21_mode_feeds_observations_unchanged(self):
         policy = random_policy(mode='raw21')
