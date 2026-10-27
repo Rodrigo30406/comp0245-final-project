@@ -1,4 +1,9 @@
 """Guard leakage boundaries, control symmetry and physical-unit inference."""
+# Make src/ importable regardless of discovery order or installation.
+import sys as _sys
+from pathlib import Path as _Path
+_sys.path.insert(0, str(_Path(__file__).resolve().parents[1] / "src"))
+
 import csv
 import json
 from pathlib import Path

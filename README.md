@@ -116,8 +116,12 @@ than the corresponding `.env` defaults. See the
 ## Verification
 
 ```bash
-python -m unittest discover -s tests -v
+python scripts/run_tests.py -v
 ```
+
+Equivalent: `python -m unittest discover -s tests -v`. Every test module adds
+`src/` to `sys.path` itself, so no installation or `PYTHONPATH` is needed and
+individual modules can run alone, e.g. `python -m unittest tests.test_learning`.
 
 Tests cover deterministic sampling, independent episodes, state/action alignment,
 terminal recording, subsampling, resume integrity, equality of interactive and

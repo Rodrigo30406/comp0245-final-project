@@ -1,4 +1,9 @@
 """Variable depth: portable export, linear output, temporal execution and recovery."""
+# Make src/ importable regardless of discovery order or installation.
+import sys as _sys
+from pathlib import Path as _Path
+_sys.path.insert(0, str(_Path(__file__).resolve().parents[1] / "src"))
+
 from copy import deepcopy
 import importlib.util
 from pathlib import Path

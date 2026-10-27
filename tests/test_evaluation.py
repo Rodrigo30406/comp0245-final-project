@@ -1,4 +1,9 @@
 """Metrics correctness and shared-engine autonomous/legacy regression tests."""
+# Make src/ importable regardless of discovery order or installation.
+import sys as _sys
+from pathlib import Path as _Path
+_sys.path.insert(0, str(_Path(__file__).resolve().parents[1] / "src"))
+
 import unittest
 import tempfile
 from pathlib import Path

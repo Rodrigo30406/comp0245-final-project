@@ -1,4 +1,9 @@
 """Cross-framework math, portable export, checkpoint recovery and CUDA fitting."""
+# Make src/ importable regardless of discovery order or installation.
+import sys as _sys
+from pathlib import Path as _Path
+_sys.path.insert(0, str(_Path(__file__).resolve().parents[1] / "src"))
+
 from copy import deepcopy
 import importlib.util
 from pathlib import Path

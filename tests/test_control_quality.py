@@ -1,4 +1,9 @@
 """Ordered route comparison and resistance to a few catastrophic episodes."""
+# Make src/ importable regardless of discovery order or installation.
+import sys as _sys
+from pathlib import Path as _Path
+_sys.path.insert(0, str(_Path(__file__).resolve().parents[1] / "src"))
+
 import unittest
 import numpy as np
 from robot_learning.evaluation.control_quality import discrete_frechet,robust_summary
