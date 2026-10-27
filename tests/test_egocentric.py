@@ -89,6 +89,26 @@ class ExtendedVariantTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             validate_spec({**SPEC, "variant": "raw21"})
 
+    def test_target_variant_is_independent_of_the_expert_goal_construction(self):
+        rng = np.random.default_rng(4)
+        x = np.stack([observation(rng.normal(size=2), rng.uniform(-np.pi, np.pi), rng.uniform(.5, 2, 3),
+                                  rng.normal(size=7), rng.normal(size=7)) for _ in range(6)])
+        t = rng.uniform(0, 40, 6)
+        spec = {**SPEC, "variant": "raw21_target_clock_v1"}
+        feats = encode(x, t, spec)
+        self.assertEqual(feats.shape, (6, 25)); self.assertEqual(len(VARIANTS["raw21_target_clock_v1"]), 25)
+        np.testing.assert_array_equal(feats[:, :21], x)
+        np.testing.assert_array_equal(feats[:, 21:24], encode(x, t, SPEC)[:, 7:10])
+        np.testing.assert_array_equal(feats[:, 24], t / SPEC["horizon_s"])
+        # A different standoff table (expert knowledge) must not change a single column.
+        other = {**spec, "standoff_heights": [0.1, 2.0], "standoff_distances": [0.2, 1.7]}
+        np.testing.assert_array_equal(encode(x, t, other), feats)
+        # And the three columns are the rigid transform of the target into the base frame.
+        yaw = x[:, 3]; d = x[:, 18:20] - x[:, 0:2]
+        np.testing.assert_allclose(feats[:, 21], np.cos(yaw) * d[:, 0] + np.sin(yaw) * d[:, 1])
+        np.testing.assert_allclose(feats[:, 22], -np.sin(yaw) * d[:, 0] + np.cos(yaw) * d[:, 1])
+        np.testing.assert_allclose(feats[:, 23], x[:, 20] - x[:, 2])
+
     def test_extended_variant_policy_roundtrip_keeps_variant(self):
         spec = {**SPEC, "variant": "raw21_egocentric_clock_v1"}
         rng = np.random.default_rng(1)

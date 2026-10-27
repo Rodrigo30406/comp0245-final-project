@@ -34,14 +34,19 @@ FEATURE_NAMES = (["goal_in_base_x", "goal_in_base_y", "goal_distance_xy",
                  ["episode_clock_fraction"])
 VARIANT = "egocentric_clock_v1"
 GEOMETRY_NAMES = FEATURE_NAMES[:10]
+TARGET_NAMES = FEATURE_NAMES[7:10]  # target in the base frame: no expert goal construction involved
 CLOCK_NAME = "episode_clock_fraction"
 # Input layouts. The lecturer's 21 explicit inputs may be kept and extended (not replaced):
 #   egocentric_clock_v1       : 10 relative geometry + 14 joint + clock (25); replaces the 7 absolute pose/target inputs
 #   raw21_clock_v1            : the 21 explicit inputs + clock (22)
 #   raw21_egocentric_clock_v1 : the 21 explicit inputs + 10 relative geometry + clock (32)
+#   raw21_target_clock_v1     : the 21 explicit inputs + 3 target-in-base-frame features + clock (25).
+#                               Uses no knowledge of the expert (no standoff table, no goal bearing rule):
+#                               only a rigid transform of observed quantities into the robot frame.
 VARIANTS = {VARIANT: list(FEATURE_NAMES),
             "raw21_clock_v1": list(INPUT_NAMES) + [CLOCK_NAME],
-            "raw21_egocentric_clock_v1": list(INPUT_NAMES) + list(GEOMETRY_NAMES) + [CLOCK_NAME]}
+            "raw21_egocentric_clock_v1": list(INPUT_NAMES) + list(GEOMETRY_NAMES) + [CLOCK_NAME],
+            "raw21_target_clock_v1": list(INPUT_NAMES) + list(TARGET_NAMES) + [CLOCK_NAME]}
 KIND = "egocentric_mlp_regressor"
 
 
@@ -109,6 +114,8 @@ def encode(observations, times, spec):
         features = np.concatenate([x, clock[:, None]], axis=1)
     elif variant == "raw21_egocentric_clock_v1":
         features = np.concatenate([x, geometry, clock[:, None]], axis=1)
+    elif variant == "raw21_target_clock_v1":
+        features = np.concatenate([x, geometry[:, 7:10], clock[:, None]], axis=1)
     else:
         raise ValueError(f"Unknown input variant {variant!r}")
     if features.shape[1] != len(VARIANTS[variant]):
