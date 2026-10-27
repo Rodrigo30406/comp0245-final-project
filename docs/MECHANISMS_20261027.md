@@ -195,6 +195,19 @@ testable with a 5-seed ablation on the same data:
 - H3: optimisation — a wider, correlated input simply conditions the problem
   better, lowering seed variance. Test: 25 + 7 random/irrelevant columns.
 
+### 7b. Addendum (16:30): how much of the geometry gain is expert knowledge
+
+Measured after this file was written (details and plan in
+`docs/BLACKBOX_PLAN_20261027.md`). Of the 10 geometry features, 3 are rigid
+transforms of the observations (target in the base frame, height difference)
+and 7 depend on the expert's goal construction (standoff table, bearing rule).
+Five seeds each, DART low, stable arrival at 5 cm: 21+clock 5–10; 21 + 3
+rigid-transform + clock **25–32**; 21 + 10 geometry + clock 115–162. The frame
+change fixes the approach (EE within 0.5 m in 202–204 / 205) but not the stop
+(154–205 episodes end > 1 m away). Most of the §1 gain therefore comes from
+telling the policy *where the expert parks*, which is design knowledge of the
+expert, not neutral maths.
+
 ## 8. Implications for the next step
 
 The one defect shared by every recipe is the hold regime, and it is a
