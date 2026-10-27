@@ -1,0 +1,30 @@
+{
+  "name": "nested_episode_count_comparison",
+  "episode_counts": [
+    64,
+    128,
+    256,
+    512
+  ],
+  "collection_seed": 20261023,
+  "split_seed": 20261025,
+  "validation_fraction": 0.2,
+  "models": [
+    "linear",
+    "mlp"
+  ],
+  "collection_recipe": "experiment_specs/collection/pilot_box.json",
+  "training_recipes": {
+    "linear": "experiment_specs/training/linear_baseline.json",
+    "mlp": "experiment_specs/training/mlp_baseline.json"
+  },
+  "reference_runs": {
+    "linear": "runs/training/linear_pilot_20261025",
+    "mlp": "runs/training/mlp_pilot_20261025"
+  },
+  "split_policy": "preserve previous membership; randomly allocate additional episodes to reach ceil(0.2*N) validation",
+  "common_evaluation": "the 13 original validation scenarios, held out by every model",
+  "normalization_for_common_metrics": "fixed original 64-episode training output standard deviations",
+  "autonomous_protocol": "experiment_specs/evaluation/validation.json",
+  "scope": "single-seed development learning curve; same architecture, box, expert and initial state; not a final test or fixed-update-budget causal study"
+}

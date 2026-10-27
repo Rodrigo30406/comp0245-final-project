@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "comp0245-final-project"
+version = "0.1.0"
+description = "Behaviour cloning of a mobile manipulator expert for COMP0245"
+requires-python = ">=3.10"
+
+[project.optional-dependencies]
+pytorch = ["torch==2.11.0"]
+
+[project.scripts]
+simulate-expert = "robot_learning.simulation.interactive:main"
+collect-expert-data = "robot_learning.data.cli:main"
+train-bc-model = "robot_learning.learning.train:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]

@@ -1,0 +1,14 @@
+{
+  "name": "base_and_system_trajectory_diagnostic",
+  "horizon_s": 40.0,
+  "dwell_s": 0.5,
+  "tolerances_m": [
+    0.01,
+    0.02,
+    0.05
+  ],
+  "trace_every_steps": 100,
+  "limits": "expert_command_envelope",
+  "failure_distance_penalty_m": 10.0,
+  "dense_trace_until_s": 2.0
+}

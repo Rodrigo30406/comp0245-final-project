@@ -1,0 +1,10 @@
+{
+  "name": "box_random_start",
+  "episodes": 64,
+  "seed": 20261023,
+  "split": "development",
+  "headless": true,
+  "max_steps": 40000,
+  "target_box": {"x": [-2.0, 2.0], "y": [-2.0, 2.0], "z": [0.3, 0.8]},
+  "initial_base": {"mode": "uniform_xy", "x": [-2.0, 2.0], "y": [-2.0, 2.0], "yaw": [0.0, 0.0]}
+}

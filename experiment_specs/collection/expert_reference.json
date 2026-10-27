@@ -1,0 +1,11 @@
+{
+  "name": "expert_reference_nominal",
+  "episodes": 1,
+  "seed": 20261023,
+  "split": "development",
+  "headless": true,
+  "max_steps": 40000,
+  "record_every_steps": 1,
+  "targets": [[0.0, 1.1, 0.5]],
+  "initial_base": {"mode": "nominal"}
+}

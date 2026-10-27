@@ -1,0 +1,56 @@
+{
+  "fixed_finger_angles": [
+    0.1,
+    0.1,
+    0.1,
+    0.1,
+    0.1,
+    0.1
+  ],
+  "base_controller": {
+    "nav_timeout": 25.0,
+    "kp_pos": 1.0,
+    "kp_ori": 3.0,
+    "max_lin_vel": 0.25,
+    "min_lin_vel": 0.05,
+    "max_ang_vel": 1.0,
+    "pos_tol": 0.08,
+    "ang_tol": 0.05,
+    "wheel_radius": 0.11,
+    "wheel_base_width": 0.66
+  },
+  "arm_controller": {
+    "reach_limit": 0.85,
+    "kp": 100.0,
+    "kd": 30.0,
+    "max_joint_vel": 1.0,
+    "max_q_lead": 0.15,
+    "max_torque": 30.0,
+    "cartesian_kp": 1.5,
+    "max_cartesian_speed": 0.25,
+    "min_ik_damping": 0.01,
+    "max_ik_damping": 0.1,
+    "singularity_threshold": 0.15,
+    "limit_margin": 0.05
+  },
+  "stop": {
+    "reach_tolerance": 0.01,
+    "min_time": 8.0,
+    "stall_window": 3.0,
+    "stall_improvement": 0.002
+  },
+  "standoff": {
+    "heights": [
+      0.1,
+      0.5,
+      1.1,
+      1.25
+    ],
+    "distances": [
+      0.8,
+      0.65,
+      0.65,
+      0.35
+    ]
+  }
+}
