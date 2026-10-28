@@ -1,0 +1,4 @@
+# collected datasets and robot models are large and regenerable (see DATA_COLLECTION.md)
+/data
+/models
+__pycache__/
