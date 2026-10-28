@@ -272,6 +272,81 @@ asks for 30 s.
    replacement" setting and the honest baseline for the reserved random bank.
 3. Then E2 (near-target starts) on top of whichever of the two wins.
 
+## 6b. Inverted experiment (19:49–20:31): one target, 512 random starts — it is not density
+
+Rodrigo's check: fix one target (validation target `[0.96, 0.83, 0.55]`),
+collect 512 DART-low demonstrations from uniformly random base poses
+(`experiment_specs/collection/inv_onetarget_randomstart_dart_low.json`,
+expert 486 / 512 successes), random split 448 / 64, three input sets × 3
+seeds, evaluated on the 64 held-out random starts of the same target. With
+one target the start-pose family is 3-D and 448 demonstrations cover it
+densely, so if E1 had failed for lack of density this should work.
+
+| Inputs (one target, random starts) | Stable arrival 1 / 2 / 5 cm of 64 | EE min distance (q25 / q50 / q75) |
+|---|---|---|
+| 22 (21 + clock) | 0 / 0 / 0 (3 seeds) | — |
+| 25 (21 + 3 rigid + clock) | 0 / 0 / 0 (3 seeds) | 0.169 / 0.171 / 0.173 m |
+| 32 (21 + 10 geometry + clock) | 2 / 5 / 12, 0 / 0 / 0, 0 / 0 / 2 | 0.168 / 0.169 / 0.171 m |
+| expert | 63 / 63 / 63 | 0.002 m |
+
+Density is not the explanation. The base-navigation diagnostics of the
+evaluator say where the failure is:
+
+| Policy (32 inputs) on … | base ever < 8 cm of its goal | stable base pose | base drift after arrival (median) | base finally in pose tolerance | final EE distance when the base is parked (q25 / q50 / q75) |
+|---|---:|---:|---:|---:|---|
+| nominal-trained, nominal goals | 0.94 | 0.84 | 0.13 m | 105 / 1025 | 0.025 / 0.039 / 0.062 m |
+| E1-trained, nominal goals | 0.85 | 0.72 | 0.07 m | 373 / 1025 | 0.083 / 0.145 / 0.267 m |
+| E1-trained, random-start goals | 0.90 | 0.77 | 0.05 m | 464 / 1025 | 0.085 / 0.175 / 0.313 m |
+| one-target-trained, its random starts | 0.92 | 0.83 | 0.24 m | 35 / 192 | 0.176 / 0.181 / 0.187 m |
+
+**The base is fine; the arm is what random-start training breaks.** Models
+trained on random starts park the base at its goal as often as the nominal
+ones, and hold it better on the nominal goals (drift 7 cm vs 13 cm, half the
+episode inside tolerance vs 12 %). But with the base correctly parked the
+end effector stops 15–18 cm from the target instead of 4 cm; in the
+one-target case it ends 17 cm away in every episode, i.e. the arm converges to
+one fixed wrong configuration. Offline, the torque error in the `done`
+regime (the only regime where the arm moves) rises from 0.31 (nominal data)
+to 0.46–0.53 (E1 data) and 0.35–0.36 (one-target data), while the wheel
+errors stay in the same range; the overall validation NRMSE hid this because
+`done` is 15 % of the samples and the torques are 7 of 9 outputs averaged
+with 2 nearly perfect wheel channels. (`regime_nrmse.py` in the scratchpad;
+60 validation episodes each.)
+
+What this is *not*: the base pose at `done` is equally tight in all three
+datasets (target in the base frame at `done`: x / y std 3 / 2 cm nominal,
+3 / 4 cm E1, 3 / 4 cm one-target; base–goal distance at `done` median 7 cm,
+90th percentile 8–10 cm), so the arm's reach target in the robot frame is
+not more scattered with random starts. The orient phase is four times larger
+(64–73 k vs 16 k validation samples; arrival heading error median 0.86–1.17
+rad vs 0.16 rad; base slip during the turn 7–10 cm vs 2 cm), which is the
+intended coverage gain, and the wheel heads use it (better hold).
+
+Open question, with the test that settles it: why does the reach regime get
+harder to imitate when the approach is random? Candidates: (i) the arm head
+in nominal data indexes the reach trajectory with the clock (`done` at
+8.7 ± 2 s) and loses that index when `done` spreads over 6–15 s; (ii) the arm
+imitation only works when the base is as still as in the demonstrations and
+the small residual base motion after a long orient turn is enough to push
+the integrated reach off its demonstrated curve. Test (i): retrain E1 32
+inputs without the clock column, 3 seeds. Test (ii): roll out the
+E1-trained policy's arm with the base frozen at the expert's `done` pose
+(a small harness on `Episode`). Both are cheap; neither was run tonight.
+
+### E3 arms launched (20:38, running overnight)
+
+Datasets: `e3_multistart3x_dart_low` (3072 episodes, every plan target with 3
+random starts, expert outcome in the dataset manifest) plus the existing
+nominal and E1 sets. Two splits built with the multi-dataset support added in
+commit `ff0f120` (`runs/splits/e3_randomonly_4096.json`: E3 + E1, 3276 / 820;
+`runs/splits/e3_mixture_4096.json`: nominal + E3, 3276 / 820), both holding
+out the plan's 205 target indices in every dataset. 32-input MLPs, 3 seeds per
+arm, evaluated on the nominal goals and on E1's random-start goals. Given
+§6b, the arm regime, not density, is the thing to watch in these results.
+Operational note: three concurrent trainers on 4096 episodes exhausted
+system RAM and one was OOM-killed; the chain was resumed with at most two
+trainers at a time (`chain_e3b.sh`).
+
 ## 7. Status
 
 - Done: decomposition (§1), variant `raw21_target_clock_v1`; E1 collected,
@@ -279,6 +354,7 @@ asks for 30 s.
   (`runs/evaluation/e1_mlp_*_seeds_on_clean_validation_20261027`,
   `…_on_e1_random_validation_20261027`,
   `dart_low_mlp_raw21plus_seeds_on_e1_random_validation_20261027`).
-- Next, on request: the dilution test (E3'), then the mixture.
+- Running: the E3 arms (random-only 4096 vs nominal + random 4096), results in the morning.
+- Next, on request: the two arm tests of §6b (no clock; frozen base).
 - E2 needs a collector mode; nothing in `src/` is edited while a collector,
   trainer or evaluator is running (provenance guards).
