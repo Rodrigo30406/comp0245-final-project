@@ -203,10 +203,82 @@ reference, so the gain of each factor is visible per input set.
 Plus, for each dataset, the coverage check that motivated it: yaw histogram at
 t = 0 (E1), approach-direction histogram at `done` (E2), episode count (E3).
 
-## 6. Status
+## 6. E1 result (16:54–19:22): random initial pose makes everything worse
 
-- Done: decomposition (§1), variant `raw21_target_clock_v1`, evaluation
-  `runs/evaluation/dart_low_mlp_raw21target_seeds_on_clean_validation_20261027`.
-- Next, on request: E1 (no code change needed; one collection spec file).
+Dataset `datasets/e1_randompose_dart_low/20261027T215423Z_…` from
+`experiment_specs/collection/e1_randompose_dart_low.json`: 1024 episodes, same
+stratified targets, base start uniform in x, y ∈ [−2, 2], yaw ∈ [−π, π],
+DART low, 7 min with 24 workers. Expert outcome 981 success / 43 stalled
+(the nominal-start set: 895 / 129), so the demonstrations are not the
+problem. Split: the same geometry plan (819 / 205). Fifteen MLPs (3 input sets
+× 5 seeds), evaluated on the 205 clean nominal-start validation goals
+(`--allow-external-holdout`: the evaluator's leakage guard keys on target +
+initial state, and no training condition is shared).
+
+| Inputs | Data | Offline val NRMSE | Stable arrival 5 cm, min / median / max | Final within 5 cm | Held ≥ 10 s | EE ever < 15 cm |
+|---|---|---:|---|---:|---:|---:|
+| 22 (21 + clock) | nominal starts | 0.172–0.177 | 5 / 9 / 10 | 0 | 0 | 14–21 |
+| 22 | **E1 random starts** | 0.212–0.218 | **2 / 4 / 7** | 0 | 0 | 8–14 |
+| 25 (21 + 3 rigid + clock) | nominal starts | 0.135–0.139 | 25 / 29 / 32 | 0–1 | 0 | 85–87 |
+| 25 | **E1 random starts** | 0.181–0.186 | **11 / 12 / 17** | 0 | 0–4 | 73–83 |
+| 32 (21 + 10 geometry + clock) | nominal starts | 0.114–0.120 | 115 / 138 / 162 | 17–96 | 61–92 | 160–188 |
+| 32 | **E1 random starts** | 0.115–0.122 | **24 / 26 / 46** | 0–31 | 0–19 | 81–106 |
+
+The hypothesis of E1 (random poses close the 22-vs-25 gap on the approach) is
+rejected: every input set, including the white-box 32, loses most of its
+closed-loop performance with the same 1024-episode budget, while the offline
+NRMSE of the 32-input set is unchanged (0.115–0.122). Two cross evaluations
+on E1's own 205 random-start validation scenarios separate the explanations:
+
+| Model (32 inputs) | On nominal-start goals | On random-start goals (E1 validation) | Failure shape on random starts |
+|---|---|---|---|
+| trained on nominal starts | 115–162 | **36–70** | EE ever < 15 cm 81–104; final > 1 m in 82–128 (runs away when it fails) |
+| trained on E1 random starts | 24–46 | **25–42** | EE ever < 15 cm 83–101; final > 1 m in 35–73 (gets near, never finishes) |
+
+Reading:
+
+- Not a train/test mismatch: the E1-trained models are weak on their own
+  distribution too (25–42). The nominal-trained models beat them even there.
+- Dilution: with the start pose free, 819 demonstrations cover a 4-D family
+  of situations instead of a 3-D one, and the demonstrations are longer
+  (median 13.5 k vs 11.1 k samples, `done` at 10.8 s vs 8.7 s). The
+  per-situation density that the stop regime needs is gone. Offline this is
+  invisible (same NRMSE); closed loop it costs everything, which is the same
+  lesson as the first night: offline error does not predict closed-loop
+  success.
+- Generalisation of the nominal recipe to random starts is partial (36–70,
+  with the runaway failure that the yaw-sweep probe predicted in
+  `docs/MECHANISMS_20261027.md` §1). This is a first, non-reserved estimate
+  of what the reserved random-start bank would show.
+- Random-pose data is therefore **extra** data, not a replacement, and only
+  at a larger budget. The next step is the dilution test, not E2.
+
+Dataset facts recorded on the way (300 episodes each): phase fractions by
+sample, nominal align / drive / orient = 0.19 / 0.62 / 0.19 versus E1
+0.11 / 0.63 / 0.26; demonstrations end at the expert's success, so the
+post-`done` hold is only a few seconds per demonstration while the evaluation
+asks for 30 s.
+
+### Revised order after E1
+
+1. **E3' — dilution test (no code):** 3072 more random-start episodes
+   (`--resume` on the same spec family or a 4096-episode spec), train the
+   32-input set on 4096 random-start demonstrations, evaluate on both goal
+   sets. If 4096 random-start demos recover ≥ the nominal 115–162 on nominal
+   goals, the cause was density and the black-box line scales with data; if
+   not, the random-start task needs the nominal core.
+2. **Mixture (small trainer change):** nominal 1024 + random 1024 in one
+   training set, 32 and 25 inputs, 5 seeds; this is the "extra data, not
+   replacement" setting and the honest baseline for the reserved random bank.
+3. Then E2 (near-target starts) on top of whichever of the two wins.
+
+## 7. Status
+
+- Done: decomposition (§1), variant `raw21_target_clock_v1`; E1 collected,
+  trained (15 runs `runs/training/mlp_e1_*`), evaluated
+  (`runs/evaluation/e1_mlp_*_seeds_on_clean_validation_20261027`,
+  `…_on_e1_random_validation_20261027`,
+  `dart_low_mlp_raw21plus_seeds_on_e1_random_validation_20261027`).
+- Next, on request: the dilution test (E3'), then the mixture.
 - E2 needs a collector mode; nothing in `src/` is edited while a collector,
   trainer or evaluator is running (provenance guards).
