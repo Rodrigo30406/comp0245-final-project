@@ -347,6 +347,57 @@ Operational note: three concurrent trainers on 4096 episodes exhausted
 system RAM and one was OOM-killed; the chain was resumed with at most two
 trainers at a time (`chain_e3b.sh`).
 
+## 6c. The 17 cm explained (28 Oct, 00:50): the arm never leaves its hold posture
+
+Measured on the inverted experiment's traces
+(`runs/evaluation/inv_onetarget_randomstart_on_own_validation_20261027/traces`,
+sampled every 100 ms) and on the demonstrations of the one-target dataset.
+
+- In the demonstrations, at the instant `done` switches on (base parked at the
+  standoff, arm still at `q_hold`), the end effector is 0.174 m from the target
+  (median; p10 0.169, p90 0.200). The expert then extends the arm and ends at
+  0.010 m.
+- The closed-loop policies' end effector ends at exactly that 0.17 m because the
+  arm does not move. End-effector displacement in the base frame between the
+  first and the last sample, median over the 64 episodes:
+
+  | Policy | EE displacement in base frame (m) | Change of arm joints 2/4/6 (rad) | Min EE–target dist. (m) |
+  |---|---:|---|---:|
+  | expert | 0.208 | 0.56 / 0.42 / 0.16 | 0.000 |
+  | 21 + clock, seeds 0–2 | 0.027–0.030 | 0.05 / 0.01 / 0.00 | 0.170–0.173 |
+  | 21 + 3 target-in-base + clock, seeds 0–2 | 0.032–0.040 | 0.05–0.07 / 0.01 / 0.00 | 0.171–0.172 |
+  | 32 inputs, seeds 0 and 1 | 0.031–0.035 | 0.05 / 0.02 / 0.00 | 0.169–0.170 |
+  | 32 inputs, seed 2 | 0.251 | 0.70 / 0.48 / 0.21 | 0.169 |
+
+  Eight of the nine models keep the arm within 3–4 cm of the hold posture for
+  the whole 40 s; the base parks correctly underneath. Only one model (32
+  inputs, seed 2) extends the arm as the expert does, and even it ends 25 cm
+  off (it extends to the right height but not to the right point).
+- The E1 numbers are the same effect on several targets: with the base parked,
+  the end effector of E1-trained models ends 8–27 cm from the target, which is
+  the spread of the hold-posture distance across the standoff table (0.35–0.80 m).
+
+So "a stable 17 cm error" was the wrong description. The arm does not go to a
+wrong posture; it never starts the reach. The failure is the *trigger* of the
+reach phase, not the reach trajectory. This narrows the two hypotheses of §6b:
+
+- Clock as trigger. In nominal demonstrations `done` happens at 8.7 ± 2 s, so
+  the clock alone predicts the reach onset, and a clock trigger is robust in
+  closed loop (time always advances, whatever the base does). With random
+  starts `done` happens anywhere between 6 and 15 s; the clock is useless and
+  the only remaining cue is the state "base parked at the standoff with zero
+  velocity", which the regressor evidently does not isolate sharply enough,
+  except by luck in one seed.
+- Test (E6, nominal data): train the 32-input model *without* the clock (31
+  inputs). If the arm stops extending on nominal starts, the nominal models'
+  arm was clock-triggered and the black-box line needs a state-based trigger
+  (memory or an explicit `arrived` feature). Needs a new input variant in
+  `egocentric.py`; it is applied only when no trainer/evaluator is running.
+- Implication for E3 (mixture of nominal and random starts): the nominal demos
+  support a clock trigger that the random demos contradict, so the mixture is
+  expected to lose the arm on nominal starts too; the evaluations running now
+  decide.
+
 ## 7. Status
 
 - Done: decomposition (§1), variant `raw21_target_clock_v1`; E1 collected,
@@ -354,7 +405,11 @@ trainers at a time (`chain_e3b.sh`).
   (`runs/evaluation/e1_mlp_*_seeds_on_clean_validation_20261027`,
   `…_on_e1_random_validation_20261027`,
   `dart_low_mlp_raw21plus_seeds_on_e1_random_validation_20261027`).
-- Running: the E3 arms (random-only 4096 vs nominal + random 4096), results in the morning.
-- Next, on request: the two arm tests of §6b (no clock; frozen base).
+- E3: three of the six trainers were OOM-killed (the final full-dataset metric pass peaks at ~92 GB RSS on
+  4096 episodes; two concurrent trainers exceed the 125 GB machine). Rule from now on: one 4096-episode trainer
+  at a time. Relaunched 28 Oct 00:40 (`chain_e3c.sh`): the three complete seeds (random-only seed 0, mixture
+  seeds 0 and 1) are being evaluated now; seeds random-only 1, 2 and mixture 2 retrain sequentially (~4.5 h) and
+  are evaluated into `*_20261027_b` directories.
+- Next, on request: E6 (§6c, nominal data without the clock) — the cheapest test of the reach-trigger mechanism.
 - E2 needs a collector mode; nothing in `src/` is edited while a collector,
   trainer or evaluator is running (provenance guards).
