@@ -475,7 +475,7 @@ Reading:
   point (goal in base ≈ 0, goal distance ≈ 0, bearing error ≈ 0, the same for every goal); the
   target-relative features describe it as "distance = standoff(height), heading ≈ 0", a different
   point for each height, next to the approach regime. The regressor's zero-wheel output is not
-  anchored there, and the integration argument of `MECHANISMS` §… applies: a few mm/s of wheel
+  anchored there, and the integration argument of `docs/MECHANISMS_20261027.md` applies: a few mm/s of wheel
   command with no restoring force walks the base away in 30 s.
 - Seed variance again dominates (33 to 129). Same signature as E3 §6d: the trigger and the hold are
   threshold events the regressor finds or misses as a whole.
