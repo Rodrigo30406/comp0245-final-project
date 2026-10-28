@@ -1,0 +1,5 @@
+Policy expert on data/hard: success 194/200 = 97.0% [93.6, 98.6] (95% Wilson), settled 194/200
+Stop reasons: reached 194, stalled 1, timeout 5
+Policy step time: mean 0.197 ms, p99 0.407 ms (median over episodes; control period 1 ms)
+Recorded clean expert reached / this policy succeeded (200 episodes): both 194, expert only 0, policy only 0, neither 6
+Recorded comparison: 200/200 episodes identical over the common length (float32), max differences: base_pos 0, q_mes 0, qd_mes 0, wheel_cmds 0, torque_arm 0

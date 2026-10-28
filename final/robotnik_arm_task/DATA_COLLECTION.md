@@ -10,6 +10,7 @@ and the expert's internal state.
 |---|---|---|
 | `collect_data.py` | new | Runs the expert for one target or a random batch, saves one `.npz` per episode + `index.csv` |
 | `analyze_index.py` | new | Figures, summary and data-quality check of one or more collected runs |
+| `evaluate_policy.py` | new | Closed-loop evaluation of a policy (or the expert) on an evaluation set, see `EVALUATION.md` |
 | `robotnik_arm_task.py`, `robotnik_arm_control.py` | course template, **unmodified** | The expert. `collect_data.py` imports its controllers and settings from them |
 | `report.txt` | notes (Chinese) | Design decisions, experiments and findings collected for the report |
 
@@ -115,6 +116,11 @@ All runs use theta -180..180 deg, max 40000 steps and log every step.
 | `data/pilot` | 100 | 1000 | r 0.1-3.0, z 0.2-1.2 | radius 2 m, any yaw | 50% | pilot run |
 | `data/train` | 2000 | 1 | r 0.1-3.0, z 0.2-1.2 | radius 2 m, any yaw | 50% | training + validation |
 | `data/test` | 300 | 100 | r 0.1-3.0, z 0.2-1.2 | radius 2 m, any yaw | 0% | final evaluation only |
+| `data/dev` | 300 | 200 | r 0.1-3.0, z 0.2-1.2 | radius 2 m, any yaw | 0% | closed-loop evaluation: development decisions |
+| `data/hard` | 200 | 201 | r 0.1-1.6, z 0.2-1.2 | radius 2 m, any yaw | 0% | closed-loop evaluation: short drives |
+| `data/confirm` | 300 | 202 | r 0.1-3.0, z 0.2-1.2 | radius 2 m, any yaw | 0% | closed-loop evaluation: confirming adopted changes |
+
+The last three are evaluation sets for `evaluate_policy.py`; their roles and commands are in `EVALUATION.md`.
 
 Commands (reproduce the data exactly):
 
@@ -127,7 +133,8 @@ python collect_data.py --n-episodes 300 --workers 20 --seed 100 --r-range 0.1 3.
 
 Results so far:
 
-- Expert success: train 95.2% (clean 98.4%, noisy 91.6%), test 298/300.
+- Expert success: train 95.2% (clean 98.4%, noisy 91.6%), test 298/300, dev 298/300, hard 194/200,
+  confirm 294/300.
 - No NaN in the data, wheel labels always match `[rw, lw, lw, rw]`, 0.15% of torque labels at
   the 30 N m limit.
 - Samples per phase in train: drive 49%, reach 27%, align 17%, orient 7%.

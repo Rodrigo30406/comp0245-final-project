@@ -2,3 +2,6 @@
 /data
 /models
 __pycache__/
+# per-episode console logs and trajectories of evaluation runs (rollouts.csv / summary.txt are kept)
+/results/*/logs/
+/results/*/traj/
