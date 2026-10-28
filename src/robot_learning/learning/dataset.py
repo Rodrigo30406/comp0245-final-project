@@ -46,6 +46,29 @@ def inventory(directory):
     return records
 
 
+def extra_inventory(saved):
+    """Records of the optional `extra_datasets` of an explicit split, each tagged with its directory.
+
+    A split may add whole datasets (same schema and episode configuration) on top of its
+    primary dataset; their records carry a 'dataset' key so identical episode IDs never collide.
+    """
+    extras = saved.get("extra_datasets", [])
+    if not isinstance(extras, list) or len(set(map(str, extras))) != len(extras):
+        raise ValueError("extra_datasets must be a list of distinct dataset directories")
+    records = []
+    for extra in extras:
+        directory = Path(extra).resolve()
+        if str(directory) == str(Path(saved["dataset"]).resolve()):
+            raise ValueError("extra_datasets must not repeat the primary dataset")
+        records.extend({**r, "dataset": str(directory)} for r in inventory(directory))
+    return records
+
+
+def record_directory(record, default):
+    """Directory an inventory record was read from (primary dataset unless tagged)."""
+    return Path(record["dataset"]) if "dataset" in record else Path(default)
+
+
 def split_episodes(records, validation_fraction, seed):
     if not 0 < validation_fraction < 1 or type(seed) is not int or seed < 0:
         raise ValueError("Invalid validation fraction or seed")
@@ -86,12 +109,13 @@ def validate_partition(records, partition):
     """Reject missing, duplicated, overlapping or stale explicit split records."""
     if set(partition) != {'training', 'validation'} or any(not partition[k] for k in partition):
         raise ValueError('Explicit split needs nonempty training and validation')
-    lookup = {r['episode_id']: r for r in records}
+    key = lambda r: (r.get('dataset'), r['episode_id'])
+    lookup = {key(r): r for r in records}
     chosen = partition['training'] + partition['validation']
-    ids = [r['episode_id'] for r in chosen]
+    ids = [key(r) for r in chosen]
     if len(ids) != len(set(ids)) or set(ids) != set(lookup):
         raise ValueError('Explicit split is overlapping, duplicated or incomplete')
-    if any(lookup[r['episode_id']] != r for r in chosen):
+    if any(lookup[key(r)] != r for r in chosen):
         raise ValueError('Explicit split contains stale or foreign records')
     return partition
 

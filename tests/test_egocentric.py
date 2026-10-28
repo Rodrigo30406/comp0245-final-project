@@ -207,5 +207,38 @@ class TrainingRunTests(unittest.TestCase):
             np.testing.assert_array_equal(loaded.predict(x), policy.predict(x))
 
 
+@unittest.skipUnless(TORCH_AVAILABLE, 'Optional PyTorch environment is not installed')
+class ExtraDatasetTests(unittest.TestCase):
+    """A split may add whole datasets on top of its primary one; records are tagged, never merged by ID."""
+
+    def test_training_uses_primary_and_extra_datasets(self):
+        from robot_learning.learning.egocentric import train
+        from robot_learning.learning.dataset import inventory, extra_inventory, validate_partition
+        from robot_learning.learning.train import DEFAULT_CONFIG
+        from robot_learning.data.storage import read_json
+        with tempfile.TemporaryDirectory() as tmp, threadpool_limits(limits=1):
+            root = Path(tmp); a = root / 'a'; b = root / 'b'; a.mkdir(); b.mkdir()
+            make_dense_dataset(a); make_dense_dataset(b, episodes=4, rows=60)
+            saved = {'dataset': str(a), 'extra_datasets': [str(b)]}
+            ra = inventory(a); rb = extra_inventory(saved)
+            self.assertEqual([r['dataset'] for r in rb], [str(b.resolve())] * 4)
+            self.assertEqual(ra[0]['episode_id'], rb[0]['episode_id'])  # same IDs in both: must not collide
+            saved.update(training=ra[:4] + rb[:3], validation=ra[4:] + rb[3:])
+            validate_partition(ra + rb, {k: saved[k] for k in ['training', 'validation']})
+            with self.assertRaises(ValueError):  # an extra record stripped of its tag is foreign
+                validate_partition(ra + rb, {'training': ra[:4] + [{k: v for k, v in rb[0].items() if k != 'dataset'}] + rb[1:3], 'validation': ra[4:] + rb[3:]})
+            write_json(root / 'split.json', saved)
+            cfg = read_json(DEFAULT_CONFIG.parent / 'mlp_pytorch.json')
+            cfg['mlp'].update(hidden_layer_sizes=[16, 16], batch_size=16, max_epochs=2, patience=100)
+            cfg['torch']['device'] = 'cpu'; write_json(root / 'cfg.json', cfg)
+            policy, metrics = train(a, root / 'split.json', root / 'cfg.json', root / 'run', 40.0, 'cpu')
+            manifest = read_json(root / 'run/run.json')
+            self.assertEqual(manifest['status'], 'complete')
+            self.assertEqual(list(manifest['extra_datasets']), [str(b.resolve())])
+            saved_split = read_json(root / 'run/split.json')
+            self.assertEqual([len(saved_split['training']), len(saved_split['validation'])], [7, 2])
+            self.assertEqual(sum('dataset' in r for r in saved_split['training'] + saved_split['validation']), 4)
+
+
 if __name__ == '__main__':
     unittest.main()

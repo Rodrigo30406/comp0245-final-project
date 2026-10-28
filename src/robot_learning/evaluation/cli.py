@@ -14,7 +14,7 @@ import numpy as np
 from robot_learning.settings import PROJECT_ROOT, get_roboenv_root
 from robot_learning.data.storage import read_json, write_json, sha256, provenance, snapshot_sources, utc_now
 from robot_learning.data.scheduler import THREAD_VARIABLES, stop_processes, validate_workers
-from robot_learning.learning.dataset import inventory, validate_partition
+from robot_learning.learning.dataset import inventory, validate_partition, extra_inventory, record_directory
 from robot_learning.simulation.config import resolve_episode_config, episode_defaults
 
 DEFAULT_CONFIG = PROJECT_ROOT/'experiment_specs/evaluation/validation.json'
@@ -48,9 +48,9 @@ def validate_protocol(cfg):
 def validate_common_validation(directory, selected, model_split, *, allow_external=False):
     """Cross-dataset comparison only on physical scenarios held out by every model."""
     model_directory = Path(model_split['dataset'])
-    validate_partition(inventory(model_directory), {k:model_split[k] for k in ['training','validation']})
+    validate_partition(inventory(model_directory) + extra_inventory(model_split), {k:model_split[k] for k in ['training','validation']})
     def condition(root, record):
-        meta = read_json(Path(root)/'episodes'/f"{record['episode_id']}.json")
+        meta = read_json(record_directory(record, root)/'episodes'/f"{record['episode_id']}.json")
         return json.dumps([record['target'], meta['actual_initial_observation'][:18]], sort_keys=True)
     selected_conditions = {condition(directory, r) for r in selected}
     training_conditions = {condition(model_directory, r) for r in model_split['training']}

@@ -22,7 +22,7 @@ import numpy as np
 from robot_learning.data.storage import read_json, write_json, sha256, utc_now, git_info
 from robot_learning.settings import PROJECT_ROOT
 from robot_learning.simulation.config import episode_defaults, resolve_episode_config
-from .dataset import inventory, load_episode, validate_partition, inventory_fingerprint
+from .dataset import inventory, load_episode, validate_partition, inventory_fingerprint, extra_inventory, record_directory
 from .metrics import errors, aggregate
 from .model import INPUT_NAMES, OUTPUT_NAMES, expand_actions
 
@@ -207,6 +207,7 @@ class EgocentricPolicy:
 def load_episode_features(directory, record, spec):
     """Observations, nine controls and recorded times; fails closed on sparse logging."""
     from .windows import validate_episode_sampling
+    directory = record_directory(record, directory)
     x, y, _ = load_episode(directory, record)
     path = Path(directory) / "episodes" / f"{record['episode_id']}.npz"
     with np.load(path, allow_pickle=False) as data:
@@ -234,14 +235,22 @@ def train(dataset, split_path, config_path, output, horizon_s=40.0, device_name=
     config = read_json(config_path); hp = config["mlp"]
     if config.get("model") != "mlp" or config.get("backend") != "pytorch":
         raise ValueError("Egocentric variant reuses the PyTorch MLP recipe")
-    records = inventory(dataset)
     saved = read_json(split_path)
     if Path(saved["dataset"]).resolve() != dataset:
         raise ValueError("Split belongs to another dataset")
+    records = inventory(dataset) + extra_inventory(saved)
     split = validate_partition(records, {k: saved[k] for k in ["training", "validation"]})
     source_cfg = read_json(dataset / "config.json")
     episode_cfg = resolve_episode_config({k: v for k, v in source_cfg.items() if k in episode_defaults()})
     dt = read_json(dataset / "episodes" / f"{records[0]['episode_id']}.json")["dt"]
+    extra_hashes = {}
+    for extra in saved.get("extra_datasets", []):
+        extra = Path(extra).resolve()
+        extra_cfg = resolve_episode_config({k: v for k, v in read_json(extra / "config.json").items() if k in episode_defaults()})
+        extra_dt = read_json(extra / "episodes" / f"{inventory(extra)[0]['episode_id']}.json")["dt"]
+        if extra_cfg != episode_cfg or extra_dt != dt:
+            raise ValueError(f"Extra dataset {extra} has a different episode configuration or dt")
+        extra_hashes[str(extra)] = {n: sha256(extra / n) for n in ["dataset.json", "config.json", "scenarios.json", "schema.json", "provenance.json"]}
     spec = spec_from_episode_config(episode_cfg, dt, horizon_s, variant); validate_spec(spec)
     device = torch.device(device_name)
     torch.manual_seed(hp["seed"]); torch.use_deterministic_algorithms(True)
@@ -257,6 +266,7 @@ def train(dataset, split_path, config_path, output, horizon_s=40.0, device_name=
     manifest = {"status": "running", "created_at": utc_now(), "dataset": str(dataset),
                 "dataset_hashes": {n: sha256(dataset / n) for n in
                                    ["dataset.json", "config.json", "scenarios.json", "schema.json", "provenance.json"]},
+                "extra_datasets": extra_hashes,
                 "source_hashes": source_hashes, "project": git_info(PROJECT_ROOT),
                 "versions": {name: importlib.metadata.version(name) for name in ["numpy", "scipy", "torch"]},
                 "python": sys.version, "command": sys.argv, "input_names": names,

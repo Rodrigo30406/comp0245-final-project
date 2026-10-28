@@ -30,7 +30,7 @@ import numpy as np
 from robot_learning.data.storage import read_json, write_json, sha256, utc_now, git_info
 from robot_learning.settings import PROJECT_ROOT
 from robot_learning.simulation.config import episode_defaults, resolve_episode_config
-from .dataset import inventory, load_episode, validate_partition, inventory_fingerprint
+from .dataset import inventory, load_episode, validate_partition, inventory_fingerprint, extra_inventory, record_directory
 from .egocentric import (FEATURE_NAMES, VARIANTS, encode, validate_spec, spec_from_episode_config,
                          load_episode_features, VARIANT)
 from .metrics import errors, aggregate
@@ -194,7 +194,7 @@ def padded_group(directory, records, spec, mode):
     feats, labels = [], []
     for record in records:
         if mode == "raw21":
-            f, y, _ = load_episode(directory, record)
+            f, y, _ = load_episode(record_directory(record, directory), record)
         else:
             f, y = load_episode_features(directory, record, spec)
         feats.append(f); labels.append(y)
@@ -217,9 +217,10 @@ def train(dataset, split_path, config_path, output, horizon_s=40.0, device_name=
         raise ValueError("stride and chunk_steps must be positive integers")
     dataset = Path(dataset).resolve(); output = Path(output).resolve(); split_path = Path(split_path).resolve()
     config = read_json(config_path); hp = config["mlp"]
-    records = inventory(dataset); saved = read_json(split_path)
+    saved = read_json(split_path)
     if Path(saved["dataset"]).resolve() != dataset:
         raise ValueError("Split belongs to another dataset")
+    records = inventory(dataset) + extra_inventory(saved)
     split = validate_partition(records, {k: saved[k] for k in ["training", "validation"]})
     source_cfg = read_json(dataset / "config.json")
     episode_cfg = resolve_episode_config({k: v for k, v in source_cfg.items() if k in episode_defaults()})
