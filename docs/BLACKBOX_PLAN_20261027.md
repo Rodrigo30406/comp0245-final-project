@@ -440,6 +440,52 @@ Reading:
 The remaining seeds (random-only 1, 2; mixture 2) retrain once the GPU is back (CPU would take ~3 h
 each on 4096 episodes); their evaluations go to `*_20261027_b` directories.
 
+## 6e. Pure transforms, 28 inputs (28 Oct, 11:44–14:03): they unlock the base and the arm, not the hold
+
+Variant `raw21_targetpolar_clock_v1` = the 21 explicit inputs + target in the base frame (x, y,
+height) + planar distance base→target + cos/sin of the heading error to the target + clock. Every
+added column is a function of the observations alone (test
+`test_targetpolar_variant_is_pure_transform_of_the_target_in_base`: a different standoff table changes
+nothing). Trained like the 25- and 32-input models (nominal DART low 1024, split 819/205, 5 seeds; on
+CPU, 7–17 min each), evaluated on the 205 nominal goals
+(`runs/evaluation/dart_low_mlp_raw21polar_seeds_on_clean_validation_20261028`).
+
+| Inputs | Offline NRMSE | Stable arrival 5 cm | Base parked | Arm extended | Drift after parking (median) | Held ≥ 10 s |
+|---|---:|---:|---:|---:|---:|---:|
+| 22 = 21 + clock | 0.172–0.177 | 5–10 | 11–36 | 80–161 | — | — |
+| 25 = 21 + target in base + clock | 0.135–0.139 | 25–32 | 138–160 | 0–60 | — | — |
+| **28 = 25 + distance and heading to target** | 0.129–0.137 | **129 / 38 / 33 / 66 / 57** | 158–183 | 32–197 | 0.36 / 3.1 / 1.6 / 1.4 / 1.4 m | 21 / 4 / 0 / 1 / 4 |
+| 32 = 21 + 10 goal geometry (expert rules) + clock | 0.114–0.120 | 115–162 | 154–194 | 119–190 | 0.07–0.50 m | 61–92 |
+
+(Base parked = stable pose arrival at the expert's goal; arm extended = end-effector displacement in
+the base frame > 10 cm; drift = maximum base displacement after the stable arrival; held = end
+effector within 5 cm for 10 s or more.)
+
+Reading:
+
+- The two polar features do what Rodrigo expected for the *approach*: the base parks in 158–183
+  goals (25 inputs: 138–160) and the arm now starts in most seeds (32–197 against 0–60). One seed
+  reaches 129 stable arrivals, inside the range of the 32-input models, with no expert rule in
+  the inputs. The scalar distance is a far easier stop cue for the regressor than the two
+  coordinates it is computed from, although the offline error barely moves (0.134 vs 0.137): the
+  gain is in closed loop, where a sharp threshold matters and a 2 % fit does not.
+- What the pure features do not give is the *hold*. After parking, the 28-input models drift
+  1.4–3.1 m (median) in four seeds of five; the 32-input models drift 0.07–0.17 m in four of five.
+  Held ≥ 10 s: 0–21 against 61–92. The expert-rule features describe the parked state as a fixed
+  point (goal in base ≈ 0, goal distance ≈ 0, bearing error ≈ 0, the same for every goal); the
+  target-relative features describe it as "distance = standoff(height), heading ≈ 0", a different
+  point for each height, next to the approach regime. The regressor's zero-wheel output is not
+  anchored there, and the integration argument of `MECHANISMS` §… applies: a few mm/s of wheel
+  command with no restoring force walks the base away in 30 s.
+- Seed variance again dominates (33 to 129). Same signature as E3 §6d: the trigger and the hold are
+  threshold events the regressor finds or misses as a whole.
+
+Consequence for the black-box line: with observations only, the missing piece is a *stationary
+cue for "parked"* that does not depend on the expert's goal. Candidates, in order of cost: (a) base
+speed and yaw rate already in the 21 inputs but perhaps too small in scale after normalisation — a
+"base is still" feature (|v|, |ω|) as a pure transform; (b) memory (E4) so the policy can latch;
+(c) the white-box contrast `arrived` bit (E0) to bound what any cue could give.
+
 ## 7. Status
 
 - Done: decomposition (§1), variant `raw21_target_clock_v1`; E1 collected,
@@ -454,11 +500,7 @@ each on 4096 episodes); their evaluations go to `*_20261027_b` directories.
   are evaluated into `*_20261027_b` directories.
 - E3 phase A reported in §6d; seeds random-only 1, 2 and mixture 2 wait for the GPU (kernel 7.0.0-38 has no
   NVIDIA module yet; fix needs sudo).
-- Running (28 Oct 13:30, CPU): 5 seeds of the 28-input pure-transform variant `raw21_targetpolar_clock_v1`
-  (21 explicit + target in base + planar distance and heading to the target + clock), trained from the
-  worktree branch `rodrigo-pure28`, evaluated on the 205 nominal goals
-  (`dart_low_mlp_raw21polar_seeds_on_clean_validation_20261028`). Offline validation NRMSE 0.129–0.137
-  (25 inputs: 0.135–0.139; 32 inputs: 0.114–0.120).
+- 28-input pure-transform variant done and reported in §6e (branch `rodrigo-pure28` merged).
 - Next, on request: E6 (§6c, nominal data without the clock) — the cheapest test of the reach-trigger mechanism.
 - E2 needs a collector mode; nothing in `src/` is edited while a collector,
   trainer or evaluator is running (provenance guards).
