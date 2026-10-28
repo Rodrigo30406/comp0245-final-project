@@ -398,6 +398,48 @@ reach phase, not the reach trajectory. This narrows the two hypotheses of §6b:
   expected to lose the arm on nominal starts too; the evaluations running now
   decide.
 
+## 6d. E3 phase A (28 Oct, 11:49–13:25): the mixture can do both, but only in one seed of two
+
+The machine rebooted at 10:56 (kernel update; the NVIDIA module is not installed for the new kernel, so
+everything below ran on CPU). Three E3 trainers were complete before the reboot (random-only seed 0,
+mixture seeds 0 and 1); they were evaluated on the 205 nominal goals (`*_on_clean_validation_20261027`)
+and on the 205 random-start goals of E1 (`*_on_e1_random_validation_20261027`). Stable arrival at 5 cm,
+plus the same base/arm decomposition as §6c (base parked = stable pose arrival at the expert's goal;
+arm extended = end-effector displacement in the base frame > 10 cm over the episode):
+
+| Training data (MLP 32 inputs) | Validation | Stable arrival 5 cm | Base parked | Arm extended |
+|---|---|---:|---:|---:|
+| nominal 1024, seeds 0–4 (reference) | nominal starts | 115–162 | 154–194 | 119–190 |
+| nominal 1024, seeds 0–4 (reference) | random starts | 36–70 | 21–56 | 60–148 |
+| E1 random 1024, seeds 0–4 (reference) | nominal starts | 24–46 | 127–161 | 0–27 |
+| random-only 4096, seed 0 | nominal starts | 56 | 147 | 42 |
+| random-only 4096, seed 0 | random starts | 55 | 154 | 31 |
+| nominal + random 4096, seed 0 | nominal starts | 51 | 177 | 26 |
+| nominal + random 4096, seed 0 | random starts | 51 | 184 | 18 |
+| nominal + random 4096, seed 1 | nominal starts | 93 | 176 | 134 |
+| nominal + random 4096, seed 1 | random starts | **113** | 176 | 136 |
+
+Reading:
+
+- The two halves of the task come from the two kinds of demonstrations. Random-start demonstrations
+  teach the base to park from anywhere (147–184 parked, against 21–56 for nominal-trained models on
+  random starts) and do not teach the arm to start (18–42 extended). Nominal demonstrations teach the
+  arm to start (119–190) and not the base from random starts. This is §6c again, on 4× the data.
+- Four times more random-start data does not fix the arm (random-only 4096 seed 0: 42 extended,
+  against 0–27 for the 1024-episode E1 models). Density is not the issue, as the inverted experiment said.
+- The mixture *can* learn both: seed 1 parks in 176 and extends the arm in 134–136, and on random
+  starts it makes 113 stable arrivals, the best of any model so far on that validation (nominal
+  reference 36–70). But seed 0 of the same data loses the arm (18–26 extended) and lands at 51.
+  The reach trigger is learnt or not learnt as a whole, per seed. That is the signature of a
+  threshold event that the regressor has no reliable cue for: when the clock is informative
+  (nominal data) every seed finds it; when the clock is ambiguous (random starts in the data) it
+  is a coin toss.
+- On nominal starts the mixture seed 1 (93) is still below the nominal-only models (115–162): the
+  random demonstrations cost accuracy on the nominal regime even in the good seed.
+
+The remaining seeds (random-only 1, 2; mixture 2) retrain once the GPU is back (CPU would take ~3 h
+each on 4096 episodes); their evaluations go to `*_20261027_b` directories.
+
 ## 7. Status
 
 - Done: decomposition (§1), variant `raw21_target_clock_v1`; E1 collected,
@@ -410,6 +452,13 @@ reach phase, not the reach trajectory. This narrows the two hypotheses of §6b:
   at a time. Relaunched 28 Oct 00:40 (`chain_e3c.sh`): the three complete seeds (random-only seed 0, mixture
   seeds 0 and 1) are being evaluated now; seeds random-only 1, 2 and mixture 2 retrain sequentially (~4.5 h) and
   are evaluated into `*_20261027_b` directories.
+- E3 phase A reported in §6d; seeds random-only 1, 2 and mixture 2 wait for the GPU (kernel 7.0.0-38 has no
+  NVIDIA module yet; fix needs sudo).
+- Running (28 Oct 13:30, CPU): 5 seeds of the 28-input pure-transform variant `raw21_targetpolar_clock_v1`
+  (21 explicit + target in base + planar distance and heading to the target + clock), trained from the
+  worktree branch `rodrigo-pure28`, evaluated on the 205 nominal goals
+  (`dart_low_mlp_raw21polar_seeds_on_clean_validation_20261028`). Offline validation NRMSE 0.129–0.137
+  (25 inputs: 0.135–0.139; 32 inputs: 0.114–0.120).
 - Next, on request: E6 (§6c, nominal data without the clock) — the cheapest test of the reach-trigger mechanism.
 - E2 needs a collector mode; nothing in `src/` is edited while a collector,
   trainer or evaluator is running (provenance guards).
