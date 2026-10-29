@@ -5,3 +5,5 @@ __pycache__/
 # per-episode console logs and trajectories of evaluation runs (rollouts.csv / summary.txt are kept)
 /results/*/logs/
 /results/*/traj/
+# per-episode scan cache of analyze_dataset.py (large, regenerable)
+/results/*/cache/

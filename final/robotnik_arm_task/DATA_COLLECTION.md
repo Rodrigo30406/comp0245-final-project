@@ -11,6 +11,7 @@ and the expert's internal state.
 | `collect_data.py` | new | Runs the expert for one target or a random batch, saves one `.npz` per episode + `index.csv` |
 | `analyze_index.py` | new | Figures, summary and data-quality check of one or more collected runs |
 | `evaluate_policy.py` | new | Closed-loop evaluation of a policy (or the expert) on an evaluation set, see `EVALUATION.md` |
+| `analyze_dataset.py` | new | Data-level analysis without a model (behaviour modes, phases, copycat baseline, what the base label depends on, arm label quality, task coverage); `results/data_analysis/` |
 | `robotnik_arm_task.py`, `robotnik_arm_control.py` | course template, **unmodified** | The expert. `collect_data.py` imports its controllers and settings from them |
 | `report.txt` | notes (Chinese) | Design decisions, experiments and findings collected for the report |
 
