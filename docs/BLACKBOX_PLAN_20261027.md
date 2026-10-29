@@ -498,8 +498,14 @@ speed and yaw rate already in the 21 inputs but perhaps too small in scale after
   at a time. Relaunched 28 Oct 00:40 (`chain_e3c.sh`): the three complete seeds (random-only seed 0, mixture
   seeds 0 and 1) are being evaluated now; seeds random-only 1, 2 and mixture 2 retrain sequentially (~4.5 h) and
   are evaluated into `*_20261027_b` directories.
-- E3 phase A reported in §6d; seeds random-only 1, 2 and mixture 2 wait for the GPU (kernel 7.0.0-38 has no
-  NVIDIA module yet; fix needs sudo).
+- E3 phase A reported in §6d. GPU back on 29 Oct (driver 595.99). The three missing seeds were OOM-killed
+  twice more at the end of training (RSS 108 GB): the final metric pass predicted the whole 36M-row training
+  set at once. Fixed in `egocentric.py` (block-wise `predict_features`, training tensors freed before the
+  pass; results identical, commit `cf69238`). Relaunched 29 Oct 19:05, one trainer at a time, evaluations
+  into `*_20261027_b`.
+- The 21 lecturer inputs carry no base velocity (position and bearing only; the arm does get its joint
+  velocities), so "the base is parked" is not observable from one frame. Next pure-transform candidate:
+  a one-step finite-difference base velocity, which is the minimal memory (pending Rodrigo's go).
 - 28-input pure-transform variant done and reported in §6e (branch `rodrigo-pure28` merged).
 - Next, on request: E6 (§6c, nominal data without the clock) — the cheapest test of the reach-trigger mechanism.
 - E2 needs a collector mode; nothing in `src/` is edited while a collector,
