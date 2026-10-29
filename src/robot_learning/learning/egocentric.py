@@ -174,8 +174,12 @@ class EgocentricPolicy:
         result.update({f"bias_{i}": b for i, b in enumerate(self.biases)})
         return result
 
-    def predict_features(self, features):
-        hidden = ((np.asarray(features, dtype=np.float64) - self.x_mean) / self.x_scale).astype(self.weights[0].dtype)
+    def predict_features(self, features, block=65536):
+        """Row-independent MLP; evaluated in blocks so a 36M-row training set does not allocate 18 GB per layer."""
+        features = np.asarray(features, dtype=np.float64)
+        if len(features) > block:
+            return np.concatenate([self.predict_features(features[s:s + block], block) for s in range(0, len(features), block)])
+        hidden = ((features - self.x_mean) / self.x_scale).astype(self.weights[0].dtype)
         for i, (w, b) in enumerate(zip(self.weights, self.biases)):
             hidden = hidden @ w + b
             if i < len(self.weights) - 1:
@@ -289,7 +293,8 @@ def train(dataset, split_path, config_path, output, horizon_s=40.0, device_name=
     try:
         x, y, _ = load_group(dataset, split["training"], spec)
         vx, vy, vranges = load_group(dataset, split["validation"], spec)
-        x_mean, x_scale = x.mean(axis=0), x.std(axis=0); x_scale[x_scale == 0] = 1.0
+        x_mean, x_scale = x.mean(axis=0), x.std(axis=0)
+        constant_inputs = [names[i] for i in np.flatnonzero(x_scale == 0)]; x_scale[x_scale == 0] = 1.0
         y_mean, y_scale = y.mean(axis=0), y.std(axis=0); y_scale[y_scale == 0] = 1.0
         xn = ((x - x_mean) / x_scale).astype(np.float32); yn = ((y - y_mean) / y_scale).astype(np.float32)
         vxn = ((vx - x_mean) / x_scale).astype(np.float32)
@@ -349,6 +354,9 @@ def train(dataset, split_path, config_path, output, horizon_s=40.0, device_name=
         batch = expand_actions(policy.predict(x_check(dataset, split["validation"][0])))
         np.testing.assert_allclose(live, batch, rtol=1e-6, atol=1e-6)
         policy.reset()
+        # Free the training tensors before the final metric pass: on 4096-episode datasets the process otherwise
+        # peaks above 100 GB RSS (three OOM kills on 27-29 Oct) while the metrics only need one group at a time.
+        del x, y, xn, yn, vx, vy, vxn, tx, ty, tvx
         metrics = {}
         for name, group, ranges_ in [("training", split["training"], None), ("validation", split["validation"], vranges)]:
             feats, truth, ranges_ = load_group(dataset, group, spec)
@@ -377,7 +385,7 @@ def train(dataset, split_path, config_path, output, horizon_s=40.0, device_name=
                 "stop_reason": "patience" if stale >= hp["patience"] else "max_epochs",
                 "checkpoint_selection": "minimum validation episode-macro balanced NRMSE",
                 "training_loss": "half output-sum MSE gradients with alpha/(2*batch_rows) weight L2; sklearn convention",
-                "constant_training_inputs": [names[i] for i in np.flatnonzero(x.std(axis=0) == 0)],
+                "constant_training_inputs": constant_inputs,
                 "inference_single_observation_us": {"median": float(np.median(timings) / 1000),
                                                     "p95": float(np.percentile(timings, 95) / 1000), "samples": len(timings)},
                 "output_limits": "none applied; the evaluator clips to the declared envelope",
