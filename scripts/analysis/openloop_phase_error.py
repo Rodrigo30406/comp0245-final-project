@@ -20,6 +20,9 @@ from robot_learning.learning.dataset import load_episode, record_directory  # no
 
 def load_policy(run):
     info = read_json(run / "model_info.json")
+    if info.get("kind") == "transformer_regressor":
+        from robot_learning.learning.transformer_policy import TransformerPolicy
+        return TransformerPolicy.load(run / "model.npz")
     if info.get("kind", "").startswith("gru") or "cell" in info:
         from robot_learning.learning.gru_policy import GRUPolicy
         return GRUPolicy.load(run / "model.npz")
