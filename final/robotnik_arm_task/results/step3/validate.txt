@@ -1,0 +1,14 @@
+== Classifier validation (v1.1 runs) ==
+Runs: expert expert_v11_dev, expert_v11_hard, expert_v11_confirm; zero zero_v11_dev
+[PASS] no harness_error: none
+[PASS] (i) expert failures classify as circling: 14 failures (14 expected over DEV + HARD + CONFIRM; per run {'expert_v11_dev': 2, 'expert_v11_hard': 6, 'expert_v11_confirm': 6}); classes {'circling': 14}
+    expert failures: turn excess 370-399 deg, ring_dist_min 0.000-0.000 m
+[PASS] (ii) zero_v11_dev: failures starting >= 0.15 m from the ring classify as no_start: 280/280 no_start; other classes {}; successes 0
+    of them 30 start 0.15-0.3 m from the ring (approached by construction; no_start is tested before the approach test): classes {'no_start': 30}
+    reported separately: 20 failures start within 0.15 m of the ring (M0-like, never no_start): classes {'approached_other': 20}; flag no_motion_near_ring 20
+[PASS] (iii) expert successes: no failure predicate fires except the expected exceptions: 786 successes; fired per predicate crash 0, never_approached 0, no_start 1, runaway 0, no_progress 0, circling 4, left_or_overshot 0, parked_no_arm 0, extended_not_reached 0; expected exceptions 5, unexpected 0
+    expected exceptions (genuine circling before a late success: the expert circled until the 25 s navigation timeout, parked after it and still reached; HARD 19 circling, HARD 158 circling, CONFIRM 62 circling, CONFIRM 69 circling, DEV 11 no_start): expert_v11_dev ep 11 no_start, expert_v11_hard ep 19 circling, turn excess 397 deg, parked_time 26.231 s, expert_v11_hard ep 158 circling, turn excess 596 deg, parked_time 27.015 s, expert_v11_confirm ep 62 circling, turn excess 472 deg, parked_time 26.618 s, expert_v11_confirm ep 69 circling, turn excess 586 deg, parked_time 27.104 s
+    successes with arm_extend_time NaN (EE never displaced > 0.10 m in the base frame): 121/786 (15.4%); their navdone_ee_err median 0.063 m, range 0.016-0.130 m; ee_base_disp_max median 0.066 m
+    short-reach episodes (expert hold posture at parking < 0.07 m from the target: parked_no_arm cannot fire there): {'expert_v11_dev': 38, 'expert_v11_hard': 12, 'expert_v11_confirm': 26}
+[PASS] (iv) expert arm_extend_time >= recorded nav_done time: 0 of 679 episodes extend before nav_done (121 without arm_extend_time or nav_done)
+[INFO] (v) expert arm_extend_time - nav_done (reported; the plan's < 0.2 s cannot hold): median 0.469 s, p95 1.317 s, max 2.739 s, > 0.2 s: 679/679

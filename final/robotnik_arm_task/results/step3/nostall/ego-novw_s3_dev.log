@@ -1,0 +1,233 @@
+pybullet build time: Oct 21 2025 11:02:13
+Evaluating bc_policy.py on 102 episodes of data/dev with 20 workers (protocol v1.1)
+pybullet build time: Oct 21 2025 11:02:13
+pybullet build time: Oct 21 2025 11:02:13
+pybullet build time: Oct 21 2025 11:02:13
+pybullet build time: Oct 21 2025 11:02:13
+pybullet build time: Oct 21 2025 11:02:13
+pybullet build time: Oct 21 2025 11:02:13
+pybullet build time: Oct 21 2025 11:02:13
+pybullet build time: Oct 21 2025 11:02:13
+pybullet build time: Oct 21 2025 11:02:13
+pybullet build time: Oct 21 2025 11:02:13
+pybullet build time: Oct 21 2025 11:02:13
+pybullet build time: Oct 21 2025 11:02:13
+pybullet build time: Oct 21 2025 11:02:13
+pybullet build time: Oct 21 2025 11:02:13
+pybullet build time: Oct 21 2025 11:02:13
+pybullet build time: Oct 21 2025 11:02:13
+pybullet build time: Oct 21 2025 11:02:13
+pybullet build time: Oct 21 2025 11:02:13
+pybullet build time: Oct 21 2025 11:02:13
+pybullet build time: Oct 21 2025 11:02:13
+[1/102] ep 0016 timeout        min err 0.2757 m  sim 40.0s  hold10 -              | elapsed 0.6 min, ETA 63.5 min
+pybullet build time: Oct 21 2025 11:02:13
+[2/102] ep 0002 timeout        min err 0.3118 m  sim 40.0s  hold10 -              | elapsed 0.6 min, ETA 31.7 min
+pybullet build time: Oct 21 2025 11:02:13
+[3/102] ep 0012 timeout        min err 0.2448 m  sim 40.0s  hold10 -              | elapsed 0.7 min, ETA 21.5 min
+[4/102] ep 0010 timeout        min err 0.3710 m  sim 40.0s  hold10 -              | elapsed 0.7 min, ETA 16.0 min
+[5/102] ep 0018 timeout        min err 0.2694 m  sim 40.0s  hold10 -              | elapsed 0.7 min, ETA 12.7 min
+[6/102] ep 0005 timeout        min err 0.3653 m  sim 40.0s  hold10 -              | elapsed 0.7 min, ETA 10.5 min
+pybullet build time: Oct 21 2025 11:02:13
+pybullet build time: Oct 21 2025 11:02:13
+pybullet build time: Oct 21 2025 11:02:13
+pybullet build time: Oct 21 2025 11:02:13
+[7/102] ep 0024 timeout        min err 0.0502 m  sim 40.0s  hold10 -              | elapsed 0.7 min, ETA 9.1 min
+pybullet build time: Oct 21 2025 11:02:13
+[8/102] ep 0015 timeout        min err 0.5015 m  sim 40.0s  hold10 -              | elapsed 0.7 min, ETA 8.7 min
+pybullet build time: Oct 21 2025 11:02:13
+[9/102] ep 0042 timeout        min err 0.2341 m  sim 40.0s  hold10 -              | elapsed 0.8 min, ETA 8.6 min
+pybullet build time: Oct 21 2025 11:02:13
+[10/102] ep 0045 timeout        min err 0.2252 m  sim 40.0s  hold10 -              | elapsed 0.9 min, ETA 8.0 min
+pybullet build time: Oct 21 2025 11:02:13
+[11/102] ep 0041 timeout        min err 0.5196 m  sim 40.0s  hold10 -              | elapsed 0.9 min, ETA 7.5 min
+pybullet build time: Oct 21 2025 11:02:13
+[12/102] ep 0038 timeout        min err 0.2174 m  sim 40.0s  hold10 -              | elapsed 0.9 min, ETA 6.9 min
+pybullet build time: Oct 21 2025 11:02:13
+[13/102] ep 0072 timeout        min err 0.2097 m  sim 40.0s  hold10 -              | elapsed 0.9 min, ETA 6.4 min
+pybullet build time: Oct 21 2025 11:02:13
+[14/102] ep 0025 timeout        min err 0.1319 m  sim 40.0s  hold10 -              | elapsed 0.9 min, ETA 5.9 min
+[15/102] ep 0040 timeout        min err 0.2923 m  sim 40.0s  hold10 -              | elapsed 0.9 min, ETA 5.5 min
+pybullet build time: Oct 21 2025 11:02:13
+pybullet build time: Oct 21 2025 11:02:13
+[16/102] ep 0074 timeout        min err 0.3601 m  sim 40.0s  hold10 -              | elapsed 1.0 min, ETA 5.2 min
+[17/102] ep 0053 timeout        min err 0.3103 m  sim 40.0s  hold10 -              | elapsed 1.0 min, ETA 4.8 min
+pybullet build time: Oct 21 2025 11:02:13
+[18/102] ep 0032 timeout        min err 0.0622 m  sim 40.0s  hold10 -              | elapsed 1.0 min, ETA 4.5 min
+pybullet build time: Oct 21 2025 11:02:13
+pybullet build time: Oct 21 2025 11:02:13
+[19/102] ep 0043 timeout        min err 0.2259 m  sim 40.0s  hold10 -              | elapsed 1.0 min, ETA 4.5 min
+[20/102] ep 0064 timeout        min err 0.4811 m  sim 40.0s  hold10 -              | elapsed 1.0 min, ETA 4.2 min
+pybullet build time: Oct 21 2025 11:02:13
+pybullet build time: Oct 21 2025 11:02:13
+[21/102] ep 0076 timeout        min err 0.2554 m  sim 40.0s  hold10 -              | elapsed 1.3 min, ETA 5.0 min
+pybullet build time: Oct 21 2025 11:02:13
+[22/102] ep 0078 timeout        min err 0.2143 m  sim 40.0s  hold10 -              | elapsed 1.3 min, ETA 4.8 min
+pybullet build time: Oct 21 2025 11:02:13
+[23/102] ep 0084 timeout        min err 0.2324 m  sim 40.0s  hold10 -              | elapsed 1.3 min, ETA 4.6 min
+pybullet build time: Oct 21 2025 11:02:13
+[24/102] ep 0089 timeout        min err 0.2602 m  sim 40.0s  hold10 -              | elapsed 1.4 min, ETA 4.4 min
+pybullet build time: Oct 21 2025 11:02:13
+[25/102] ep 0075 timeout        min err 0.3327 m  sim 40.0s  hold10 -              | elapsed 1.5 min, ETA 4.5 min
+pybullet build time: Oct 21 2025 11:02:13
+[26/102] ep 0095 timeout        min err 0.2033 m  sim 40.0s  hold10 -              | elapsed 1.5 min, ETA 4.4 min
+pybullet build time: Oct 21 2025 11:02:13
+[27/102] ep 0080 timeout        min err 0.2308 m  sim 40.0s  hold10 -              | elapsed 1.5 min, ETA 4.2 min
+pybullet build time: Oct 21 2025 11:02:13
+[28/102] ep 0097 timeout        min err 0.3347 m  sim 40.0s  hold10 -              | elapsed 1.6 min, ETA 4.1 min
+pybullet build time: Oct 21 2025 11:02:13
+[29/102] ep 0085 timeout        min err 0.2351 m  sim 40.0s  hold10 -              | elapsed 1.6 min, ETA 4.0 min
+pybullet build time: Oct 21 2025 11:02:13
+[30/102] ep 0105 timeout        min err 0.1019 m  sim 40.0s  hold10 -              | elapsed 1.6 min, ETA 3.8 min
+pybullet build time: Oct 21 2025 11:02:13
+[31/102] ep 0091 timeout        min err 0.2943 m  sim 40.0s  hold10 -              | elapsed 1.7 min, ETA 3.9 min
+pybullet build time: Oct 21 2025 11:02:13
+[32/102] ep 0114 timeout        min err 0.1818 m  sim 40.0s  hold10 -              | elapsed 1.7 min, ETA 3.7 min
+pybullet build time: Oct 21 2025 11:02:13
+[33/102] ep 0098 timeout        min err 0.5106 m  sim 40.0s  hold10 -              | elapsed 1.8 min, ETA 3.8 min
+[34/102] ep 0110 timeout        min err 0.4013 m  sim 40.0s  hold10 -              | elapsed 1.8 min, ETA 3.7 min
+[35/102] ep 0107 timeout        min err 0.3292 m  sim 40.0s  hold10 -              | elapsed 1.8 min, ETA 3.5 min
+pybullet build time: Oct 21 2025 11:02:13
+pybullet build time: Oct 21 2025 11:02:13
+pybullet build time: Oct 21 2025 11:02:13
+[36/102] ep 0115 timeout        min err 0.1948 m  sim 40.0s  hold10 -              | elapsed 1.9 min, ETA 3.5 min
+pybullet build time: Oct 21 2025 11:02:13
+[37/102] ep 0109 timeout        min err 0.5231 m  sim 40.0s  hold10 -              | elapsed 1.9 min, ETA 3.4 min
+pybullet build time: Oct 21 2025 11:02:13
+[38/102] ep 0113 timeout        min err 0.1030 m  sim 40.0s  hold10 -              | elapsed 1.9 min, ETA 3.2 min
+pybullet build time: Oct 21 2025 11:02:13
+[39/102] ep 0130 timeout        min err 0.3207 m  sim 40.0s  hold10 -              | elapsed 2.0 min, ETA 3.2 min
+pybullet build time: Oct 21 2025 11:02:13
+[40/102] ep 0119 timeout        min err 0.2557 m  sim 40.0s  hold10 -              | elapsed 2.0 min, ETA 3.1 min
+pybullet build time: Oct 21 2025 11:02:13
+[41/102] ep 0133 timeout        min err 0.4956 m  sim 40.0s  hold10 -              | elapsed 2.0 min, ETA 3.0 min
+[42/102] ep 0136 timeout        min err 0.1779 m  sim 40.0s  hold10 -              | elapsed 2.0 min, ETA 2.8 min
+pybullet build time: Oct 21 2025 11:02:13
+pybullet build time: Oct 21 2025 11:02:13
+[43/102] ep 0140 timeout        min err 0.4227 m  sim 40.0s  hold10 -              | elapsed 2.1 min, ETA 2.8 min
+pybullet build time: Oct 21 2025 11:02:13
+[44/102] ep 0127 timeout        min err 0.3911 m  sim 40.0s  hold10 -              | elapsed 2.1 min, ETA 2.8 min
+pybullet build time: Oct 21 2025 11:02:13
+[45/102] ep 0142 timeout        min err 0.3684 m  sim 40.0s  hold10 -              | elapsed 2.2 min, ETA 2.7 min
+pybullet build time: Oct 21 2025 11:02:13
+[46/102] ep 0148 timeout        min err 0.3195 m  sim 40.0s  hold10 -              | elapsed 2.2 min, ETA 2.7 min
+pybullet build time: Oct 21 2025 11:02:13
+[47/102] ep 0141 timeout        min err 0.3737 m  sim 40.0s  hold10 -              | elapsed 2.3 min, ETA 2.7 min
+pybullet build time: Oct 21 2025 11:02:13
+[48/102] ep 0152 timeout        min err 0.2621 m  sim 40.0s  hold10 -              | elapsed 2.4 min, ETA 2.7 min
+pybullet build time: Oct 21 2025 11:02:13
+[49/102] ep 0151 timeout        min err 0.1099 m  sim 40.0s  hold10 -              | elapsed 2.4 min, ETA 2.6 min
+pybullet build time: Oct 21 2025 11:02:13
+[50/102] ep 0169 timeout        min err 0.2383 m  sim 40.0s  hold10 -              | elapsed 2.5 min, ETA 2.6 min
+pybullet build time: Oct 21 2025 11:02:13
+[51/102] ep 0149 timeout        min err 0.3238 m  sim 40.0s  hold10 -              | elapsed 2.5 min, ETA 2.5 min
+[52/102] ep 0145 timeout        min err 0.5026 m  sim 40.0s  hold10 -              | elapsed 2.5 min, ETA 2.4 min
+pybullet build time: Oct 21 2025 11:02:13
+pybullet build time: Oct 21 2025 11:02:13
+[53/102] ep 0163 timeout        min err 0.3776 m  sim 40.0s  hold10 -              | elapsed 2.6 min, ETA 2.4 min
+pybullet build time: Oct 21 2025 11:02:13
+[54/102] ep 0182 timeout        min err 0.2449 m  sim 40.0s  hold10 -              | elapsed 2.6 min, ETA 2.3 min
+pybullet build time: Oct 21 2025 11:02:13
+[55/102] ep 0161 timeout        min err 0.2184 m  sim 40.0s  hold10 -              | elapsed 2.6 min, ETA 2.3 min
+pybullet build time: Oct 21 2025 11:02:13
+[56/102] ep 0197 timeout        min err 0.1443 m  sim 40.0s  hold10 -              | elapsed 2.7 min, ETA 2.3 min
+pybullet build time: Oct 21 2025 11:02:13
+[57/102] ep 0162 timeout        min err 0.3890 m  sim 40.0s  hold10 -              | elapsed 2.8 min, ETA 2.2 min
+pybullet build time: Oct 21 2025 11:02:13
+[58/102] ep 0175 timeout        min err 0.1324 m  sim 40.0s  hold10 -              | elapsed 2.8 min, ETA 2.1 min
+pybullet build time: Oct 21 2025 11:02:13
+[59/102] ep 0176 timeout        min err 0.2082 m  sim 40.0s  hold10 -              | elapsed 2.9 min, ETA 2.1 min
+pybullet build time: Oct 21 2025 11:02:13
+[60/102] ep 0198 timeout        min err 0.1535 m  sim 40.0s  hold10 -              | elapsed 2.9 min, ETA 2.0 min
+[61/102] ep 0202 timeout        min err 0.3837 m  sim 40.0s  hold10 -              | elapsed 2.9 min, ETA 1.9 min
+pybullet build time: Oct 21 2025 11:02:13
+pybullet build time: Oct 21 2025 11:02:13
+[62/102] ep 0177 timeout        min err 0.1344 m  sim 40.0s  hold10 -              | elapsed 2.9 min, ETA 1.9 min
+pybullet build time: Oct 21 2025 11:02:13
+[63/102] ep 0192 timeout        min err 0.3296 m  sim 40.0s  hold10 -              | elapsed 2.9 min, ETA 1.8 min
+pybullet build time: Oct 21 2025 11:02:13
+[64/102] ep 0206 timeout        min err 0.1958 m  sim 40.0s  hold10 -              | elapsed 3.0 min, ETA 1.8 min
+pybullet build time: Oct 21 2025 11:02:13
+[65/102] ep 0194 timeout        min err 0.3538 m  sim 40.0s  hold10 -              | elapsed 3.0 min, ETA 1.7 min
+pybullet build time: Oct 21 2025 11:02:13
+[66/102] ep 0183 timeout        min err 0.2143 m  sim 40.0s  hold10 -              | elapsed 3.0 min, ETA 1.7 min
+pybullet build time: Oct 21 2025 11:02:13
+[67/102] ep 0207 timeout        min err 0.4019 m  sim 40.0s  hold10 -              | elapsed 3.0 min, ETA 1.6 min
+pybullet build time: Oct 21 2025 11:02:13
+[68/102] ep 0209 timeout        min err 0.3009 m  sim 40.0s  hold10 -              | elapsed 3.1 min, ETA 1.5 min
+pybullet build time: Oct 21 2025 11:02:13
+[69/102] ep 0200 timeout        min err 0.3468 m  sim 40.0s  hold10 -              | elapsed 3.1 min, ETA 1.5 min
+pybullet build time: Oct 21 2025 11:02:13
+[70/102] ep 0210 timeout        min err 0.3172 m  sim 40.0s  hold10 -              | elapsed 3.2 min, ETA 1.5 min
+pybullet build time: Oct 21 2025 11:02:13
+[71/102] ep 0215 timeout        min err 0.3452 m  sim 40.0s  hold10 -              | elapsed 3.3 min, ETA 1.4 min
+pybullet build time: Oct 21 2025 11:02:13
+[72/102] ep 0219 timeout        min err 0.4492 m  sim 40.0s  hold10 -              | elapsed 3.4 min, ETA 1.4 min
+pybullet build time: Oct 21 2025 11:02:13
+[73/102] ep 0216 timeout        min err 0.2268 m  sim 40.0s  hold10 -              | elapsed 3.4 min, ETA 1.4 min
+pybullet build time: Oct 21 2025 11:02:13
+[74/102] ep 0218 timeout        min err 0.2741 m  sim 40.0s  hold10 -              | elapsed 3.4 min, ETA 1.3 min
+pybullet build time: Oct 21 2025 11:02:13
+[75/102] ep 0212 timeout        min err 0.2305 m  sim 40.0s  hold10 -              | elapsed 3.5 min, ETA 1.3 min
+pybullet build time: Oct 21 2025 11:02:13
+[76/102] ep 0233 timeout        min err 0.3185 m  sim 40.0s  hold10 -              | elapsed 3.5 min, ETA 1.2 min
+pybullet build time: Oct 21 2025 11:02:13
+[77/102] ep 0234 timeout        min err 0.3231 m  sim 40.0s  hold10 -              | elapsed 3.6 min, ETA 1.2 min
+pybullet build time: Oct 21 2025 11:02:13
+[78/102] ep 0239 timeout        min err 0.2918 m  sim 40.0s  hold10 -              | elapsed 3.6 min, ETA 1.1 min
+pybullet build time: Oct 21 2025 11:02:13
+[79/102] ep 0213 timeout        min err 0.0286 m  sim 40.0s  hold10 -              | elapsed 3.7 min, ETA 1.1 min
+pybullet build time: Oct 21 2025 11:02:13
+[80/102] ep 0229 timeout        min err 0.3861 m  sim 40.0s  hold10 -              | elapsed 3.7 min, ETA 1.0 min
+pybullet build time: Oct 21 2025 11:02:13
+[81/102] ep 0222 timeout        min err 0.0194 m  sim 40.0s  hold10 -              | elapsed 3.7 min, ETA 1.0 min
+pybullet build time: Oct 21 2025 11:02:13
+[82/102] ep 0230 timeout        min err 0.2728 m  sim 40.0s  hold10 -              | elapsed 3.8 min, ETA 0.9 min
+pybullet build time: Oct 21 2025 11:02:13
+[83/102] ep 0262 timeout        min err 0.0330 m  sim 40.0s  hold10 -              | elapsed 3.8 min, ETA 0.9 min
+pybullet build time: Oct 21 2025 11:02:13
+[84/102] ep 0235 timeout        min err 0.2270 m  sim 40.0s  hold10 -              | elapsed 3.9 min, ETA 0.8 min
+pybullet build time: Oct 21 2025 11:02:13
+[85/102] ep 0270 timeout        min err 0.2594 m  sim 40.0s  hold10 -              | elapsed 3.9 min, ETA 0.8 min
+pybullet build time: Oct 21 2025 11:02:13
+[86/102] ep 0238 timeout        min err 0.2158 m  sim 40.0s  hold10 -              | elapsed 3.9 min, ETA 0.7 min
+pybullet build time: Oct 21 2025 11:02:13
+[87/102] ep 0272 timeout        min err 0.1611 m  sim 40.0s  hold10 -              | elapsed 4.0 min, ETA 0.7 min
+pybullet build time: Oct 21 2025 11:02:13
+[88/102] ep 0247 timeout        min err 0.3269 m  sim 40.0s  hold10 -              | elapsed 4.0 min, ETA 0.6 min
+pybullet build time: Oct 21 2025 11:02:13
+[89/102] ep 0281 timeout        min err 0.0479 m  sim 40.0s  hold10 -              | elapsed 4.0 min, ETA 0.6 min
+pybullet build time: Oct 21 2025 11:02:13
+[90/102] ep 0267 timeout        min err 0.2052 m  sim 40.0s  hold10 -              | elapsed 4.0 min, ETA 0.5 min
+pybullet build time: Oct 21 2025 11:02:13
+[91/102] ep 0274 timeout        min err 0.3811 m  sim 40.0s  hold10 -              | elapsed 4.1 min, ETA 0.5 min
+pybullet build time: Oct 21 2025 11:02:13
+[92/102] ep 0256 timeout        min err 0.0394 m  sim 40.0s  hold10 -              | elapsed 4.1 min, ETA 0.4 min
+pybullet build time: Oct 21 2025 11:02:13
+[93/102] ep 0269 timeout        min err 0.0686 m  sim 40.0s  hold10 -              | elapsed 4.1 min, ETA 0.4 min
+pybullet build time: Oct 21 2025 11:02:13
+[94/102] ep 0283 timeout        min err 0.1922 m  sim 40.0s  hold10 -              | elapsed 4.1 min, ETA 0.4 min
+pybullet build time: Oct 21 2025 11:02:13
+[95/102] ep 0287 timeout        min err 0.2860 m  sim 40.0s  hold10 -              | elapsed 4.2 min, ETA 0.3 min
+pybullet build time: Oct 21 2025 11:02:13
+[96/102] ep 0279 timeout        min err 0.1091 m  sim 40.0s  hold10 -              | elapsed 4.2 min, ETA 0.3 min
+pybullet build time: Oct 21 2025 11:02:13
+[97/102] ep 0284 timeout        min err 0.3478 m  sim 40.0s  hold10 -              | elapsed 4.2 min, ETA 0.2 min
+[98/102] ep 0292 timeout        min err 0.3780 m  sim 40.0s  hold10 -              | elapsed 4.2 min, ETA 0.2 min
+pybullet build time: Oct 21 2025 11:02:13
+pybullet build time: Oct 21 2025 11:02:13
+[99/102] ep 0290 timeout        min err 0.3253 m  sim 40.0s  hold10 -              | elapsed 4.2 min, ETA 0.1 min
+pybullet build time: Oct 21 2025 11:02:13
+[100/102] ep 0289 timeout        min err 0.1110 m  sim 40.0s  hold10 -              | elapsed 4.3 min, ETA 0.1 min
+pybullet build time: Oct 21 2025 11:02:13
+[101/102] ep 0297 timeout        min err 0.2126 m  sim 40.0s  hold10 -              | elapsed 4.3 min, ETA 0.0 min
+pybullet build time: Oct 21 2025 11:02:13
+[102/102] ep 0296 timeout        min err 0.0127 m  sim 40.0s  hold10 -              | elapsed 4.3 min, ETA 0.0 min
+Policy bc_policy.py on data/dev: success 0/102 = 0.0% [0.0, 3.6] (95% Wilson), settled 0/102
+Stop reasons: timeout 102
+Policy step time: mean 0.133 ms, p99 0.170 ms (median over episodes; control period 1 ms)
+Recorded clean expert reached / this policy succeeded (102 episodes): both 0, expert only 101, policy only 0, neither 1
+v1.1 held_10s (EE < 15 mm for 10 s after the first reach): 0/102 = 0.0% [0.0, 3.6]; extended hold ended: not reached 102
+v1.1 stable arrival (EE within tol for >= 0.5 s, ending by 40 s): 5cm 6/102 = 5.9% [2.7, 12.2], 2cm 0, 1cm 0
+v1.1 parked (ring distance < 0.2 m and base still for >= 1.0 s): 102/102 = 100.0% [96.4, 100.0]; arm extended (EE > 0.1 m from its start in the base frame): 0/102 = 0.0% [0.0, 3.6] (both up to the v1 stop point)
+Evaluation time: 4.3 min. Results in results/step3/nostall/ego-novw_s3_dev

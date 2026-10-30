@@ -1,0 +1,10 @@
+== Episode references ==
+dev: 300 episodes (0.3 s), cache /home/w/comp0245/LAB_SESSION_COMP_0245_2026_PUBLIC/.claude/worktrees/eval-protocol/final/robotnik_arm_task/results/step3/cache_ref_dev.csv
+dev: 300/300 episodes in results/data_analysis/episodes_dev.csv; mode mismatches 0; max |difference| align_req_deg 0, orient_req_deg 0, navdone_ee_err 0, d0 0, cov_pct_world 0, cov_pct_rel 0
+dev: recorded nav_done time (first nav_done step of the .npz) vs index.csv nav_done_time: max |difference| 4.73e-07 s over 300 episodes (0 with only one defined)
+hard: 200 episodes (0.2 s), cache /home/w/comp0245/LAB_SESSION_COMP_0245_2026_PUBLIC/.claude/worktrees/eval-protocol/final/robotnik_arm_task/results/step3/cache_ref_hard.csv
+hard: 200/200 episodes in results/data_analysis/episodes_hard.csv; mode mismatches 0; max |difference| align_req_deg 0, orient_req_deg 0, navdone_ee_err 0, d0 0, cov_pct_world 0, cov_pct_rel 0
+hard: recorded nav_done time (first nav_done step of the .npz) vs index.csv nav_done_time: max |difference| 2.9e-07 s over 200 episodes (0 with only one defined)
+pilot: 100 episodes (0.1 s), cache /home/w/comp0245/LAB_SESSION_COMP_0245_2026_PUBLIC/.claude/worktrees/eval-protocol/final/robotnik_arm_task/results/step3/cache_ref_pilot.csv
+pilot: no results/data_analysis/episodes_pilot.csv (computed from the recordings only)
+pilot: recorded nav_done time (first nav_done step of the .npz) vs index.csv nav_done_time: max |difference| 7.78e-07 s over 100 episodes (0 with only one defined)

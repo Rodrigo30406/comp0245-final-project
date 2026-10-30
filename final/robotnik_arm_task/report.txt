@@ -414,6 +414,371 @@ COMP0245 Assignment - report 素材记录
    - coverage_ecdf、pairplot_episodes：附录 / README。
 
 
+[Methodology] 评估协议 v1.1（2026-10-29 升级，在评估任何学习模型之前；用户 2026-10-29 确认）
+-------------------------------------------------------------------------------------------
+代码：evaluate_policy.py（PROTOCOL_VERSION = "v1.1"）；说明：EVALUATION.md 的 "Protocol v1.1" 一节。
+1) 改动：主指标完全不变，只加次要指标和诊断列。
+   - 首次到达（末端误差 < 10 mm）后继续仿真 10 s（v1 是 1 s）。success、settled、hold_error 等全部 v1 列仍在 1 s 保持窗口
+     结束时冻结，与 v1 完全相同；1-10 s 内的报错、NaN 或侧翻（只在 1 s 之后检查）只结束延长窗口，记在 hold10_stop，
+     不改变 success。延长窗口内不用停滞、超时规则。
+   - 新的次要指标：held_10s（10 s 内末端误差始终 < 15 mm）、hold10_error_end（10 s 时的误差）、保持期间底盘的最大位移、
+     最大转角、最大轮速指令、首次离开 15 mm 的时刻；Rodrigo 的"稳定到达"stable_{1,2,5}cm_time（误差 <= 1/2/5 cm 连续 0.5 s，
+     记录区间结束时刻，区间须在 40 s 内结束）和 5 cm 稳定到达后首次离开的时刻。
+   - 新的诊断列：arm_extend_time（末端在车体坐标系下相对 t = 0 的位移首次 > 0.10 m，Rodrigo 的定义）及其最大位移；
+     "停靠环距离" | ||target_xy - base_xy|| - standoff(z) |（起点、最小、终点；不依赖专家停靠点的方位，模型停在环上任何
+     位置都够得到）；朝向 target 的误差；parked（环距离 < 0.20 m 且底盘静止（< 1 cm/s、< 0.02 rad/s）连续 1 s）；
+     轮速超出专家包络（> 1.2 x 3.0 rad/s）的步数比例（只作描述）。
+   - 原来的 arm_move_time 保留但对专家无效：保持阶段 j2 下垂 0.050-0.058 rad，超过 0.05 rad 的阈值，800/800 个专家 episode
+     都在约 0.58 s 记下"开始伸臂"（v1.1 实测 0.577-1.127 s）。
+2) 设计记录（用专家数据校准，均在看到任何模型结果之前）
+   - parked 的环距离容差从方案中的 0.10 m 改为 0.20 m：专家 DEV/HARD 录制中停靠时的环距离最大 0.193 / 0.184 m
+     （中位 0.07 / 0.06 m；v1.1 运行中 CONFIRM 最大 0.195 m）。原因：drive 在离停靠点 0.15 m 内按"已越过"规则结束，之后原地 orient 转向还会让底盘中心移动。
+     0.10 m 时专家只有 84.5%（DEV）/ 62.5%（HARD）判为停靠。
+   - 对于到达的 episode，parked 必须在 v1 停止点（t_reach + 1 s）之前完成：专家 DEV 67 在到达后 0.075 s 被机械臂反作用推动
+     （0.033 m/s），所以没有判为停靠。专家成功但未判为停靠的只有 DEV 67 和 CONFIRM 185。
+   - arm_extend_time 对专家：DEV 245/300 = 81.7%、HARD 181/200 = 90.5%、CONFIRM 253/300 = 84.3%（方案估计未伸臂约 5%，实际
+     DEV 18%：target 离保持姿态很近时末端不需要移动 10 cm）。所以伸臂比例要与专家在同一批 episode 上配对比较。
+     伸臂时刻总在 nav_done 之后：专家导航期间车体坐标系下末端位移最大 5.2 cm；DEV+HARD+CONFIRM 679 个伸臂的 episode 中
+     arm_extend_time - nav_done 为 0.33-2.7 s（中位 0.47 s，p95 1.3 s），没有一个在 nav_done 之前。方案里"相差 < 0.2 s"的验证按构造不可能成立（笛卡尔速度上限 0.25 m/s，10 cm 至少要 0.4 s），
+     改为只报告分布。
+   - 局限：位移定义分不清伸臂和塌下：零力矩时机械臂在重力下塌下，0.14 s 就"伸臂"（末端移动 0.78 m）。
+     分析中另报"朝 target 伸臂"（arm_extend 且最小误差比专家停靠时的保持姿态误差小 2 cm 以上）。
+   - 新观察：专家失败的 episode 在 25 s 导航超时后，轮速指令为 0，底盘仍侧向滑行约 1.6-1.8 m（轮子侧向摩擦 0.01），
+     所以专家失败都结束在离环很远处。
+3) 验证（results/expert_v11_{dev,hard,confirm}，--compare-recorded；tests/check_v11_against_v1.py）
+   - 800/800 个 episode 与录制逐步一致（base_pos、q、qd、指令最大差 0），比较长度覆盖整个运行（含延长窗口内录制还有的部分）。
+   - 41 个 v1 列（除 wall_time、policy_ms_*、cmp_steps 外的全部 v1 列）逐 episode 与 v1 结果（results/expert_{dev,hard,confirm}）
+     完全相同（CSV 字符串一致，check_v11_against_v1.py --require-compare）：DEV 300/300、HARD 200/200、CONFIRM 300/300。
+     检查脚本在缺 episode、重复行、协议版本不对、录制比较不一致时都判 FAIL。success：DEV 298/300、HARD 194/200、CONFIRM 294/300，与 v1 相同。
+   - 专家的 v1.1 次要指标：held_10s DEV 296/300、HARD 194/200、CONFIRM 292/300；5 cm 稳定到达 = 成功数；parked DEV 297、
+     HARD 194、CONFIRM 293；到达后 10 s 时误差中位约 0.2 mm，保持期间轮速指令为 0。
+   - 混合 policy 两边都设成专家（results/B-EE_dev，--no-early-stop）：300/300 与录制逐步一致，298/300 成功，与专家相同。
+     零 policy（results/zero_v11_dev）：0/300，stalled 287、timeout 13。
+   - 单元测试：tests/test_harness_v11.py（驻留检测的边界情况、车体坐标系在平面刚体运动下不变、环距离、保持窗口记账、
+     在 1 s 窗口内外注入异常 / NaN / 侧翻时 v1 列不变）。
+   - 代价：到达的 episode 多仿真 9 s，专家基线耗时约为 v1 的 2 倍（300 个约 9.5 min，16 进程）。
+
+[Methodology] 第 3 步：训练管线与部署（train_policy.py、bc_features.py、policies/）
+-------------------------------------------------------------------------------
+1) 数据与划分（trained/data_split.json，所有模型、所有训练 seed 共用）
+   - data/train 过滤后 1897 个 episode（status == reached 且 nav_timed_out == False，代码中断言）。
+   - 按 episode 划分 85% / 15%，按 noisy x mode（mode_of(d0)）分层，每层 n_val = round(0.15 n)，划分 seed 0：
+     训练 1613 个 episode、验证 284 个（验证集 clean M0/M1/M2 9/23/121，noisy 8/18/105）。
+   - 降采样步长 9（奇数：低 z 时力矩标签逐步正负交替，偶数步长会混叠；第 2 步）。每个训练 episode 一个起始偏移
+     （0-8，default_rng(0)），训练行 = 第 offset::9 步，共 1,764,684 行。偏移 seed 与划分 seed 都是 0，两个 rng 是同一个
+     数据流，但偏移与 episode 内容无关，不影响结果（如实记录：方案写的是"独立的数据 seed"）。
+   - 验证行 = 验证 episode 的全部 1 kHz 步，2,802,594 行（事件那一步占事件后超额误差的 34-51%，降采样会丢掉它）。
+   - 缓存 results/step3/cache（每列一个 .npy，可内存映射，相对录制无损，762 MiB）；缓存和每个模型记录划分文件的 sha256，
+     不一致时拒绝加载。
+2) 特征与输出（bc_features.py，训练和部署共用同一个函数）
+   - ego（22）：target 在当前车体坐标系下的 dx、dy，target z，平面距离 rho，cos/sin beta，arm q(7)、qd(7)，v̂、ŵ；
+     ego_novw（20）：去掉 v̂、ŵ；raw（23）：base x、y，sin/cos yaw，q(7)、qd(7)，v̂、ŵ，target x、y、z。
+     全部是当前观测的纯变换：不用 t，不用专家规则，不用起始位姿。v̂、ŵ 由实测轮速按 skid-steer 模型换算（两侧前后轮平均）。
+   - 输出 9 维：(v, w) + 7 个力矩（干净标签：wheel_cmds、torque_arm，不是加噪后执行的指令）；按训练行的均值、标准差标准化，
+     损失中 9 个输出等权。部署时用 collect_data.wheel_speeds(v, w) 换回 4 个轮速。
+3) 模型
+   - MLP 2x128 ReLU：sklearn 1.9.1 MLPRegressor（Adam lr 1e-3、alpha 1e-4、batch 200、shuffle），每个 epoch 调一次 partial_fit，
+     random_state = np.random.RandomState(seed)。已验证：partial_fit 每次正好一个 epoch、Adam 状态保留、每个 epoch 的打乱不同
+     （int 的 random_state 会让每个 epoch 重放同一个排列）、同一 seed 跨进程逐位相同。float64、单线程，多个 seed 各占一个进程并行。
+   - early stopping：验证集全部 1 kHz 步上的标准化 MSE；相对上一次显著改进下降 >= 1e-3 才算改进，patience 5，最多 200 个 epoch；
+     保存验证损失最低那个 epoch 的权重。
+   - OLS：标准化特征加截距的最小二乘（np.linalg.lstsq），存成一层的模型。在 N = 1.76M 时 alpha <= 1e3 的 Ridge 与 OLS 没有区别。
+   - 模型文件 .npz：权重、标准化参数、特征说明、meta（超参数、划分 hash、损失曲线、代码 sha256 等）；部署用 numpy 前向。
+4) 验证（单元测试 tests/test_training.py、test_policies.py、test_hybrid.py，全部通过）
+   - (a) numpy 前向与 MLPRegressor.predict（反标准化后）最大差 < 1e-9；OLS 同理。
+   - (b) (v, w) -> 轮速 -> (v, w) 往返最大差 < 1e-12。
+   - (c) ego / ego_novw 特征在 base 与 target 的任意平面旋转 + 平移下不变（< 1e-9）；raw 不是（对照）。
+   - (d) 符号约定：pybullet 中 w = +0.5 rad/s 持续 1 s，yaw +0.512 rad（-0.5 时 -0.510）；pilot 中 40/40 个干净的 M2 episode，
+     第一个非零 w 标签与 t = 0 时的 beta 同号。
+   - (e) 训练 / 部署一致：BCPolicy.act 对单个观测的输出与训练时的向量化路径在 300 个录制步上一致（< 1e-9），3 种特征集都测。
+   - 缓存中随机抽的行与 .npz 原始值逐位相同（含带噪 episode：标签是干净指令，不是执行的指令）。
+   - 训练确定性：ego seed 0-2 先用于 pilot，之后用最终代码（只改了离线滞后分析）重新训练，检查与 pilot 用的模型逐位相同（结果见下）。
+5) 代价：ego MLP 单进程每个 epoch partial_fit 6.3-6.8 s + 验证损失 2.9 s；10 个进程并行时每个 epoch 约 15-50 s（与评估争用 CPU）；
+   pilot 的 3 个 seed 在 21-26 个 epoch 停止（最佳 epoch 16-21）。OLS 拟合 1.2 s。每个进程约 1.2 GB 内存。
+   推理：BCPolicy 每步约 20-30 us（大部分是单行特征构造的开销），闭环 policy_ms 中位 0.12-0.17 ms，专家 0.19 ms。
+6) 离线分析的定义（描述性，trained/<name>.offline.json）
+   - 各输出的 RMSE / nRMSE，按 phase 类（align、drive、orient、reach_move、reach_hold）、clean / noisy、事件窗口内外，
+     与照抄基线（实测 v̂、ŵ 作为 (v, w) 的预测）对照；力矩按段（导航保持、reach_move、reach_hold）x z（< / >= 0.45 m）。
+   - 事件窗口内的滞后 k：k 在 -30..30 步，k > 0 表示预测落后于标签（pred[t] ~ label[t - k]），所有 k 用同一组 t
+     （[事件 - 20 ms, 事件 + 沉降时间]），t - k < 0 时标签补 0（机器人从静止开始），超出 episode 末尾补最后一个值；
+     曲线相对极差 < 1e-3 记为"平"（不给 k），|k| = 30 标为边界。只用干净的验证 episode。
+     设计记录：初版只搜索 k >= 0 且每个 k 用不同的 t 集合，审查发现领先会被报成 0、start 事件的 k 偏大，在看任何 MLP 的
+     离线结果之前改正。ego-ols：start、align>drive、drive>orient 的 v、w 都是 k = +1，与照抄基线相同。
+   - drive>reach 在验证集中只有 2 个干净事件，其滞后不可靠。
+
+
+[Methodology] 第 3 步：闭环失败分类（analyze_rollouts.py）与判据验证（在看任何学习模型的 DEV/HARD 结果之前）
+-----------------------------------------------------------------------------------------------------
+1) 最终判定顺序（每个失败的 episode 只归一类；success 不分类）
+   1. crash：tipped、invalid_action、policy_error（harness_error 是评估程序的错误，重跑，不算 policy 的失败）。
+   2. no_start：起点离停靠环 >= 0.15 m，且底盘路径 < 0.15 m、累计转角 < 10 度（在"是否接近"之前判定）。
+   3. 从未接近（停靠环距离的最小值 > 0.3 m）：runaway（终点环距离 > 起点环距离 + 1 m）-> no_progress（环距离从未比起点
+      小 0.10 m 以上：转了但没有朝环开）-> never_other。
+   4. 接近过：circling（累计转角 - align_req - orient_req（orient_req 只在已停靠时计入）> 360 度）-> left_or_overshot
+      （终点环距离 > 0.3 m）-> parked_no_arm（arm_extend_time 为空，|min_error - navdone_ee_err| < 2 cm，且 navdone_ee_err
+      >= 7 cm）-> extended_not_reached（1 <= min_error < 5 cm）-> approached_other。
+   - 起点离环 < 0.15 m（类似 M0）的失败永远不是 no_start；底盘不动时另标 no_motion_near_ring，单独报告。
+   - 轮速超出专家包络的比例只作描述，不参与分类。
+   - 合并类（作图，也对应 Rodrigo 的 4 类）：arrive_stay = 成功且 held_10s；arrive_leave = 成功但没有保持 10 s；
+     base_ok_ee_not = parked_no_arm + extended_not_reached + approached_other；base_not = no_start + runaway + no_progress +
+     never_other + circling + left_or_overshot；crash。
+2) 相对方案的修订（设计记录；原因都来自专家或零 policy 这些已知答案的案例，只有 no_progress 来自 ego 的 pilot）
+   - circling：方案减去 align_req + orient_req。专家的 2 个 M1 失败（DEV 169、HARD 124）底盘一直没停靠，从未做那 180 度的
+     orient 转向，按方案只算出多转 209-219 度，被判成 left_or_overshot。改为 orient_req 只在已停靠时计入后，14/14 判为 circling。
+   - no_start：方案中"起点在环上 0.15 m 内排除"在"从未接近"分支里永远不会生效（起点离环 <= 0.3 m 就算接近过），所以把
+     no_start 的运动测试放到接近判定之前（对起点离环 >= 0.15 m 的 episode）。路径阈值从 0.05 m 改为 0.15 m：零 policy 的
+     机械臂在重力下塌下，会把底盘推动 0.008-0.108 m（转角 <= 0.22 度），0.05 m 时 280 个中有 25 个漏判。
+   - parked_no_arm 加了 navdone_ee_err >= 7 cm：专家停靠时保持姿态已经离 target 不到 7 cm 的"短伸臂"episode（DEV 38、HARD 12），
+     用 min_error 分不清"没伸"和"伸了没到"，原规则在 5 个专家成功的 episode 上会触发。这些 episode 上的失败在每张类别表里单独计数。
+   - no_progress（新增）：pilot 上 ego 的失败主要是"原地转向对准后不再前进"（路径 0.13-0.30 m、转角约 90-100 度），既不满足
+     不出发（转角 > 10 度），也不是跑飞，原来会落进 never_other。这个类别是看了 ego 在 pilot 上的行为之后加的（如实记录），
+     判据与机制无关，两边同样适用。
+   - 方案中"专家 arm_extend_time 与 nav_done 相差 < 0.2 s"不可能成立（见协议 v1.1），改为只报告分布。
+3) 验证结果（results/step3/validate.txt；专家 v1.1 DEV + HARD + CONFIRM，零 policy DEV）
+   - (i) 专家 14 个失败全部判为 circling（多转 370-399 度，环距离最小值 < 1 mm：绕着停靠点转）。PASS。
+   - (ii) 零 policy：起点离环 >= 0.15 m 的 280 个失败全部判为 no_start；起点离环 < 0.15 m 的 20 个是 approached_other，
+     全部带 no_motion_near_ring 标记。PASS。
+   - (iii) 专家 786 个成功：失败判据只在 5 个有记录的例外上触发：HARD 19、158 与 CONFIRM 62、69 是真实的"绕圈后到达"
+     （专家一直绕到 25 s 导航超时，之后停靠，仍然到达，多转 397-596 度）；DEV 11 起点离 target 足够近，底盘几乎不动
+     （路径 0.08 m）机械臂就在 1.57 s 到达。其余判据（含 parked_no_arm）在成功上都不触发。PASS（有记录的例外）。
+   - (iv) 专家伸臂从不早于 nav_done（679 个伸臂的 episode 中 0 个）。PASS。
+   - (v) arm_extend_time - nav_done：中位 0.47 s、p95 1.3 s、最大 2.7 s（只报告）。
+   - 专家成功中 arm_extend_time 为空的：121/786 = 15.4%（短伸臂），所以伸臂比例要与专家在同一批 episode 上配对比较；
+     另报 arm_extended_toward（伸臂且最小误差比专家停靠时的保持姿态误差小 2 cm 以上），排除"机械臂塌下"。
+
+
+[Methodology] 第 3 步：统计方法（analyze_rollouts.py）
+----------------------------------------------------
+- 单个 seed 的成功率用 Wilson 区间。seed 平均用两层 bootstrap（先有放回地抽 seed，再抽 episode，10000 次，percentile CI），
+  不把多个 seed 的试验合在一起算 Wilson（伪重复）。
+- 两边的配对差值：每次抽样在每一边内独立地抽 seed，episode 只抽一次、两边共用（配对），差值 = B - A；双侧 p = 2 min(P(<=0), P(>=0))。
+- 校准（审查时的模拟，零假设，E = 300）：S = 5、seed 标准差 11 个百分点时，两层 percentile bootstrap 的 P(p < 0.05) = 0.115、
+  P(CI 下界 > 0) = 0.068（名义 0.025）；seed 标准差 20 个百分点时 0.087 / 0.050；seed 标准差只有约 2 个百分点（只有二项噪声）时
+  P(p < 0.05) = 0.003（过于保守）。单元测试的模拟（S = 5、E = 100）：bootstrap 0.093 / 0.048，按 seed 成功率的 Welch t 检验
+  0.052 / 0.030。原因：只有 5 个 seed 时，重抽 seed 低估了 seed 层的方差，percentile 区间偏窄。
+  -> 实验 A 的条件 (1) 要求两层 bootstrap 的 CI 下界 > 0，并且按 seed 成功率的 Welch 95% CI 下界也 > 0；实验 B 中与专家格
+     （确定性，没有 seed）的对比用按 seed 差值的单样本 t 检验，Holm 用 bootstrap p 和 t 检验 p 中较大的那个。
+- 每对 seed 的精确 McNemar（描述性）、全部 seed x seed 差值；seed 一致性：Cochran Q、归一化 psi = psi_raw / (1 - prod p - prod (1 - p))。
+- Holm：p_adj <= alpha 拒绝。比较族：实验 B 的 3 个对比一族；分层一族，只含 n >= 30 的分层（DEV：M1 48、M2 0.08-0.5 46、
+  M2 0.5-1.0 56、M2 >= 1.0 138；M0 12 和边界带 8 只作描述）；次要指标一族。实验 A 的主比较单独判定，不校正。
+- 完整性检查：配对的运行必须来自同一个评估集、episode 集合完整且相同；有 harness_error 时拒绝比较；混合 policy 的运行必须
+  用了 --no-early-stop（否则 ME 格会被停滞规则偏低）。
+
+[Methodology] 第 3 步预注册：实验 A、B 与描述性部分（2026-10-29 写下，在 DEV/HARD/CONFIRM 上运行任何学习模型之前）
+-----------------------------------------------------------------------------------------------------------
+方案：STEP3_PLAN_PROMPT.md（用户 2026-10-29 确认）。代码：train_policy.py、policies/bc_policy.py、policies/hybrid.py、
+analyze_rollouts.py；协议 v1.1。冻结之后不再修改；如果必须改，写明改动、原因、改之前看到了什么。
+0) 预注册之前已经看过的东西（如实记录）
+   - pilot 冒烟测试（3.4）：ego seed 0-2 在 data/pilot 上的闭环结果（见 2)），以及 ego seed 1 在 pilot ep 0、3 上保存的轨迹
+     和一次离线检查（见 2) 的机制观察）。这 3 个模型同时是实验 A 中 ego 的 seed 0-2（用最终代码重新训练，并检查逐位相同，见 1)）。
+   - 失败分类的修订（见"闭环失败分类"一节）都在这之前完成；其中 no_progress 类是看了 ego 在 pilot 上的失败形态之后加的。
+   - ego seed 0-2 的训练日志（停止 epoch 21-26、最佳 epoch 16-21、验证标准化 MSE 0.0142-0.0159）；ego seed 0-3 的 2-epoch
+     计时测试损失；ego-ols 的离线验证误差（标准化 MSE 0.280，(v, w) 误差与照抄基线几乎相同）。
+   - 一个只用 pilot 前 10 个 episode 拟合的测试用 OLS 在 pilot ep 14、22 上的冒烟运行（BCPolicy、EM、ME 格各 2 个，全部失败：
+     侧翻、力矩饱和、底盘跑飞）；审查时一个全零输出模型的 ME 格在 pilot ep 12、58 上的运行（底盘不动，25 s 超时后专家机械臂
+     仍到达）。这些模型都不是登记的模型。
+   - 专家在 DEV/HARD/CONFIRM 上的 v1.1 结果，零 policy 在 DEV 上的结果，混合 policy（两边都是专家）在 DEV 上的结果。
+   - 事故：开发分析代码时，一次运行读了 data/confirm 的 300 个专家录制（meta、nav_done 时刻、该时刻的末端位置）来建参照缓存，
+     只打印了一行"nav_done 时刻与 index.csv 的最大差 4.7e-7 s"，没有看任何逐 episode 的值；缓存已删除，代码加了
+     --allow-confirm 保护。读到的只是专家数据，没有任何模型结果，不影响 CONFIRM 作为复现集的用途。
+   - 没有看过：任何学习模型在 DEV/HARD/CONFIRM 上的闭环结果；ego-novw 的任何训练损失、离线指标或闭环结果；包含登记模型的
+     混合格子的任何结果；raw 的任何结果。
+1) 固定不变的设置（实验 A 两边相同）
+   - 数据：data/train 过滤后 1897 个 episode，trained/data_split.json（划分 seed 0、偏移 seed 0、步长 9）：
+     训练 1613 个 episode / 1,764,684 行，验证 284 个 episode / 2,802,594 行（1 kHz 全量）。
+   - 网络：MLP 2x128 ReLU，Adam lr 1e-3，alpha 1e-4，batch 200，partial_fit 每次一个 epoch；输入、输出按训练行标准化，
+     9 个输出等权；early stopping：验证集标准化 MSE 相对改进 1e-3、patience 5、最多 200 个 epoch，保存最佳 epoch 的权重。
+   - 训练 seed 0..S-1（S 见 2)），两边同一组 seed。所有模型用同一版 train_policy.py 训练；ego seed 0-2 用最终代码重新训练，
+     并检查与 pilot 用的模型逐位相同（训练是确定性的）。
+   - 评估：协议 v1.1，DEV 全部 300 个、HARD 全部 200 个；每个模型族在 DEV 上把被判 stalled 的 episode 用 --no-early-stop
+     单独重跑，确认没有一个会成功（协议要求）。
+2) pilot 结果、地板规则、seed 数
+   - pilot（n = 100，50 个带噪录制的起点也照常评估）：ego seed 0/1/2 成功 0 / 0 / 0；末端曾进入 5 cm 1 / 1 / 1；
+     parked 10 / 9 / 8；arm extended 2 / 1 / 1（单位：episode / 100）。底盘大多没有开出去：路径中位 0.13-0.30 m，转角中位约 90-100 度；
+     停止原因 stalled 26-74、timeout 25-74、tipped 0-1。
+   - 机制观察（ego seed 1，pilot ep 0）：闭环中底盘原地转向对准后 v 指令一直约 0.001 m/s，再也不起步。离线检查：在专家录制的
+     align -> drive 切换那一步，标签 v = 0.25 m/s，而实测 v̂ = -0.002，模型输出 v = 0.002；5 步之后实测 v̂ = 0.21（专家已起步），
+     模型输出 0.250。即模型照抄实测速度，起步这个决策点被"v̂ = 0 -> v = 0"的不动点卡住。这正是第 2 步预注册的 H-copycat
+     机制（起步滞后），但只在 ego 上看到；ego-novw 会不会起步没有看过。
+   - 地板规则（决定指标的顺序，只由两边是否都在地板上决定，与哪一边更好无关）：
+     主指标 DEV success；如果两边 seed 平均成功率都 < 5%，决定指标改为"末端曾进入 5 cm"（reach_5cm）；如果两边 reach_5cm 也都
+     < 5%，改为 parked（停靠环距离 < 0.20 m 且静止 1 s）。其余指标只作机制证据（Holm 校正后报告）。
+     （方案的地板规则只列了 4 个次要指标；这里具体化为按信息量排序的单一决定指标，避免在 4 个指标里挑结果。）
+   - seed 数：σ̂ = pilot 上 3 个 seed 的决定指标比例的样本标准差（百分点），决定指标按同样的顺序在 pilot 上确定：
+     pilot 成功率 < 5% 且 reach_5cm < 5%，所以用 parked。S = min(8, max(5, ceil(2 (2.8 σ̂ / 20)^2)))。
+     -> σ̂ = 1.0 pp，S = 5。按 seed 方差算的最小可检测差异 2.8 σ̂ sqrt(2/S) = 1.8 pp，这是下限（没有计入 episode 抽样和
+     seed x episode 交互，实际分辨率看 CI 宽度）。
+3) 实验 A：ego 对 ego-novw（唯一变量：是否输入实测轮速 v̂、ŵ）
+   - 竞争假设与预测（"比例"均为 seed 平均；差值 = ego-novw 减 ego，两层 bootstrap 95% CI）：
+     H-copycat（轮速有害）：去掉 v̂、ŵ 后能起步。预测：ego-novw 的 no_start + no_progress + left_or_overshot 比例比 ego 低
+     （差值 CI 上界 < 0）；parked 和决定指标更高；离线（描述性）：事件窗口内 ego 的滞后 k >= 1（start、align>drive、
+     drive>orient），ego-novw 的 k 约为 0 或领先。
+     H-hidden-phase（轮速有用）：去掉后分不清 align 和 drive、也失去"已停稳"信号。预测：ego-novw 的 circling + left_or_overshot
+     比例更高，parked 更低，集中在 |d0| < 1 的分层；arm extended 更低；到达的 episode 中 hold10_base_disp_max 更大。
+     H-goal（主要问题与轮速无关）：两边在停靠环上的终点距离差不多，以专家停靠点为参照的距离都偏大（模型停在环上的其他方位）。
+     预测：在 parked 的 episode 中，两边 ring_dist_final 中位数之差 < 3 cm，base_goal_dist_final - ring_dist_final 的中位数
+     两边都 > 专家自己的值，且两边之差 < 5 cm。（只有两边都有足够多 parked 的 episode（每边 >= 30 个 seed x episode）才判定。）
+     先验（Rodrigo）：底盘能到位，主要失败是机械臂不伸。pilot 已经部分否定了这一条对 ego 的适用性（底盘不起步）；
+     对 ego-novw 仍预测：如果它能起步，主要失败类别是 parked_no_arm / extended_not_reached（合并类 base_ok_ee_not）。
+   - 决定指标与采纳规则（协议第 5 条的具体化）：默认保留 v̂、ŵ（brief 的 qd_mes 包含轮速）。只有满足全部条件才改为去掉：
+     (1) 决定指标（见 2) 的地板规则）的配对差值（ego-novw 减 ego）：两层 bootstrap 95% CI 下界 > 0，并且按 seed 成功率的
+         Welch 95% CI 下界也 > 0（审查的模拟显示 S = 5 且 seed 方差大时百分位两层 bootstrap 偏乐观，零假设下
+         "CI 下界 > 0"的概率约 5-7% 而不是 2.5%，所以两者都要满足）；
+     (2) 净改进中 >= 50% 来自 H-copycat 预测的失败类别（no_start + no_progress + left_or_overshot 的比例减少量 / 决定指标的
+         净改进；决定指标不是 success 时，用该指标的失败 episode 的类别）；
+     (3) 按 d0 分层（n >= 30 的分层：M1、M2 0.08-0.5、M2 0.5-1.0、M2 >= 1.0）没有一层的差值 CI 上界低于 -10 个百分点；
+     (4) HARD 上差值方向相同（点估计 > 0）；
+     (5) CONFIRM 上用新训练的 seed（100-104）复现方向（点估计 > 0）。
+     反方向（ego 明显更好，(1)-(4) 镜像成立）作为"保留轮速"的证据记录，也在 CONFIRM 上用新 seed 复现。
+     都不满足：保留 ego，写成"在约 X 个百分点的分辨率下没有检测到差异"。
+   - 报告：每个 seed 的成功率（及决定指标）附 Wilson 区间；seed 平均附两层 bootstrap CI；每对 seed 的精确 McNemar（描述性）；
+     全部 seed x seed 差值；失败类别按"每个 episode 各类别的 seed 平均比例"汇总；次要指标 reach_2cm、reach_5cm、parked、
+     arm_extended、arm_extended_toward、held_10s、stable_5cm 的配对差值（Holm）。
+4) 实验 B：底盘 / 机械臂 2x2 拆分（DEV，--no-early-stop）
+   - 格子：EE = results/B-EE_dev（已跑，与录制逐步一致，298/300）；EM（专家底盘 + 模型机械臂）；ME（模型底盘 + 专家机械臂，
+     专家机械臂由影子 FSM 的 nav_done 触发）；MM = 实验 A 采纳那一边的模型自己的 DEV 结果。模型用该边 seed 0-4（预算）。
+   - 事先写明的耦合：专家机械臂开始伸 = 给模型底盘一个"已到达"信号；专家底盘 done 之后轮速严格为 0 = 给模型机械臂一个完美的
+     静止信号（v̂ = ŵ = 0），所以单换格会高估各自那一半。ME 格的 25 s 超时：底盘没有到达专家停靠位姿时，专家机械臂在 25 s 从
+     底盘所在位置伸出，起点离 target 近的 episode（|d0| < 0.15，DEV 20 个）即使底盘不动也能成功，所以归因同时报告去掉这些
+     episode 的结果，ME 成功按触发方式（threshold / timeout / never）拆开。
+   - 判读：逐 (seed, episode) 归因 MM 的失败：ME 失败 -> 底盘原因；EM 失败 -> 机械臂原因（两者可同时）；ME、EM 都成功 -> 交互。
+     与独立假设下的 p_ME x p_EM 对照。三个对比 ME-EE、EM-EE、MM-EE：seed 平均，两层 bootstrap 与按 seed 的单样本 t 检验，
+     取两者中较大的 p 做 Holm（3 个一族）；结论落在：只有底盘 / 只有机械臂 / 两者都有 / 都不显著。
+   - 预测（来自 pilot 与 Rodrigo）：如果采纳 ego：ME 明显低于 EE（底盘不起步，大多靠 25 s 超时触发；起点近的 episode 除外），
+     MM 失败主要归因于底盘；EM 是开放问题：专家底盘停稳后（v̂ = 0）模型机械臂会不会伸。Rodrigo E1 预测不伸（伸臂比例低），
+     记录模型 arm_extend_time - 专家 nav_done（专家自己 0.36-2.4 s）。
+5) 描述性部分的事先说明（不做采纳决定）
+   - raw：MLP seed 0 + raw-ols，只跑 DEV；停止规则：成功率 <= 1% 且多数为 never-approached 类（不出发 / 无进展 / 跑飞），
+     不再加 seed。ego-ols 也在 DEV 上跑一次。
+   - M1 对 M2 的伸臂触发：如果"不伸臂"（parked_no_arm）集中在 M1（nav_done 之前有约 180 度的原地转向），支持"长 orient 段"
+     的解释；如果各模式一样，支持 Rodrigo 的"缺 clock"解释。只在底盘停靠的 episode 足够多（每个模式 >= 20 个 seed x episode）
+     时解读。
+   - seed 一致性（Cochran Q、归一化 psi）、成功率 vs 覆盖度百分位、离线验证误差 vs DEV 闭环、离线滞后 k、按 reach 段 x z 的
+     力矩误差、推理耗时和参数量：按方案第 6 节报告，不作判定。
+
+
+[Results] 第 3 步实验 A：ego 对 ego-novw（2026-10-30，按冻结的预注册运行；results/step3/A_*、A_mechanisms.txt）
+--------------------------------------------------------------------------------------------------------------
+运行：results/step3/run_expA.sh（DEV、HARD 各 5 个 seed x 2 边，协议 v1.1）。2026-10-29 20:10 应用户要求暂停，
+10-30 00:45 续跑（脚本跳过已完成的运行，中断时只跑到一半的 ego s4 DEV 被删除后重跑）。
+0) 检查
+   - 用最终代码重新训练的 ego seed 0-2 与 pilot 用的模型逐位相同（10 个数组），训练是确定性的。
+   - 停滞早停检查（协议要求）：每个模型族在 DEV 上被判 stalled 的 episode 用 --no-early-stop 重跑，ego 509 个、ego-novw 117 个、
+     raw 51 个，全部在 40 s 超时失败，没有一个会成功；早停没有造成误判。
+   - 没有 harness_error；所有配对的运行 episode 集合完整且相同。
+1) 主指标与地板规则
+   - DEV success：ego 0/300 x 5 个 seed；ego-novw 1、0、0、1、3 / 300，seed 平均 0.3%（两层 bootstrap [0.0, 1.0]）。
+     专家 99.3%。两边都 < 5%，地板规则生效，决定指标改为 reach_5cm；ego-novw 的 reach_5cm 9.0% >= 5%，所以停在 reach_5cm。
+   - HARD success：ego 0.2%、ego-novw 0.4%（专家 97.0%）。
+2) 决定指标 reach_5cm（末端曾进入 5 cm；差值 = ego-novw 减 ego）
+   - DEV：ego 0.5% [0.0, 1.3]（每个 seed 2/2/0/3/1 个 / 300）、ego-novw 9.0% [6.0, 12.3]（22/28/30/27/28 个 / 300）；
+     差值 +8.5 pp，两层 bootstrap [+5.5, +11.7]，Welch（按 seed）[+7.2, +9.7]，p 8.5e-6。
+   - HARD：ego 1.3%（0/5/2/2/4 个 / 200）、ego-novw 4.5%（3/8/10/11/13 个 / 200），差值 +3.2 pp [+0.6, +6.3]（Welch [+0.9, +5.5]）。
+3) 采纳规则（地板规则下按 reach_5cm 判定）
+   (1) DEV 差值的 bootstrap CI 下界 +5.5 > 0，Welch CI 下界 +7.2 > 0：满足。
+   (2) 在 reach_5cm 失败的 episode 中，H-copycat 预测的类别（no_start + no_progress + left_or_overshot）的比例从 45.3% 降到 0.0%，
+       减少 45.3 pp，是 reach_5cm 净改进（8.5 pp）的 535%：满足（>= 50%）。
+       解读：比值远大于 100% 是因为"不起步"这类失败几乎全部消失，但被"解放"出来的 episode 大多又在后面失败
+       （circling +25.5 pp、parked_no_arm +52.0 pp），只有一小部分到了 5 cm 内。
+   (3) n >= 30 的分层中 reach_5cm 差值 CI 上界最低的是 M1 +8.3 pp（>= -10）：满足。
+   (4) HARD 上方向相同（+3.2 pp）：满足。
+   (5) CONFIRM（新训练的 seed 100-104，两边各 5 个；results/step3/run_confirmA.sh，2026-10-30 打开 CONFIRM 只为这一次复现）：
+       reach_5cm ego 0.5%（2/1/2/1/1 个 / 300）、ego-novw 7.5%（27/25/22/21/18 个 / 300），差值 +7.1 pp，两层 bootstrap
+       [+4.3, +10.1]，Welch [+5.6, +8.5]：方向复现，满足。success 0.1% 对 0.3%（专家 98.0%）。
+       机制也复现：no_progress 60.5% -> 0%，circling +19.7 [+3.1, +36.1] pp，parked_no_arm +56.2 [+45.0, +68.5] pp。
+   -> 决定（按预注册的采纳规则，5 个条件全部满足）：主线改为 ego-novw，去掉实测轮速 v̂、ŵ。
+      注意这个决定的范围：两边的主指标（10 mm 成功）都在地板上（< 1%），这个结论只说明去掉 v̂、ŵ 让模型离目标更近，
+      不说明任何一边是可用的 policy。之后的实验（实验 B 和第 4 步）都在 ego-novw 上做。
+4) 机制预测（预注册的检验；差值 ego-novw 减 ego，两层 bootstrap 95% CI）
+   - H-copycat：
+     * 预测类别比例下降：DEV 45.3% -> 0.1%，-45.3 [-71.5, -20.7] pp；HARD -36.7 [-53.6, -20.6] pp。支持。
+       其中 no_progress（转了但没有朝环开）DEV 39.1% -> 0%，no_start 4.9% -> 0%。
+     * reach_5cm 上升：支持（见 2)）。parked 上升：不支持（DEV +1.2 [-12.1, +21.6]，HARD -13.1 [-27.0, +4.8]）。
+     * 离线滞后 k（描述性）：ego 5 个 seed 在 start、align>drive、drive>orient 的 v、w 都是 k = +1，与照抄基线（实测速度）
+       完全相同。ego-novw 不是预测的"k 约为 0"：start 处 v 领先到搜索边界（-30），align>drive 落后 1-9 步，
+       drive>orient 落后 10-15 步。即去掉 v̂、ŵ 后模型只能从位姿慢慢推断阶段，决策点反而更晚。
+   - H-hidden-phase：
+     * circling + left_or_overshot 上升：DEV +24.2 [+8.6, +44.1] pp（circling 6.7% -> 32.2%），HARD +29.6 [+13.0, +48.0]。支持。
+     * 集中在 |d0| < 1：DEV |d0| < 1 +31.0 [+11.9, +51.4] pp，|d0| >= 1 +16.2 [+2.2, +37.4] pp。部分支持（两边都有，前者更大）。
+     * parked 下降：不支持（见上）。arm_extended 下降：-0.9 [-2.5, +0.5]，不显著（两边都约 1%，专家 82%）。
+     * 到达后的漂移：两边到达的 seed x episode 只有 0 / 5 个，无法判定。
+   - H-goal：在停靠的 seed x episode 中，终点环距离中位数 ego 11.9 cm、ego-novw 3.8 cm，差 -8.1 cm，超过预测的 3 cm：不支持
+     （ego-novw 停得更靠近环）。以专家停靠点为参照的额外距离中位数 0.6 / 2.1 cm，都大于专家自己的 0.2 cm，差 +1.5 cm（< 5 cm）。
+   - Rodrigo 的先验（ego-novw 的主要失败是机械臂不伸）：DEV 中 ego-novw 的最多类别是 parked_no_arm 54.3%，其次 circling 32.2%：
+     支持（HARD 上 circling 52.0% 多于 parked_no_arm 38.3%）。arm_extended 两边都约 1%：底盘停稳后机械臂几乎从不开始伸。
+   - 结论：两个竞争假设各自对了一部分，它们说的是两个真实存在的机制。实测轮速让模型照抄"当前速度"，在起步这个决策点
+     被 v̂ = 0 -> v = 0 的不动点卡住（H-copycat）；去掉它之后底盘能开，但分不清"到了没有"，在停靠点附近绕圈（H-hidden-phase
+     中"停稳信号"那一部分）。两者都不能让机械臂开始伸：这是下一个瓶颈（实验 B 检验）。
+5) 描述性
+   - 离线误差预测不了闭环：ego 的离线验证损失 0.0142-0.0160，ego-novw 0.0260-0.0268（v 的 nRMSE 0.03 对 0.20），离线 ego
+     好得多，闭环却更差。13 个模型上 Spearman(val_loss, DEV reach_5cm) = +0.57（p 0.04，方向与"离线好 = 闭环好"相反），
+     Spearman(val_loss, DEV success) = +0.36（p 0.23）。图 results/step3/fig_step3_offline_vs_closed。这复现了 Rodrigo 的观察。
+   - raw（MLP seed 0）DEV 0/300，从未接近的类别 225/300：按停止规则不再加 seed。ego-ols、raw-ols 在 300/300 个 episode 中侧翻
+     （中位约 10-11 s；力矩 65% 的步饱和，轮速指令最高约 130 rad/s）：线性模型在闭环中不稳定。
+   - seed 一致性：成功太少，Cochran Q 都不显著（ego-novw DEV Q 6.7, p 0.15）；按 seed 的 parked 很分散（ego-novw DEV
+     0/2/3/50/4%：seed 3 一半的 episode 都停靠了）。
+   - M1 对 M2：ego-novw 的 parked_no_arm 集中在 M2（DEV 64.8% 对 M1 12.5%），不集中在 M1，所以不支持"长 orient 段"的解释；
+     M1 的失败主要是绕圈。按预注册的读法，更接近 Rodrigo"没有可靠的触发线索（缺 clock）"的解释，但这里只是描述。
+   - 推理耗时：MLP 每步中位约 0.12-0.14 ms，OLS 0.08-0.10 ms，专家 0.19 ms；参数量 ego 20,617、ego-novw 20,361、raw 20,745。
+   - 图：fig_step3_classes_d0_theta（合并类别叠加在 (d0, theta) 上）、fig_step3_offline_vs_closed、fig_step3_success_coverage
+     （成功太少，没有信息）。
+
+
+[Results] 第 3 步实验 B：底盘 / 机械臂 2x2 拆分（2026-10-30，按预注册运行；ego-novw seed 0-4，DEV，--no-early-stop；
+results/step3/B_ego-novw_dev.txt、fig_step3_split2x2）
+-------------------------------------------------------------------------------------------------------------
+1) 各格成功率（seed 平均，两层 bootstrap 95% CI）
+   - EE（混合 policy，两边都是专家）99.3% [98.3, 100.0]，与 expert_v11_dev 逐 episode 相同（300/300）。
+   - EM（专家底盘 + 模型机械臂）0.1% [0.0, 0.4]（每个 seed 0/0/0/0/1 个）。
+   - ME（模型底盘 + 专家机械臂）96.7% [93.0, 99.3]（每个 seed 100/90/99/96/99%）。
+   - MM（全模型，即实验 A 的 ego-novw DEV 结果）0.3% [0.0, 1.0]。
+2) 判读（预注册）
+   - 与专家的配对差值（Holm over 3，用 bootstrap p 与按 seed 单样本 t 检验 p 中较大的那个）：ME - EE -2.7 [-6.5, +0.1] pp，
+     p 0.19（不显著）；EM - EE -99.3 pp，Holm p 3e-4；MM - EE -99.0 pp，Holm p 3e-4。结论类别：只有机械臂。
+   - 归因（MM 的 1495 个失败的 seed x episode）：只因机械臂 96.6% [92.9, 99.2]，两者都有 3.3%，只因底盘 0%，交互 0.1%；
+     机械臂原因合计 99.9%，底盘原因合计 3.3%。去掉 20 个起点在环附近（|d0| < 0.15 m）的 episode 后：机械臂 99.9%、底盘 2.2%。
+     独立假设下的期望 p_ME x p_EM = 0.1%，观察到的 MM 0.3%。
+   - ME 格按影子 FSM 的触发方式：阈值触发（模型底盘自己到达专家停靠位姿，pos_tol 8 cm、ang_tol 0.05 rad）1284/1500
+     （其中 97.2% 成功）；25 s 超时触发 215（93.5% 成功）；没有触发 1。超时触发的成功不说明底盘停到位（专家机械臂从底盘
+     所在的位置伸出）。
+3) 机械臂为什么失败（EM 格）
+   - 1500/1500 个 seed x episode 中模型机械臂从来没有"伸臂"（arm_extend_time 为空）：车体坐标系下末端位移最大只有 5.3 cm
+     （中位 4.3 cm），与导航期间保持姿态的晃动（专家最大 5.2 cm）一样；专家伸臂时中位 26 cm。力矩没有饱和。
+     即专家底盘已经停稳、停在正确的位置，模型机械臂仍然一直输出"保持姿态"的力矩：失败在触发（何时开始伸），
+     不是在伸臂轨迹上。这回答了 Rodrigo §6b(ii) 的问题，与他 E1 的观察（随机起点训练时机械臂不开始伸）一致。
+   - 预注册的耦合在这里的含义：EM 格里专家底盘 done 之后轮速严格为 0，但 ego-novw 没有 v̂、ŵ 输入，看不到这个"静止"信号，
+     它能用的只有位姿和机械臂自己的 q、qd。所以 EM 格没有高估模型机械臂。
+4) 底盘这一半（ME 格）的读法与局限
+   - 模型底盘在 85.6% 的 seed x episode 中自己到达了专家的停靠位姿（阈值触发），比 PARK_RING_TOL 的环更严格。
+   - 但 ME 格高估了底盘：阈值触发之后专家机械臂开始伸，等于告诉模型底盘"已经到了"（模型输入里有 arm q）；全模型 MM 里没有
+     这个信号，ego-novw 在 DEV 上绕圈 32.2%（实验 A）。所以"底盘没问题"只在"到达之前"这个意义上成立，到达之后能否停住，
+     实验 A 显示是有问题的（H-hidden-phase 的停稳信号）。
+5) 与预注册预测的对照
+   - 预注册中对 ME 的具体预测是以"采纳 ego"为前提写的（底盘不起步），实际采纳的是 ego-novw，这一条不适用。
+   - EM：预注册写为开放问题，Rodrigo E1 预测机械臂不伸：支持（1500/1500 不伸）。
+   - 下一步的主要瓶颈因此是机械臂的触发：单帧输入中没有可靠的"该开始伸了"的线索（训练数据里专家的触发来自它自己的 FSM
+     记忆 nav_done，见第 2 步预测 1 的 orient / reach 混淆）。候选（第 4 步之后，需要新的预注册）：给模型一个可观测的触发特征
+     （例如底盘静止且停在环上），或者把底盘和机械臂分成两个模型、用一个显式的、可从观测计算的切换规则；后者等于把专家的
+     阶段结构交给模型，要在 report 中说明。
+
+
+[References] 参考文献（已核对出处）
+--------------------------------
+- P. de Haan, D. Jayaraman, S. Levine, "Causal Confusion in Imitation Learning", NeurIPS 2019. arXiv:1905.11979.
+  * 内容：behaviour cloning 只做判别式回归，不知道专家与环境之间的因果结构，可能抓住与专家动作相关、
+    但不是原因的特征（causal misidentification）；反直觉的结论是给模仿者更多信息反而可能更差。
+    他们用有针对性的干预（与环境交互或询问专家）来找出正确的因果结构。
+  * 用在：[Methodology] 输入设计、实验 A 的动机。
+- C. Wen, J. Lin, T. Darrell, D. Jayaraman, Y. Gao, "Fighting Copycat Agents in Behavioral Cloning from Observation
+  Histories", NeurIPS 2020. arXiv:2010.14876.
+  * 内容：输入含观测历史时，模仿者学会"照抄专家的上一个动作"（copycat problem），而不是预测下一个动作；
+    他们用对抗训练从特征表示中去掉关于上一个动作的多余信息，同时保留预测下一个动作所需的信息。
+  * 与我们的区别：我们的泄漏不来自历史输入，而来自单帧状态本身：轮子是速度控制，实测轮速 qd_wheel 约等于
+    上一步的轮速指令（照抄基线 R² 约 0.99，见 [Methodology / Results] 数据检查补充、第 2 步结果 3)）。
+  * 用在：离线表必须带照抄基线的理由；实验 A（ego 对 ego 去掉 v̂、ŵ）的 H-copycat 假设；
+    如果之后加历史输入的模型，要预先考虑 copycat 会更严重。
+
+
 [TODO] 待确定
 ------------
 - 噪声强度：已根据上面的实验定为 sigma_v = 0.02、sigma_w = 0.05，力矩 2.0 N*m（伸臂末段衰减）。

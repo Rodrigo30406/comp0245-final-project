@@ -7,3 +7,13 @@ __pycache__/
 /results/*/traj/
 # per-episode scan cache of analyze_dataset.py (large, regenerable)
 /results/*/cache/
+# step 3: smoke-test folders, console logs of runs and training, duplicate pilot models (regenerable / not needed)
+/results/tmp_*/
+/results/*.log
+/results/step3/*.log
+/results/step3/*.stdout
+/results/step3/offline_*.txt
+/results/step3/nostall/*/logs/
+/results/step3/cache_ref_*.csv
+/trained/*.log
+/trained/pilot_models/

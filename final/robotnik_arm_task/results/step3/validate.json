@@ -1,0 +1,36 @@
+{
+ "checks": [
+  {
+   "check": "no harness_error",
+   "passed": true,
+   "detail": "none"
+  },
+  {
+   "check": "(i) expert failures classify as circling",
+   "passed": true,
+   "detail": "14 failures (14 expected over DEV + HARD + CONFIRM; per run {'expert_v11_dev': 2, 'expert_v11_hard': 6, 'expert_v11_confirm': 6}); classes {'circling': 14}"
+  },
+  {
+   "check": "(ii) zero_v11_dev: failures starting >= 0.15 m from the ring classify as no_start",
+   "passed": true,
+   "detail": "280/280 no_start; other classes {}; successes 0"
+  },
+  {
+   "check": "(iii) expert successes: no failure predicate fires except the expected exceptions",
+   "passed": true,
+   "detail": "786 successes; fired per predicate crash 0, never_approached 0, no_start 1, runaway 0, no_progress 0, circling 4, left_or_overshot 0, parked_no_arm 0, extended_not_reached 0; expected exceptions 5, unexpected 0"
+  },
+  {
+   "check": "(iv) expert arm_extend_time >= recorded nav_done time",
+   "passed": true,
+   "detail": "0 of 679 episodes extend before nav_done (121 without arm_extend_time or nav_done)"
+  },
+  {
+   "check": "(v) expert arm_extend_time - nav_done (reported; the plan's < 0.2 s cannot hold)",
+   "passed": null,
+   "detail": "median 0.469 s, p95 1.317 s, max 2.739 s, > 0.2 s: 679/679"
+  }
+ ],
+ "missing": [],
+ "skipped_confirm": []
+}
