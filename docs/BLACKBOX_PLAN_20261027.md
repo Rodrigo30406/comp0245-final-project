@@ -579,6 +579,59 @@ transforms, 20 ms stride, gradient horizon 20 s) and phase 3 (MLP 28 control on 
 running to test. If the GRU copies as well, the known remedies are feature dropout on the velocity
 (Wen et al.) or an explicit phase head; both stay black-box.
 
+## 6h. E4 phase 2 (30 Oct, 01:38): the GRU learns the stop and never reaches it
+
+Three GRUs over the 28 pure transforms (hidden 128, head 128, memory stride 20 ms, TBPTT 1000 decisions = 20 s,
+so the gradient sees whole demonstrations), same mixture split of 4096 episodes, 7–9 min of training each on the GPU.
+Evaluations `e4_gru_polar_on_{clean,e1_random}_validation_20261029`.
+
+| Seed | offline NRMSE | Nominal: arrivals | parked | arm | drift | held ≥ 10 s | Random: arrivals | parked | arm | drift | held |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| 0 | 0.136 | 32 | 13 | 149 | 3.27 m | 9 | 29 | 7 | 155 | 2.95 m | 8 |
+| 1 | 0.153 | **102** | 21 | 101 | 1.55 m | 38 | **99** | 9 | 96 | 1.69 m | 36 |
+| 2 | 0.145 | 27 | 44 | 16 | 2.55 m | 2 | 26 | 12 | 14 | 2.07 m | 1 |
+| ref. MLP 32, same mixture (§6f) | 0.114–0.120 | 51–93 | 171–177 | 26–134 | 0.18 m | | 51–113 | 174–184 | 18–136 | 0.13 m | |
+| ref. first-night GRU 32 / GRU 25, nominal data | | 122–163 | | | | | | | | | |
+
+Three measurements (`scripts/analysis/openloop_phase_error.py`, `clock_extrapolation.py`, `stop_profile.py`):
+
+- **Open loop, every model has the stop.** Teacher-forced on 40 validation demonstrations, the predicted wheel
+  command after the expert's stop is 1–3% of the drive level for the GRU, 0–5% for every MLP family, and it
+  stays below 10% for 96–100% of the post-stop time. Drive-phase error relative to the expert: MLP 32
+  mixture 0.03–0.04, MLP 31 velocity 0.05, **GRU 0.06**, MLP 28 mixture 0.09, MLP 28 nominal 0.11.
+- **The clock extrapolation is real, and the mixture data removes it, not the memory.** Freezing the final
+  (parked) observation of a demonstration and letting the clock run to 40 s, the models trained on nominal
+  data start driving again: MLP 28 nominal 24–33% of the drive level at +20–30 s, MLP 32 nominal 14–28%.
+  Nominal demonstrations last 9.3 s (median), so a clock past ~15 s is outside their support while the
+  evaluation runs 40 s; this is the measured cause of the 0.36–3.1 m drift after parking in §6e. Models
+  trained on the mixture do not restart (GRU 1–4%, MLP 32 mixture 1–4%, MLP 28 mixture 3–8% in two seeds,
+  47% in one): random-start demonstrations last 13.2 s median and up to 29 s, and in them the clock carries
+  no phase, so the regressor stops reading it.
+- **Closed loop, the GRU rarely reaches the state where its stop fires.** Its closest approach to the goal is
+  a median 10–18 cm on nominal starts and 20–36 cm on random starts, against an 8 cm / 0.05 rad box and the
+  expert's 7 cm; it is still moving at 40 s in 103–196 of 205 episodes, so the hold it has open loop is never
+  exercised (parked 13–44). Across the five families the open-loop precision does not predict the
+  closed-loop approach: the MLP 28 on nominal data has the worst drive-phase error (0.11) and the tightest
+  closest approach (1–2 cm, §6e); the GRU has the second-best error and the loosest approach. The latch is a
+  knife edge in state space, and what decides whether it fires is where the policy's own trajectory passes,
+  not how well it fits the expert's trajectory.
+
+Two things the memory did buy. The GRU is the first family whose behaviour does not depend on the start
+pose (32 / 102 / 27 nominal against 29 / 99 / 26 random, the MLP 32 mixture loses 0–20 between the two and
+the nominal models lose half). And it brings the arm back on random-start data: 149, 101 and 16 episodes
+with the arm extended, where the stateless models trained on random starts had 0–45 (§6f), so the
+reach is being timed from the history rather than from the clock. Seed 1's 102 / 99 arrivals come from
+exactly that: the arm reaching the target while the base creeps past it (parked 21, arm 101, held ≥ 10 s 38).
+
+What this settles, with §6g: neither one-step velocity nor a 20 s recurrent memory turns the pure
+28 inputs into a reliable hold on these data. The hold fails for two measured reasons that need two
+different fixes: (1) the nominal demonstrations end too early for the clock (fixed by any data whose clock
+is uninformative or longer, the mixture already does this); (2) the stop condition is an 8 cm / 0.05 rad box
+that the learner's own approach misses by 10–30 cm. The second is a coverage problem around the goal, which
+is what E2 (near-target starts: demonstrations that begin a few decimetres from the goal with random
+heading, so the stop is demonstrated from many approach states) was designed for, and it is now the
+first candidate. The phase 3 control (MLP 28 on the mixture) is being evaluated to close E4.
+
 ## 7. Status
 
 - Done: decomposition (§1), variant `raw21_target_clock_v1`; E1 collected,
@@ -606,8 +659,10 @@ running to test. If the GRU copies as well, the known remedies are feature dropo
   Nothing in these inputs comes from the expert: the velocity is the finite difference of the lecturer's
   own position and bearing inputs (what odometry gives a real robot), the GRU sees the same 28 inputs.
 - E4 phase 1 done and reported in §6g (30 Oct 00:14): the finite-difference velocity is a copycat shortcut,
-  37–40 arrivals. GRU seeds trained (7–9 min each, offline 0.136 / 0.153 / 0.145), evaluations running;
-  control MLP 28 training.
+  37–40 arrivals.
+- E4 phase 2 done and reported in §6h (30 Oct 01:38): GRU 28 pure on the mixture, 32 / 102 / 27 arrivals, the
+  stop is learned open loop but the closed-loop approach misses the 8 cm box. Control MLP 28 trained
+  (offline 0.145–0.149), evaluations running.
 - 28-input pure-transform variant done and reported in §6e (branch `rodrigo-pure28` merged).
 - Next, on request: E6 (§6c, nominal data without the clock) — the cheapest test of the reach-trigger mechanism.
 - E2 needs a collector mode; nothing in `src/` is edited while a collector,
