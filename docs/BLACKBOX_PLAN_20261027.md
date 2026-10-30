@@ -729,6 +729,15 @@ Consequences for the black-box line (decision pending):
   51–93 for the MLP 32 on the same data; the lost hold is a measured creep (6–10% residual wheel command,
   6–9 cm towards the target in 8–12 s, then drive), not the arm, not the clock, not the approach. Remedies
   listed in §6i, decision pending.
+- Decision 30 Oct (Rodrigo): keep the 4096 mixture as the base data for everything that follows; add E5 now.
+- E5 launched 30 Oct 04:05 (`chain_e5.sh`, GPU, one trainer at a time): causal transformer over the 28 pure
+  transforms (`src/robot_learning/learning/transformer_policy.py`, commit `d1c30ec`): one token every 20 ms,
+  causal attention over the last 1000 tokens (20 s, the GRU's gradient horizon), 2 layers, d 64, 4 heads, FFN 128,
+  no positional encoding (order from the causal mask, time from the clock input, so nothing extrapolates past the
+  demonstration lengths), 1 ms reaction head on memory + current features as in the GRU. Same mixture split,
+  3 seeds, runs `tf_e5_mixture4096_raw21polar_stride20_seed*`, evaluations `e5_tf_polar_on_{clean,e1_random}_validation_20261030`.
+  NumPy inference with a key/value cache: 46 µs per physics step with a full window (GRU ≈ 120 µs); verified against
+  the torch network to 1e-9 by test and at the end of every run. Black-box: same inputs as the GRU, nothing from the expert.
 - 28-input pure-transform variant done and reported in §6e (branch `rodrigo-pure28` merged).
 - Next, on request: E6 (§6c, nominal data without the clock) — the cheapest test of the reach-trigger mechanism.
 - E2 needs a collector mode; nothing in `src/` is edited while a collector,
