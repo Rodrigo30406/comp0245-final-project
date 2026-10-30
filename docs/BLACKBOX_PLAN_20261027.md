@@ -730,7 +730,7 @@ Consequences for the black-box line (decision pending):
   6–9 cm towards the target in 8–12 s, then drive), not the arm, not the clock, not the approach. Remedies
   listed in §6i, decision pending.
 - Decision 30 Oct (Rodrigo): keep the 4096 mixture as the base data for everything that follows; add E5 now.
-- E5 launched 30 Oct 04:05 (`chain_e5.sh`, GPU, one trainer at a time): causal transformer over the 28 pure
+- E5 launched 30 Oct 09:15 (`chain_e5.sh`, GPU, one trainer at a time): causal transformer over the 28 pure
   transforms (`src/robot_learning/learning/transformer_policy.py`, commit `d1c30ec`): one token every 20 ms,
   causal attention over the last 1000 tokens (20 s, the GRU's gradient horizon), 2 layers, d 64, 4 heads, FFN 128,
   no positional encoding (order from the causal mask, time from the clock input, so nothing extrapolates past the
