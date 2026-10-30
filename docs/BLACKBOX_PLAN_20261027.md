@@ -540,8 +540,18 @@ pure transform), then the GRU if that is not enough.
   are evaluated into `*_20261027_b` directories.
 - E3 complete and reported in §6f (six models, two validations).
 - The 21 lecturer inputs carry no base velocity (position and bearing only; the arm does get its joint
-  velocities), so "the base is parked" is not observable from one frame. Next pure-transform candidate:
-  a one-step finite-difference base velocity, which is the minimal memory (pending Rodrigo's go).
+  velocities), so "the base is parked" is not observable from one frame.
+- E4 launched 29 Oct 22:21 (`chain_e4.sh`, GPU, one trainer at a time), all on the nominal + random
+  mixture split (`runs/splits/e3_mixture_4096.json`), 3 seeds each, evaluated on the 205 nominal and the
+  205 random-start goals (`runs/evaluation/e4_*_20261029`):
+  1. MLP 31 = 28 pure transforms + finite-difference base velocity (`raw21_targetpolar_vel_clock_v1`,
+     commit `c3d67a4`): the one-step memory. Runs `mlp_e4_mixture4096_raw21polarvel_seed*`.
+  2. GRU on the 28 pure transforms, memory stride 20 ms, TBPTT 1000 decisions (20 s): the long memory.
+     Runs `gru_e4_mixture4096_raw21polar_stride20_seed*`.
+  3. Control: MLP 28 without velocity on the same data, to separate the effect of the velocity from the
+     effect of the mixture data. Runs `mlp_e4_mixture4096_raw21polar_seed*`.
+  Nothing in these inputs comes from the expert: the velocity is the finite difference of the lecturer's
+  own position and bearing inputs (what odometry gives a real robot), the GRU sees the same 28 inputs.
 - 28-input pure-transform variant done and reported in §6e (branch `rodrigo-pure28` merged).
 - Next, on request: E6 (§6c, nominal data without the clock) — the cheapest test of the reach-trigger mechanism.
 - E2 needs a collector mode; nothing in `src/` is edited while a collector,
