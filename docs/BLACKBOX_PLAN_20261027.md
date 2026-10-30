@@ -486,6 +486,46 @@ speed and yaw rate already in the 21 inputs but perhaps too small in scale after
 "base is still" feature (|v|, |ω|) as a pure transform; (b) memory (E4) so the policy can latch;
 (c) the white-box contrast `arrived` bit (E0) to bound what any cue could give.
 
+## 6f. E3 complete (29 Oct, 20:42): three seeds per arm, both validations
+
+Six MLP-32 models, 4096 training episodes each, trained with the memory-fixed trainer (seeds 1, 2 of
+random-only and seed 2 of the mixture) or before it (the others; the training loop is identical).
+Stable arrival at 5 cm on 205 goals; base parked / arm extended / median drift after parking as in §6c–6e.
+Evaluations `e3_*_on_{clean,e1_random}_validation_20261027` and `*_b`.
+
+| Training data | Seed | Nominal starts: arrivals | parked | arm | drift | Random starts: arrivals | parked | arm | drift |
+|---|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| random-only 4096 | 0 | 56 | 147 | 42 | — | 55 | 154 | 31 | — |
+| random-only 4096 | 1 | 26 | 146 | 0 | 0.02 m | 29 | 169 | 0 | 0.02 m |
+| random-only 4096 | 2 | 23 | 163 | 45 | 0.09 m | 33 | 169 | 24 | 0.03 m |
+| nominal + random 4096 | 0 | 51 | 177 | 26 | — | 51 | 184 | 18 | — |
+| nominal + random 4096 | 1 | 93 | 176 | 134 | — | **113** | 176 | 136 | — |
+| nominal + random 4096 | 2 | 78 | 171 | 71 | 0.18 m | 71 | 174 | 58 | 0.13 m |
+| reference: nominal 1024, seeds 0–4 | | 115–162 | 154–194 | 119–190 | 0.07–0.50 m | 36–70 | 21–56 | 60–148 | |
+
+Reading, adding to §6d:
+
+- Random-start demonstrations teach the base *and its hold*: the random-only models park in 146–169 goals
+  and then drift only 2–9 cm (the nominal-trained models drift 7–50 cm; the 28-input pure-transform
+  models 36–310 cm). The latch that the nominal data never pins down, random-start data does. The
+  mechanism fits §6c: with random starts the clock carries no information about the phase, so the
+  regressor is forced to read the stop from the state, and it does.
+- The same data never teaches the arm: 0–45 episodes with the arm extended, in two seeds literally 0.
+  So the arm trigger in nominal-trained models *is* clock-driven (prediction of §6c, now supported by
+  three seeds × two validations), and the clock is exactly what random starts destroy.
+- The mixture trades one for the other with the seed deciding the balance: seed 1 keeps the arm (134)
+  and the hold, seeds 0 and 2 keep the hold and partly lose the arm (26, 71). On random starts the
+  mixture is the best family so far (51–113 against 36–70 for the nominal models), on nominal starts
+  it is below the nominal models (51–93 against 115–162).
+
+Taken together with §6e, the two halves now have a cause each, and they pull in opposite directions
+for a stateless regressor on these inputs: the hold needs a stop cue that is not the clock (random
+starts supply it, pure target features do not), the arm trigger needs a cue the clock provides in
+nominal data and nothing else provides. A one-frame policy without base velocity cannot have both
+from observations alone. The next step is therefore not more data or more features of the current
+frame but a base-velocity signal: finite difference of two consecutive observations (minimal memory,
+pure transform), then the GRU if that is not enough.
+
 ## 7. Status
 
 - Done: decomposition (§1), variant `raw21_target_clock_v1`; E1 collected,
@@ -498,11 +538,7 @@ speed and yaw rate already in the 21 inputs but perhaps too small in scale after
   at a time. Relaunched 28 Oct 00:40 (`chain_e3c.sh`): the three complete seeds (random-only seed 0, mixture
   seeds 0 and 1) are being evaluated now; seeds random-only 1, 2 and mixture 2 retrain sequentially (~4.5 h) and
   are evaluated into `*_20261027_b` directories.
-- E3 phase A reported in §6d. GPU back on 29 Oct (driver 595.99). The three missing seeds were OOM-killed
-  twice more at the end of training (RSS 108 GB): the final metric pass predicted the whole 36M-row training
-  set at once. Fixed in `egocentric.py` (block-wise `predict_features`, training tensors freed before the
-  pass; results identical, commit `cf69238`). Relaunched 29 Oct 19:05, one trainer at a time, evaluations
-  into `*_20261027_b`.
+- E3 complete and reported in §6f (six models, two validations).
 - The 21 lecturer inputs carry no base velocity (position and bearing only; the arm does get its joint
   velocities), so "the base is parked" is not observable from one frame. Next pure-transform candidate:
   a one-step finite-difference base velocity, which is the minimal memory (pending Rodrigo's go).
