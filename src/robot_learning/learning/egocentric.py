@@ -36,6 +36,7 @@ VARIANT = "egocentric_clock_v1"
 GEOMETRY_NAMES = FEATURE_NAMES[:10]
 TARGET_NAMES = FEATURE_NAMES[7:10]  # target in the base frame: no expert goal construction involved
 POLAR_NAMES = ["target_distance_xy", "cos_heading_error_to_target", "sin_heading_error_to_target"]
+VELOCITY_NAMES = ["base_forward_speed_fd", "base_lateral_speed_fd", "base_yaw_rate_fd"]
 CLOCK_NAME = "episode_clock_fraction"
 # Input layouts. The lecturer's 21 explicit inputs may be kept and extended (not replaced):
 #   egocentric_clock_v1       : 10 relative geometry + 14 joint + clock (25); replaces the 7 absolute pose/target inputs
@@ -47,11 +48,17 @@ CLOCK_NAME = "episode_clock_fraction"
 #   raw21_targetpolar_clock_v1: raw21_target_clock_v1 plus the same target in polar form (planar distance
 #                               base->target and cos/sin of the heading error to the target) + clock (28).
 #                               Still no expert knowledge: these are functions of the 3 target-in-base features.
+#   raw21_targetpolar_vel_clock_v1: raw21_targetpolar_clock_v1 plus the base velocity by finite difference of two
+#                               consecutive observations (forward and lateral speed in the base frame, yaw rate) (31).
+#                               The lecturer's inputs carry no base velocity; this is the one-step memory a robot's
+#                               odometry provides. Zero on the first step of an episode (the robot starts at rest).
 VARIANTS = {VARIANT: list(FEATURE_NAMES),
             "raw21_clock_v1": list(INPUT_NAMES) + [CLOCK_NAME],
             "raw21_egocentric_clock_v1": list(INPUT_NAMES) + list(GEOMETRY_NAMES) + [CLOCK_NAME],
             "raw21_target_clock_v1": list(INPUT_NAMES) + list(TARGET_NAMES) + [CLOCK_NAME],
-            "raw21_targetpolar_clock_v1": list(INPUT_NAMES) + list(TARGET_NAMES) + POLAR_NAMES + [CLOCK_NAME]}
+            "raw21_targetpolar_clock_v1": list(INPUT_NAMES) + list(TARGET_NAMES) + POLAR_NAMES + [CLOCK_NAME],
+            "raw21_targetpolar_vel_clock_v1": list(INPUT_NAMES) + list(TARGET_NAMES) + POLAR_NAMES + VELOCITY_NAMES + [CLOCK_NAME]}
+STATEFUL_VARIANTS = {"raw21_targetpolar_vel_clock_v1"}  # need the previous observation: live inference keeps it
 KIND = "egocentric_mlp_regressor"
 
 
@@ -79,7 +86,7 @@ def wrap(angle):
     return (angle + np.pi) % (2 * np.pi) - np.pi
 
 
-def encode(observations, times, spec):
+def encode(observations, times, spec, previous=None):
     """(N, 21) raw observations and (N,) seconds since episode start -> (N, F) features of spec["variant"].
 
     Reproduces the expert's goal construction from `Episode._initialize`: bearing from the
@@ -90,6 +97,10 @@ def encode(observations, times, spec):
     t = np.asarray(times, dtype=np.float64)
     if x.ndim != 2 or x.shape[1] != 21 or t.shape != (len(x),) or not np.isfinite(x).all() or not np.isfinite(t).all():
         raise ValueError("Expected finite (N, 21) observations and (N,) times")
+    if previous is not None:
+        previous = np.asarray(previous, dtype=np.float64)
+        if previous.shape != (21,) or not np.isfinite(previous).all():
+            raise ValueError("previous must be one finite 21D observation")
     base_xy, base_z, yaw = x[:, 0:2], x[:, 2], x[:, 3]
     q, qd, target = x[:, 4:11], x[:, 11:18], x[:, 18:21]
     planar = np.hypot(target[:, 0], target[:, 1])
@@ -121,11 +132,19 @@ def encode(observations, times, spec):
         features = np.concatenate([x, geometry, clock[:, None]], axis=1)
     elif variant == "raw21_target_clock_v1":
         features = np.concatenate([x, geometry[:, 7:10], clock[:, None]], axis=1)
-    elif variant == "raw21_targetpolar_clock_v1":
+    elif variant in ("raw21_targetpolar_clock_v1", "raw21_targetpolar_vel_clock_v1"):
         target_distance = np.hypot(target_b[:, 0], target_b[:, 1])
         heading_to_target = np.arctan2(target_b[:, 1], target_b[:, 0])  # already relative to the base heading
         polar = np.stack([target_distance, np.cos(heading_to_target), np.sin(heading_to_target)], axis=1)
-        features = np.concatenate([x, geometry[:, 7:10], polar, clock[:, None]], axis=1)
+        if variant == "raw21_targetpolar_clock_v1":
+            features = np.concatenate([x, geometry[:, 7:10], polar, clock[:, None]], axis=1)
+        else:
+            # Finite-difference base velocity from consecutive observations of ONE episode in order; the row before the
+            # first is the first itself (zero velocity: every episode starts at rest) unless `previous` is given.
+            prev = np.vstack([x[:1] if previous is None else previous[None], x[:-1]])
+            dxy = (x[:, :2] - prev[:, :2]) / spec["dt_s"]
+            velocity = np.concatenate([to_base(dxy), (wrap(yaw - prev[:, 3]) / spec["dt_s"])[:, None]], axis=1)
+            features = np.concatenate([x, geometry[:, 7:10], polar, velocity, clock[:, None]], axis=1)
     else:
         raise ValueError(f"Unknown input variant {variant!r}")
     if features.shape[1] != len(VARIANTS[variant]):
@@ -159,7 +178,7 @@ class EgocentricPolicy:
             raise ValueError("Scales must be positive")
         if not all(np.isfinite(v).all() for v in self.arrays().values() if v.dtype.kind == "f"):
             raise ValueError("Non-finite parameters")
-        self._count = 0; self._dt = spec["dt_s"]
+        self._count = 0; self._dt = spec["dt_s"]; self._prev = None
 
     @property
     def input_features(self):
@@ -197,12 +216,14 @@ class EgocentricPolicy:
         if x.shape != (21,):
             raise ValueError("Live inference takes one 21D observation")
         t = self._count * self._dt; self._count += 1
-        return expand_actions(self.predict_features(encode(x[None], np.array([t]), self.spec))[0])
+        features = encode(x[None], np.array([t]), self.spec, previous=self._prev)
+        self._prev = x
+        return expand_actions(self.predict_features(features)[0])
 
     def reset(self, dt=None):
         if dt is not None and not np.isclose(dt, self.spec["dt_s"], rtol=0, atol=1e-12):
             raise ValueError("Policy clock dt differs from simulator dt")
-        self._count = 0
+        self._count = 0; self._prev = None
 
     def save(self, path):
         np.savez_compressed(path, **self.arrays())

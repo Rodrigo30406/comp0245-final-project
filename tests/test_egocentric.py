@@ -127,6 +127,37 @@ class ExtendedVariantTests(unittest.TestCase):
         other = {**spec, "standoff_heights": [0.1, 2.0], "standoff_distances": [0.2, 1.7]}
         np.testing.assert_array_equal(encode(x, t, other), feats)
 
+    def test_velocity_variant_is_a_finite_difference_and_live_matches_batch(self):
+        rng = np.random.default_rng(6)
+        # A smooth trajectory: the base drives and turns, so consecutive observations differ.
+        n = 40; tt = np.arange(n) * SPEC["dt_s"]
+        x = np.stack([observation([0.3 * t, 0.1 * np.sin(t)], 0.2 * t, [1.5, 0.5, 0.6], rng.normal(size=7), rng.normal(size=7)) for t in tt])
+        spec = {**SPEC, "variant": "raw21_targetpolar_vel_clock_v1"}
+        feats = encode(x, tt, spec)
+        self.assertEqual(feats.shape, (n, 31)); self.assertEqual(len(VARIANTS["raw21_targetpolar_vel_clock_v1"]), 31)
+        np.testing.assert_array_equal(feats[:, :27], encode(x, tt, {**SPEC, "variant": "raw21_targetpolar_clock_v1"})[:, :27])
+        np.testing.assert_array_equal(feats[:, 30], tt / SPEC["horizon_s"])
+        np.testing.assert_array_equal(feats[0, 27:30], 0.0)  # at rest before the first observation
+        dt = SPEC["dt_s"]; yaw = x[1:, 3]; d = (x[1:, :2] - x[:-1, :2]) / dt
+        np.testing.assert_allclose(feats[1:, 27], np.cos(yaw) * d[:, 0] + np.sin(yaw) * d[:, 1])
+        np.testing.assert_allclose(feats[1:, 28], -np.sin(yaw) * d[:, 0] + np.cos(yaw) * d[:, 1])
+        np.testing.assert_allclose(feats[1:, 29], (x[1:, 3] - x[:-1, 3]) / dt)
+        # Expert knowledge changes nothing.
+        other = {**spec, "standoff_heights": [0.1, 2.0], "standoff_distances": [0.2, 1.7]}
+        np.testing.assert_array_equal(encode(x, tt, other), feats)
+        # `previous` continues an episode: encoding row k alone with row k-1 as previous equals the batch row.
+        np.testing.assert_allclose(encode(x[5:6], tt[5:6], spec, previous=x[4])[0], feats[5])
+        # Live inference keeps the previous observation and resets it.
+        policy = EgocentricPolicy(spec, np.zeros(31), np.ones(31), np.zeros(9), np.ones(9),
+                                  [rng.normal(size=(31, 5)), rng.normal(size=(5, 9))], [np.zeros(5), np.zeros(9)])
+        policy.reset(dt); live = np.stack([policy.predict_action(o) for o in x])
+        np.testing.assert_allclose(live, expand_actions(policy.predict(x)), rtol=1e-9, atol=1e-9)
+        policy.reset(dt)
+        np.testing.assert_allclose(policy.predict_action(x[0]), live[0])
+        # The GRU has no previous-observation state, so it must refuse the stateful variant.
+        from robot_learning.learning.gru_policy import MODES
+        self.assertNotIn("raw21_targetpolar_vel_clock_v1", MODES)
+
     def test_extended_variant_policy_roundtrip_keeps_variant(self):
         spec = {**SPEC, "variant": "raw21_egocentric_clock_v1"}
         rng = np.random.default_rng(1)

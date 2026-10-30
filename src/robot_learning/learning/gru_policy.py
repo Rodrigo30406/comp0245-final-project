@@ -31,13 +31,14 @@ from robot_learning.data.storage import read_json, write_json, sha256, utc_now, 
 from robot_learning.settings import PROJECT_ROOT
 from robot_learning.simulation.config import episode_defaults, resolve_episode_config
 from .dataset import inventory, load_episode, validate_partition, inventory_fingerprint, extra_inventory, record_directory
-from .egocentric import (FEATURE_NAMES, VARIANTS, encode, validate_spec, spec_from_episode_config,
+from .egocentric import (FEATURE_NAMES, VARIANTS, STATEFUL_VARIANTS, encode, validate_spec, spec_from_episode_config,
                          load_episode_features, VARIANT)
 from .metrics import errors, aggregate
 from .model import INPUT_NAMES, OUTPUT_NAMES, expand_actions
 
 KIND = "gru_regressor"
-MODES = {"raw21": list(INPUT_NAMES), **{variant: list(names) for variant, names in VARIANTS.items()}}
+MODES = {"raw21": list(INPUT_NAMES), **{variant: list(names) for variant, names in VARIANTS.items()
+                                        if variant not in STATEFUL_VARIANTS}}  # the GRU live path keeps no previous observation
 
 
 def input_names(mode):
