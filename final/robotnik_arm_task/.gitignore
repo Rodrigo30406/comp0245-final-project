@@ -17,3 +17,5 @@ __pycache__/
 /results/step3/cache_ref_*.csv
 /trained/*.log
 /trained/pilot_models/
+/results/step3/nostall/*.log
+/results/step3/C0/*.err
