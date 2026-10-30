@@ -632,6 +632,69 @@ is what E2 (near-target starts: demonstrations that begin a few decimetres from 
 heading, so the stop is demonstrated from many approach states) was designed for, and it is now the
 first candidate. The phase 3 control (MLP 28 on the mixture) is being evaluated to close E4.
 
+## 6i. E4 closed (30 Oct, 02:20–03:10): the control, and the measured cause of the lost hold
+
+Phase 3, the control: three MLP-28 (pure transforms, no velocity) on the same mixture split. Evaluations
+`e4_mlp_polar_on_{clean,e1_random}_validation_20261029`. Full E4 table (stable arrivals at 5 cm of 205):
+
+| Model on the nominal + random mixture (4096) | offline NRMSE | Nominal: arrivals | parked | arm | drift | Random: arrivals | parked | arm | drift |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| MLP 28 pure (control), seeds 0–2 | 0.145–0.149 | 23 / 30 / 27 | 119–126 | 3 / 103 / 15 | 2.0–2.3 m | 11 / 15 / 17 | 33–68 | 3 / 105 / 11 | 1.8–2.3 m |
+| MLP 31 = 28 pure + FD velocity (§6g) | 0.106–0.108 | 40 / 38 / 37 | 98–116 | 130 / 0 / 0 | 0.09–0.90 m | 39 / 36 / 33 | 4–14 | 111 / 0 / 0 | 0.08–1.06 m |
+| GRU 28 pure, memory 20 ms (§6h) | 0.136–0.153 | 32 / **102** / 27 | 13–44 | 149 / 101 / 16 | 1.6–3.3 m | 29 / **99** / 26 | 7–12 | 155 / 96 / 14 | 1.7–3.0 m |
+| MLP 32 (21 + 10 goal-based + clock, §6f) | 0.114–0.120 | 51 / 93 / 78 | 171–177 | 26 / 134 / 71 | 0.13–0.18 m | 51 / **113** / 71 | 174–184 | 18 / 136 / 58 | 0.13 m |
+
+The control settles the attribution. Same data, same trainer: the 28 pure inputs give 23–30 arrivals, the 32
+inputs with the goal-based features give 51–93. Neither memory variant closes that gap (velocity 37–40, GRU
+27–102 with one lucky seed). The 28-input control reaches the box as precisely as anything (closest approach
+2–4 cm, parked 119–126) and then does not stay: moving at 40 s in 199–203 of 205 episodes, held ≥ 10 s in 0–5.
+
+What makes the pure-input models leave, measured on the evaluation traces (`creep_profile.py`,
+`arm_drift_at_restart.py`) and on open-loop probes at the expert's stop pose (`stop_basin.py`,
+`stop_arm_sensitivity.py`, `clock_extrapolation.py --freeze-at stop`):
+
+- **It is not the arm.** When a parked base restarts, the arm is 0.020 rad rms from its hold posture, the same
+  value the expert shows at rest (the arm never moved). The wheel outputs *are* very sensitive to the arm
+  (an rms offset of 0.1 rad per joint at the stop pose provokes 30–48% of the drive command in the MLP 28,
+  156% in one GRU; 0.2 rad gives 64–119%): the wheels do read the arm as the phase flag (§6g), but in closed
+  loop the arm stays where the demonstrations had it, so this sensitivity is not what fires.
+- **It is not the clock, and not the pose inside the box.** With the observation frozen at the expert's stop
+  (arm at hold) and the clock run to 40 s, the mixture-trained MLP 28 outputs 2–7% of the drive command
+  (one seed 17–23% after 10 s); displacing the base anywhere within ±15 cm or rotating it ±0.1 rad at the stop
+  changes that to 2–5%. The restarts happen at a median 15.7–20 s, inside the clock support of the mixture
+  (random-start demonstrations last 13 s median, up to 29 s).
+- **It is a creep.** The regressor's "zero" is 6–10% of its driving command (the expert's is exactly zero: a
+  latched phase, not a regression). That bias integrates: in the 120–142 nominal episodes per seed where the
+  MLP 28 parks and restarts, the base creeps 5.8–9.2 cm over 7.5–11.9 s with the heading fixed (2.6–5.6°),
+  **towards the target in 95–100% of the episodes**, and then drives. Nominal-trained MLP 28 (§6e): the same,
+  5.5–10 cm towards the target in 86–97% of 157–198 episodes, restart at 13–16 s. The expert parks at the
+  standoff radius (0.70–0.72 m from the target) approaching from outside, so the demonstrated stop states form a
+  thin shell at that radius; nothing in the data says what to do 10 cm inside it. The open-loop basin shows the
+  asymmetry: displaced 20–40 cm *towards* the target the MLP 28 outputs 13–21% of the drive command, displaced
+  *away* 4–7%. The GRU is the extreme case: it pauses 0.5–2.8 s with 19–33% of the drive command still on,
+  creeps 1–7 cm and goes. The MLP 32 creeps too (7% while parked, 10–26 cm) but its goal-centred features keep
+  the command at 2–3% up to 40 cm inside (seed 0), so it drifts 13–18 cm and mostly stays.
+
+So the hold is lost through a different mechanism than the one §6h proposed: not an approach that misses the
+box, but a parked regressor whose residual command is a slow forward creep, into a region of state space no
+demonstration covers, where it extrapolates to "drive". It is the same compounding-error structure as the
+copycat of §6g and the clock of §6h: a stateless regressor reads the consequences of its own small errors as
+a new situation.
+
+Consequences for the black-box line (decision pending):
+
+1. **Data that covers the inside of the shell** is the clean remedy: demonstrations that start within a few
+   decimetres of the goal with random heading (E2). From inside the box the expert latches `done` at once
+   (zero wheels everywhere inside, the basin becomes a disc); from just inside the standoff radius it turns
+   and drives back to the goal, which is the recovery a crept base needs. DART noise during the stop phase
+   would do the same more cheaply if the collector can inject it after the stop (today's DART perturbs during
+   driving; at 0.5 wheel noise the parked base is not displaced enough).
+2. **A latched stop in the policy** (a stop head trained on the demonstrations' own wheel commands, with
+   hysteresis) is the architectural remedy; it uses only demonstrated actions, not the expert's phases, but it
+   is a design decision beyond the lecturer's MLP recipe.
+3. The GRU keeps its two genuine gains (start-pose invariance, arm timing from history) and would benefit
+   from either remedy as much as the MLP.
+
 ## 7. Status
 
 - Done: decomposition (§1), variant `raw21_target_clock_v1`; E1 collected,
@@ -661,8 +724,11 @@ first candidate. The phase 3 control (MLP 28 on the mixture) is being evaluated 
 - E4 phase 1 done and reported in §6g (30 Oct 00:14): the finite-difference velocity is a copycat shortcut,
   37–40 arrivals.
 - E4 phase 2 done and reported in §6h (30 Oct 01:38): GRU 28 pure on the mixture, 32 / 102 / 27 arrivals, the
-  stop is learned open loop but the closed-loop approach misses the 8 cm box. Control MLP 28 trained
-  (offline 0.145–0.149), evaluations running.
+  stop is learned open loop but the hold is lost in closed loop.
+- E4 closed and reported in §6i (30 Oct 03:10): the control MLP 28 on the mixture gives 23–30 arrivals against
+  51–93 for the MLP 32 on the same data; the lost hold is a measured creep (6–10% residual wheel command,
+  6–9 cm towards the target in 8–12 s, then drive), not the arm, not the clock, not the approach. Remedies
+  listed in §6i, decision pending.
 - 28-input pure-transform variant done and reported in §6e (branch `rodrigo-pure28` merged).
 - Next, on request: E6 (§6c, nominal data without the clock) — the cheapest test of the reach-trigger mechanism.
 - E2 needs a collector mode; nothing in `src/` is edited while a collector,
