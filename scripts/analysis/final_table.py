@@ -40,6 +40,9 @@ EVALS = {  # evaluation dir -> {policy label in summary: (display name, training
     "e3_randomonly4096_on_clean_validation_20261027_b": {f"randomonly4096_seed{s}": (f"E3 random-only 4096: MLP 32, DART low, seed {s}", f"mlp_e3_randomonly4096_raw21plus_seed{s}") for s in (1, 2)},
     "e3_mixture4096_on_clean_validation_20261027": {f"mixture4096_seed{s}": (f"E3 nominal + random 4096: MLP 32, DART low, seed {s}", f"mlp_e3_mixture4096_raw21plus_seed{s}") for s in (0, 1)},
     "e3_mixture4096_on_clean_validation_20261027_b": {"mixture4096_seed2": ("E3 nominal + random 4096: MLP 32, DART low, seed 2", "mlp_e3_mixture4096_raw21plus_seed2")},
+    "e4_mlp_polarvel_on_clean_validation_20261029": {f"mlp_polarvel_seed{s}": (f"E4 nominal + random 4096: MLP 31 (28 pure + FD base velocity), seed {s}", f"mlp_e4_mixture4096_raw21polarvel_seed{s}") for s in range(3)},
+    "e4_gru_polar_on_clean_validation_20261029": {f"gru_polar_mem20ms_seed{s}": (f"E4 nominal + random 4096: GRU 28 pure, memory 20 ms, seed {s}", f"gru_e4_mixture4096_raw21polar_stride20_seed{s}") for s in range(3)},
+    "e4_mlp_polar_on_clean_validation_20261029": {f"mlp_polar_seed{s}": (f"E4 nominal + random 4096: MLP 28 pure (control), seed {s}", f"mlp_e4_mixture4096_raw21polar_seed{s}") for s in range(3)},
     "dart_low_gru_egocentric_on_clean_validation_20261027": {"gru_dartlow_ego_mem1ms": ("GRU 25 egocentric, memory 1 ms, DART low noise", "gru_dart_low_ego_stride1")},
 }
 

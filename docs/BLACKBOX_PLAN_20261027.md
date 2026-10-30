@@ -526,6 +526,59 @@ from observations alone. The next step is therefore not more data or more featur
 frame but a base-velocity signal: finite difference of two consecutive observations (minimal memory,
 pure transform), then the GRU if that is not enough.
 
+## 6g. E4 phase 1 (30 Oct, 00:14): finite-difference base velocity makes a copycat, not a stop cue
+
+Three MLP-31 models (`raw21_targetpolar_vel_clock_v1`: the 28 pure transforms of §6e plus the finite difference of
+the lecturer's base position and bearing, in the base frame) trained on the nominal + random mixture of 4096
+episodes, 205 nominal and 205 random-start goals. Evaluations `e4_mlp_polarvel_on_{clean,e1_random}_validation_20261029`.
+
+| Seed | offline NRMSE | Nominal: arrivals | parked | arm | drift | held ≥ 10 s | Random: arrivals | parked | arm | drift | held |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| 0 | 0.108 | 40 | 107 | 130 | 0.90 m | 7 | 39 | 14 | 111 | 1.06 m | 1 |
+| 1 | 0.107 | 38 | 116 | 0 | 0.20 m | 34 | 36 | 4 | 0 | 0.12 m | 26 |
+| 2 | 0.106 | 37 | 98 | 0 | 0.09 m | 19 | 33 | 12 | 0 | 0.08 m | 8 |
+| ref. MLP 28, nominal data (§6e) | 0.129–0.137 | 33–129 | 158–183 | 32–197 | 0.36–3.1 m | 0–21 | | | | | |
+| ref. MLP 32, same mixture (§6f) | 0.114–0.120 | 51–93 | 171–177 | 26–134 | 0.18 m | | 51–113 | 174–184 | 18–136 | 0.13 m | |
+
+The offline error is the best of every variant trained so far and the closed loop is the worst of the
+black-box line: 37–40 arrivals on either validation, the base parked in 4–14 of 205 random-start goals.
+The two facts have one cause, measured with `scripts/analysis/velocity_copycat.py` on 60 validation
+episodes (778k rows) and `scripts/analysis/stop_profile.py` on the evaluations:
+
+- **The velocity is the expert's previous command in disguise.** A linear map from the three velocity
+  features alone recovers 90% of the variance of the expert's two wheel commands (R² 0.904 / 0.896); the
+  other 28 features together recover 55% (0.550 / 0.538). The base is a first-order system driven by a
+  smooth expert, so its velocity at *t* is a near copy of the command at *t* − 1 ms. Regressing on it is
+  easy, which is why the offline error drops to 0.106; it is also the copycat shortcut of behaviour
+  cloning from observation histories (Wen et al., NeurIPS 2020), learned here from a single extra frame.
+- **The policy did take the shortcut.** On the rows where the expert drives (542k rows, mean |wheel| 2.27),
+  the three models reproduce the command (2.27); with the velocity features set to zero, the same rows and
+  the same geometry, they keep 38%, 30% and 33% of it. Two thirds of the drive command is read from "I am
+  already moving", one third from where the target is.
+- **Closed loop, a copycat latches.** Whatever the base is doing is fed back as its own cause. Seed 0 latched
+  on "moving": at 40 s the base is still moving in 187 of 205 nominal episodes (closest approach to the goal
+  median 8 cm, final median 1.46 m past it). Seeds 1 and 2 latched on "stopped": 152 of 205 nominal
+  episodes end stopped outside the pose tolerance, at a median 0.10–0.16 m from the goal, so the hold is
+  there (drift 9–20 cm, held ≥ 10 s in 19–34) but the pose is a few centimetres off and the arm never fires
+  (0 extended). From random starts the same two seeds stop at a median 0.37–0.42 m from the goal and never
+  got closer than 0.35–0.39 m: the expert's align phase rotates in place at zero linear speed, the policy
+  reads "at rest" and stays at rest. The reference MLP 28 on nominal data has the opposite profile (97–199
+  episodes still moving at 40 s, closest approach 1–2 cm): it has no stop at all.
+- **The wheels read the arm as a phase flag.** The largest standardised sensitivities of the wheel outputs
+  are to `arm_q_2`, `arm_q_6`, `arm_qd_6` and the lateral velocity, not to the target distance (seed 1 and 2
+  do rank `target_distance_xy` first or second). In the demonstrations the arm leaves its hold posture only
+  after the base has latched `done`, so the arm configuration is a perfect, non-privileged indicator of
+  "wheels are zero". It is another shortcut of the same kind: the policy infers the phase from the
+  consequences of its own past actions rather than from the task geometry.
+
+What this settles: the base velocity is observable without privileged information and it does carry the
+phase, but handing it to a one-frame regressor as a plain input turns the regressor into a copycat of its
+last command. "Memory" for this task cannot be the previous frame; it has to be a latent that is trained to
+predict the expert's phase, not to continue the robot's motion. That is what phase 2 (GRU over the 28 pure
+transforms, 20 ms stride, gradient horizon 20 s) and phase 3 (MLP 28 control on the same data) are
+running to test. If the GRU copies as well, the known remedies are feature dropout on the velocity
+(Wen et al.) or an explicit phase head; both stay black-box.
+
 ## 7. Status
 
 - Done: decomposition (§1), variant `raw21_target_clock_v1`; E1 collected,
@@ -552,6 +605,9 @@ pure transform), then the GRU if that is not enough.
      effect of the mixture data. Runs `mlp_e4_mixture4096_raw21polar_seed*`.
   Nothing in these inputs comes from the expert: the velocity is the finite difference of the lecturer's
   own position and bearing inputs (what odometry gives a real robot), the GRU sees the same 28 inputs.
+- E4 phase 1 done and reported in §6g (30 Oct 00:14): the finite-difference velocity is a copycat shortcut,
+  37–40 arrivals. GRU seeds trained (7–9 min each, offline 0.136 / 0.153 / 0.145), evaluations running;
+  control MLP 28 training.
 - 28-input pure-transform variant done and reported in §6e (branch `rodrigo-pure28` merged).
 - Next, on request: E6 (§6c, nominal data without the clock) — the cheapest test of the reach-trigger mechanism.
 - E2 needs a collector mode; nothing in `src/` is edited while a collector,
