@@ -43,6 +43,7 @@ EVALS = {  # evaluation dir -> {policy label in summary: (display name, training
     "e4_mlp_polarvel_on_clean_validation_20261029": {f"mlp_polarvel_seed{s}": (f"E4 nominal + random 4096: MLP 31 (28 pure + FD base velocity), seed {s}", f"mlp_e4_mixture4096_raw21polarvel_seed{s}") for s in range(3)},
     "e4_gru_polar_on_clean_validation_20261029": {f"gru_polar_mem20ms_seed{s}": (f"E4 nominal + random 4096: GRU 28 pure, memory 20 ms, seed {s}", f"gru_e4_mixture4096_raw21polar_stride20_seed{s}") for s in range(3)},
     "e4_mlp_polar_on_clean_validation_20261029": {f"mlp_polar_seed{s}": (f"E4 nominal + random 4096: MLP 28 pure (control), seed {s}", f"mlp_e4_mixture4096_raw21polar_seed{s}") for s in range(3)},
+    "e5_tf_polar_on_clean_validation_20261030": {f"tf_polar_mem20s_seed{s}": (f"E5 nominal + random 4096: transformer 28 pure, attention 20 s, seed {s}", f"tf_e5_mixture4096_raw21polar_stride20_seed{s}") for s in range(3)},
     "dart_low_gru_egocentric_on_clean_validation_20261027": {"gru_dartlow_ego_mem1ms": ("GRU 25 egocentric, memory 1 ms, DART low noise", "gru_dart_low_ego_stride1")},
 }
 

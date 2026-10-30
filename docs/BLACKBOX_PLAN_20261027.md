@@ -695,6 +695,64 @@ Consequences for the black-box line (decision pending):
 3. The GRU keeps its two genuine gains (start-pose invariance, arm timing from history) and would benefit
    from either remedy as much as the MLP.
 
+## 6j. E5 (30 Oct, 09:15–10:28): the transformer fits the demonstrations best and holds worst
+
+Three causal transformers on the 28 pure transforms (§7 for the architecture), same mixture split as E4, same
+two validations. Runs `tf_e5_mixture4096_raw21polar_stride20_seed{0,1,2}` (575 / 768 / 455 s on the GPU, best
+epoch 67 / 97 / 49), evaluations `e5_tf_polar_on_{clean,e1_random}_validation_20261030`. Stable arrivals at
+5 cm of 205, seeds 0 / 1 / 2:
+
+| Model on the nominal + random mixture (4096) | offline NRMSE | Nominal: arrivals | parked | arm | held ≥ 10 s | Random: arrivals | parked | arm | held ≥ 10 s |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| MLP 28 pure (control, §6i) | 0.145–0.149 | 23 / 30 / 27 | 119–126 | 3 / 103 / 15 | 0–5 | 11 / 15 / 17 | 33–68 | 3 / 105 / 11 | — |
+| GRU 28 pure, memory 20 ms (§6h) | 0.136–0.153 | 32 / **102** / 27 | 13–44 | 149 / 101 / 16 | — | 29 / **99** / 26 | 7–12 | 155 / 96 / 14 | — |
+| **Transformer 28 pure, attention 20 s** | **0.130–0.142** | 81 / 76 / 47 | 59 / 85 / 42 | 57 / 44 / 30 | 16 / 35 / 9 | 60 / 32 / 29 | 10 / 6 / 12 | 40 / 48 / 42 | 11 / 6 / 1 |
+| MLP 32 (goal-based features, §6f) | 0.114–0.120 | 51 / 93 / 78 | 171–177 | 26 / 134 / 71 | — | 51 / **113** / 71 | 174–184 | 18 / 136 / 58 | — |
+
+"Arrivals" here is the 5 cm criterion (EE within 5 cm of the target for 0.5 s at some point of the 40 s), the
+one all the tables use; at 1 cm the transformer gets 25 / 29 / 8 nominal and 9 / 5 / 3 random. Median final
+distance 1.5–1.7 m nominal, 1.6–1.9 m random: in tolerance at 40 s in 0–2 episodes, moving at 40 s in 162–193.
+
+Three facts, in the order they were measured:
+
+1. **Offline it is the best pure-input model.** Validation NRMSE 0.130–0.142 against 0.136–0.153 for the GRU
+   and 0.145–0.149 for the MLP 28 on the same split, and the cleanest stop ever measured open loop: teacher-forced
+   after the expert's stop the residual wheel command is 1–2% at 0.5, 2 and 5 s (MLP 28: 6–10%, GRU: 5–20%),
+   and above 10% in 0–1% of the post-stop time. The clock does not move it: frozen at the stop pose and run to
+   40 s, 2–5% (one seed 10% in the last ten seconds when frozen at the episode end). Attention over 20 s does
+   what it was asked: it reads the stop from the history.
+2. **Closed loop it reaches the box and leaves it, by the same creep as everything else, only larger.** On the
+   evaluation traces (`creep_profile.py`) the transformer parks and restarts in 105–148 of 205 nominal episodes:
+   parked 5.0–9.5 s, residual wheel command while parked 11–17% of its driving command (MLP 28: 6–10%), creep
+   7.5–15.3 cm, towards the target in 93–100% of the episodes, heading fixed (4–12°), target distance at the
+   park 0.73 m (the standoff shell). The arm is at hold when it restarts (0.020 rad rms, the expert's resting
+   value), so again it is not the arm. Open loop the model is quiet because the teacher keeps it on the
+   demonstrated shell; closed loop its own 11–17% pushes it inside the shell within seconds, where no token in
+   its 20 s window has ever been seen. Attention does not generalise to an unseen token any better than an MLP
+   generalises to an unseen input: the stop is learned as a function of the trajectory *so far*, and a
+   trajectory that enters the shell was never demonstrated.
+3. **It loses the GRU's start-pose invariance.** The GRU gave the same arrivals on nominal and random starts
+   (32 / 102 / 27 vs 29 / 99 / 26); the transformer drops from 81 / 76 / 47 to 60 / 32 / 29, base parked 6–12 on
+   random starts, median closest approach 0.26–0.41 m (nominal 0.07–0.08 m). With no positional encoding and
+   attention weights that are functions of the token contents, the recurrent summary that the GRU builds (which
+   does not care where the episode started) is replaced by a set of matches against the stored tokens, and a
+   random start produces tokens the nominal half of the data never contained. The arm follows the base: extended
+   in 30–57 nominal episodes (GRU 149 / 101 / 16, MLP 28 3 / 103 / 15), arrivals held ≥ 10 s in 1–35.
+
+Where this leaves the memory question. The three memories tried on the mixture (velocity, GRU, attention) all
+learn the stop open loop and all lose it closed loop through a residual command that was never zero because the
+expert's zero is a latch, not a regression target; the memory with the longest horizon (attention) has the
+smallest open-loop residual and the largest closed-loop one. What varies between them is the second-order
+behaviour (the GRU's pose invariance, the transformer's precision) and none of it touches the hold. The hold is a
+coverage problem of the training distribution (states inside the standoff shell, §6i remedy 1) or a structural
+one (a latched stop head, remedy 2); it is not an architecture problem, and E5 is the third architecture that
+says so. The MLP 32 holds for a different reason: its goal-centred inputs (distance and bearing to the
+*expert's goal*, which encode the standoff rule) make "inside the shell" look like "at the goal", a shortcut the
+pure inputs cannot offer.
+
+Cost: 455–768 s per seed on the GPU (6 s per epoch, 18.7 GB), 46 µs per physics step at inference, so a
+transformer is not expensive here; it is just not what is missing.
+
 ## 7. Status
 
 - Done: decomposition (§1), variant `raw21_target_clock_v1`; E1 collected,
@@ -738,6 +796,10 @@ Consequences for the black-box line (decision pending):
   3 seeds, runs `tf_e5_mixture4096_raw21polar_stride20_seed*`, evaluations `e5_tf_polar_on_{clean,e1_random}_validation_20261030`.
   NumPy inference with a key/value cache: 46 µs per physics step with a full window (GRU ≈ 120 µs); verified against
   the torch network to 1e-9 by test and at the end of every run. Black-box: same inputs as the GRU, nothing from the expert.
+- E5 done and reported in §6j (30 Oct 10:28): transformer 28 pure on the mixture, best offline NRMSE of the pure
+  models (0.130–0.142) and the cleanest open-loop stop (1–2% residual), 81 / 76 / 47 arrivals nominal, 60 / 32 / 29
+  random; parked and restarted in 105–148 episodes by the §6i creep (11–17% residual while parked, 7.5–15 cm
+  towards the target). Third architecture to show the hold is a coverage/latch problem, not a memory problem.
 - 28-input pure-transform variant done and reported in §6e (branch `rodrigo-pure28` merged).
 - Next, on request: E6 (§6c, nominal data without the clock) — the cheapest test of the reach-trigger mechanism.
 - E2 needs a collector mode; nothing in `src/` is edited while a collector,
