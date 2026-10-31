@@ -1,0 +1,36 @@
+C3 probe: validation episodes with k0 284; frames POST_STILL/FROZEN 8923 (in 141 episodes), FAR (nav_done False, ring > 0.3 m) 1353917 (in 244 episodes), PRE_LOOK 187985; navigation rows 1979875
+training episodes with k0 > 0 (recorded k0 - 1, k0 pairs): 1611 (k0 = 0: 2, left out)
+
+== ego-novw_s0: K -, rows added 0, epochs 27 (best 22), val loss 0.026163, nav (v, w) nRMSE 0.2335, 0.2866
+  (i)  FROZEN(EM) n 8923: r median +0.004 [IQR -0.006, +0.011], frac r > 0.5 0.000; per-episode medians (n 141): median +0.004 -> gate (median >= 0.5) FAIL   [C0 model baseline: median +0.001]
+  (ii) FAR n 1353917: r median +0.002, p95 +0.098, p99 +0.158, max +0.308, frac r > 0.5 0.0000 (episodes with such a frame 0) -> gate (median < 0.1, p95 < 0.3) PASS   [C0 model baseline: median +0.000, p95 +0.096]
+  reported: contamination r of pred(k0 - 1) (n 284): median +0.002, p95 +0.007, max +0.011, frac > 0.5 0.000
+  reported: PRE_LOOK n 187985 trigger direction r median +0.001, p75 +0.016, p95 +0.066, frac > 0.5 0.000; own label (C0) median +1.003
+  reported: validation recorded k0 + j ms, r median: +0 +0.003 (frac > 0.5 0.00), +1 +0.765 (frac > 0.5 0.84), +2 +0.984 (frac > 0.5 1.00), +5 +0.989 (frac > 0.5 1.00)
+  reported: training recorded k0 (n 1611) r median +0.002, frac > 0.5 0.000
+
+== ego-novw-trig-k16_s0: K 16, rows added 25808, epochs 11 (best 6), val loss 0.060375, nav (v, w) nRMSE 0.2574, 0.3156
+  (i)  FROZEN(EM) n 8923: r median -0.007 [IQR -0.038, +0.045], frac r > 0.5 0.000; per-episode medians (n 141): median -0.006 -> gate (median >= 0.5) FAIL   [C0 model baseline: median -0.062]
+  (ii) FAR n 1353917: r median -0.001, p95 +0.099, p99 +0.159, max +0.446, frac r > 0.5 0.0000 (episodes with such a frame 0) -> gate (median < 0.1, p95 < 0.3) PASS   [C0 model baseline: median -0.110, p95 +0.079]
+  reported: contamination r of pred(k0 - 1) (n 284): median +0.122, p95 +0.624, max +0.938, frac > 0.5 0.109
+  reported: PRE_LOOK n 187985 trigger direction r median -0.018, p75 +0.024, p95 +0.251, frac > 0.5 0.016; own label (C0) median +0.905
+  reported: validation recorded k0 + j ms, r median: +0 +0.121 (frac > 0.5 0.11), +1 +0.618 (frac > 0.5 0.65), +2 +0.761 (frac > 0.5 0.84), +5 +0.872 (frac > 0.5 0.95)
+  reported: training recorded k0 (n 1611) r median +0.117, frac > 0.5 0.103
+
+== ego-novw-trig-k64_s0: K 64, rows added 103232, epochs 17 (best 12), val loss 0.092517, nav (v, w) nRMSE 0.2625, 0.3091
+  (i)  FROZEN(EM) n 8923: r median +0.296 [IQR +0.180, +0.445], frac r > 0.5 0.195; per-episode medians (n 141): median +0.290 -> gate (median >= 0.5) FAIL   [C0 model baseline: median -0.051]
+  (ii) FAR n 1353917: r median +0.002, p95 +0.097, p99 +0.156, max +0.360, frac r > 0.5 0.0000 (episodes with such a frame 0) -> gate (median < 0.1, p95 < 0.3) PASS   [C0 model baseline: median -0.284, p95 +0.020]
+  reported: contamination r of pred(k0 - 1) (n 284): median +0.283, p95 +0.964, max +1.309, frac > 0.5 0.394
+  reported: PRE_LOOK n 187985 trigger direction r median +0.006, p75 +0.060, p95 +0.489, frac > 0.5 0.049; own label (C0) median +0.795
+  reported: validation recorded k0 + j ms, r median: +0 +0.297 (frac > 0.5 0.39), +1 +0.933 (frac > 0.5 0.90), +2 +0.971 (frac > 0.5 0.95), +5 +0.916 (frac > 0.5 0.97)
+  reported: training recorded k0 (n 1611) r median +0.347, frac > 0.5 0.438
+
+== ego-novw-trig-k256_s0: K 256, rows added 412928, epochs 29 (best 24), val loss 0.121979, nav (v, w) nRMSE 0.2645, 0.3346
+  (i)  FROZEN(EM) n 8923: r median +0.484 [IQR +0.256, +0.751], frac r > 0.5 0.491; per-episode medians (n 141): median +0.576 -> gate (median >= 0.5) FAIL   [C0 model baseline: median -0.008]
+  (ii) FAR n 1353917: r median +0.002, p95 +0.097, p99 +0.156, max +0.307, frac r > 0.5 0.0000 (episodes with such a frame 0) -> gate (median < 0.1, p95 < 0.3) PASS   [C0 model baseline: median -0.423, p95 -0.058]
+  reported: contamination r of pred(k0 - 1) (n 284): median +0.485, p95 +1.028, max +1.223, frac > 0.5 0.479
+  reported: PRE_LOOK n 187985 trigger direction r median +0.004, p75 +0.057, p95 +0.594, frac > 0.5 0.061; own label (C0) median +0.800
+  reported: validation recorded k0 + j ms, r median: +0 +0.478 (frac > 0.5 0.48), +1 +1.005 (frac > 0.5 0.97), +2 +0.979 (frac > 0.5 0.98), +5 +0.893 (frac > 0.5 0.98)
+  reported: training recorded k0 (n 1611) r median +0.638, frac > 0.5 0.552
+
+calibration models tested: K [16, 64, 256]; passing both gates: [] -> NO K passes: stop and propose (STEP3C_PLAN_PROMPT.md 4)

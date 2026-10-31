@@ -1,0 +1,22 @@
+== 1) Where do ego-novw's reach_5cm come from? (DEV, 5 seeds) ==
+  135 seed x episode with min_error < 5 cm; expert hold-posture error at parking (navdone_ee_err): median 4.2 cm, < 7 cm in 84%; arm extended in 3
+  DEV episodes whose expert hold posture is already within 5 cm / 7 cm of the target: 21 / 38 of 300
+== 2) ego-novw failures: is the base parked and still? (DEV, seed x episode) ==
+  parked_no_arm          n  815  parked (still 1 s on the ring)  17.4%  ring_final median   4.2 cm  turn median    342 deg  path median 1.81 m
+  circling               n  483  parked (still 1 s on the ring)   0.8%  ring_final median   4.8 cm  turn median    576 deg  path median 1.64 m
+  approached_other       n  101  parked (still 1 s on the ring)  17.8%  ring_final median   4.1 cm  turn median    354 deg  path median 1.47 m
+  extended_not_reached   n   94  parked (still 1 s on the ring)  11.7%  ring_final median   4.2 cm  turn median    342 deg  path median 1.62 m
+  success                n    5  parked (still 1 s on the ring)  40.0%  ring_final median   4.6 cm  turn median    133 deg  path median 0.77 m
+  crash                  n    1  parked (still 1 s on the ring)   0.0%  ring_final median 163.9 cm  turn median    368 deg  path median 2.68 m
+  left_or_overshot       n    1  parked (still 1 s on the ring) 100.0%  ring_final median  82.1 cm  turn median    260 deg  path median 2.74 m
+== 3) Why the arm never triggers: labels near the trigger in the validation data (1 kHz, clean + noisy) ==
+  frames that look parked with the arm at hold: 203638 ; of them labelled reach (nav_done) 7.7%
+    with |beta| < 0.05 rad: 106664 frames, reach-labelled 13.7%
+    with |beta| < 0.02 rad: 20013 frames, reach-labelled 22.3%
+  after nav_done the arm stays within 0.06 rad of hold for median 32 ms (p90 117 ms); the orient phase before it lasts median 432 ms
+== 4) Does base stillness (measured wheel speeds) remove the ambiguity? ==
+  parked-looking (ring < 0.2, |beta| < 0.1, arm at hold): 203638 frames, reach-labelled 7.7%
+    ... and base still (|v| < 0.01, |w| < 0.02): 8802 frames, reach-labelled 100.0%
+    ... and base moving: 194836 frames, reach-labelled 3.5%
+  still + parked-looking frames that are NOT reach: phase codes (array([2], dtype=int8), array([1]))
+  ... their time before nav_done: median 219 ms, p90 219 ms

@@ -762,6 +762,383 @@ results/step3/B_ego-novw_dev.txt、fig_step3_split2x2）
      阶段结构交给模型，要在 report 中说明。
 
 
+[Results] 第 3 步续：C0 离线证据（实验 C3 的依据；2026-10-30，results/step3/C0/，在 C3 预注册之前看到）
+------------------------------------------------------------------------------------------------------
+脚本与输出：results/step3/C0/（README.md 说明每个脚本；只读验证缓存、已训练模型和已有运行，不做仿真）。2026-10-30 C3 开始前
+在任务目录复跑 9 个脚本，输出与存档的 *.txt 逐字相同。
+1) 实验 B 的含义（见上一节）：EM 0.1%，模型机械臂在 1500/1500 个 seed x episode 中从未伸臂（末端位移最大 5.3 cm，与导航时保持
+   姿态的晃动相同）；ME 96.7%，其中 85.6% 由阈值触发（模型底盘自己到达专家停靠位姿）；MM 的失败 99.9% 可归因于机械臂。
+2) 方案 A（v̂、ŵ 只给机械臂）的前提被否定（offline_trigger_stats、probe_trigger、probe_time、probe_jitter）：
+   - 此前"底盘静止的 8,802 帧 100% 是 reach"中，8,801 帧机械臂已经在动（max|qd_arm| >= 0.2 rad/s）：底盘静止发生在机械臂开始
+     动之后。触发那一帧（nav_done 的第一步 k0）底盘还在转：|ŵ| 中位 0.138 rad/s；nav_done 之后第一次静止中位 33 ms。
+   - 284 个验证 episode 中没有一个是"底盘先静止、机械臂后开始动"。机械臂安静、看起来已停好的帧只有 0.2-2.1% 是 reach。
+   - 结论：v̂、ŵ 不是机械臂的触发线索。
+3) 两类网络只会"接着伸"（probe_trigger、probe_time）：响应分数 r = <pred - pred(k0-1), Δ> / ||Δ||^2（0 = 保持，1 = 标签；
+   pred(k0-1) 是该模型自己在 k0-1 帧的预测）。录制的 k0+j 帧用 Δ = tau[k0+j] - tau[k0-1]：k0 帧上 ego、ego-novw 的 r 都是 0.00，
+   从 k0+1 ms 起 0.76-0.96，之后约 1.0（probe_time）。EM 稳态（合成：专家停靠后的底盘位姿、v̂ = ŵ = 0、机械臂在 k0-1 的保持姿态、
+   qd = 0；Δ = tau[k0] - tau[k0-1]）：ego 的 r 中位 0.003-0.007，ego-novw 0.001-0.002（probe_trigger 的 FROZEN(EM) 行）。推动对照
+   （probe_time）：同一稳态下把机械臂速度换成 k0+1 ms 的录制值，r = 0.67-0.87。即机械臂一旦开始动就会自我维持（机械臂一侧的
+   照抄），缺的是"从静止开始伸"。
+4) 触发帧在数据里只占一帧（k0labels、footprint）：k0 的标签 v = w = 0，力矩跳变中位 27.9 N·m（p10 21.3）；k0-1 的标签 |w| 0.150。
+   k0 时环距离中位 0.074 m（最大 0.180），|beta| 中位 0.032 rad。训练行（步长 9）中"nav_done 且机械臂在保持姿态、max|qd| < 0.1"
+   的只有 147 行（0.008%），其中底盘静止 1 行。与 k0 相像但标为保持的帧（在环附近、朝向、机械臂在保持姿态）每个 episode 约
+   74 行（步长 9）：在这些相像帧上，MSE 回归的条件均值就是"保持"。
+5) 绕圈对总成功率的影响（circling）：MM 的 483 个 circling 中 337 个（69.8%）在 ME 格同一单元里阈值触发后成功，108 个靠 25 s
+   超时成功，38 个失败；815 个 parked_no_arm 中 734 个（90.1%）阈值触发后成功。即绕圈大多发生在底盘已经到过停靠位姿之后，
+   是"机械臂不伸 -> 底盘没有'已到达'信号"的后果；触发修好后，仍有约 10% 的 episode 是底盘自己的问题。
+6) 反面证据（check455）：底盘自己停靠并朝向 target（< 6 度）时伸臂的次数：ego DEV 55 个中 4 个、HARD 70 个中 0 个；ego-novw
+   DEV 177 个中 4 个、HARD 115 个中 3 个。ego 的 55 个中 48 个来自 seed 3、4，22 个的朝向误差在专家 orient 容差（0.05 rad）
+   之外（这两个数来自方案第 2 节，check455.txt 里没有；冻结前的审查由 results/ego_s{0..4}_dev 重算一致：每个 seed 1/4/2/25/23 个）。
+7) Rodrigo 2026-10-30 的更新（team/rodrigo，docs/BLACKBOX_PLAN_20261027.md §6f-§6i）：随机起点的数据能教会底盘停住，但教不会
+   机械臂（205 个中伸臂 0-45，两个 seed 为 0）；名义起点数据里的触发靠时钟；输入加有限差分底盘速度（MLP 31）后伸臂 130/0/0，
+   变成照抄；GRU（记忆）把伸臂找回一部分（149/101/16）；底盘把机械臂当作阶段标志，停住之后的丢失来自回归"零"指令残留的
+   6-10%（蠕动）。他的下一步是 E2（近目标起点）和带滞回的停止头。95de559 之后的新提交（d1c30ec、a60492c、f94ac93）只有 E5：
+   因果 transformer（时钟输入 + 20 s 记忆）。C3 与之不重复：不重采数据、不加记忆，是"补触发状态"最便宜的做法。
+
+
+[Methodology] 第 3 步续预注册：实验 C3（2026-10-30 写下，在 DEV/HARD/CONFIRM 上运行 C3 之前；冻结记录 results/step3/prereg_C3_frozen.txt）
+------------------------------------------------------------------------------------------------------------------------
+方案：STEP3C_PLAN_PROMPT.md（用户 2026-10-30 确认：先选方案 A，三个独立审查用 C0 的离线证据否定了 A 的前提，用户改选 C3）。
+冻结前另做了 4 个独立审查（训练改动、K 探针、判定与运行脚本、本节文本，只读），据此做了下面写明的修改；其中两处改动偏离方案
+原文，用户 2026-10-30 确认（2) 的探针基线、6) 的 CONFIRM 时机）。
+代码：train_policy.py（build-trigger-cache、--trigger-copies、--trigger-qd-jitter）、results/step3/C3_probe.py、
+results/step3/C3_mechanisms.py、results/step3/run_expC3.sh；协议 v1.1，统计同第 3 步。
+冻结范围：本节，以及冻结记录里列出 sha256 的文件：上面 4 个；C3_probe.py 执行的 results/step3/C0/probe_trigger.py；
+tests/test_training.py；判定用到的 analyze_rollouts.py、bc_features.py、policies/bc_policy.py、policies/hybrid.py、
+evaluate_policy.py（第 3 步之后没有改过）；触发缓存的 manifest。冻结之后不再修改；如果必须改，写明改动、原因、改之前看到了什么。
+0) 预注册之前已经看过的东西（如实记录）
+   - 实验 A、B 的全部结果，results/step3/summary.txt，C0 的全部离线证据（上一节）。
+   - 触发帧缓存（results/step3/cache/trigger，1613 行）：k0 时 v、w 标签 1613/1613 为 0；训练 episode 747、880（都是 M0）
+     从第 0 步起就 nav_done（k0 = 0，见 1)）。全部 1897 个保留 episode 中只有这 2 个，验证集 284 个 episode 都是 k0 > 0。
+   - C3_probe.py 在已有的 ego-novw_s0、s1 上的检查运行（results/step3/C3_probe_prefreeze_baseline.txt，录制标签基线，见 2)）：
+     FROZEN(EM) r 中位 +0.004 / +0.004（C0 的模型基线下 +0.001 / +0.001，复现 C0）；门槛 (ii) 的帧（1,353,917 帧，244 个
+     episode）r 中位 +0.002 / +0.001，p95 +0.098 / +0.097，最大 0.31 / 0.36（基线本身满足门槛 (ii)）；k0-1 帧的污染指标中位
+     +0.002；PRE_LOOK 触发方向 r 中位 +0.001，p95 +0.066 / +0.066；验证集录制 k0 帧 r +0.003 / +0.002，k0+1 ms 0.77 / 0.83；
+     训练 episode 录制 k0 帧 r +0.002；导航段 (v, w) nRMSE 0.234、0.287（s0）。改基线之前，同样的运行用 C0 的模型基线看过一次
+     （数字见括号）。
+   - 冻结前审查的检查（只用验证集、训练集和已有模型）：k0 与 k0-1 的标准化特征距离中位 0.020（p90 0.054），qd 抖动云半径 1.31；
+     一个人造模型（ego-novw_s0 的预测，在"环 < 0.2 m、|beta| < 0.1、机械臂在保持姿态"的帧上加该 episode 的标签跳变，即 4) 预测
+     C3 会学到的规则）在 FROZEN(EM) 上：C0 的模型基线 r +0.002（门槛 (i) 判不过），录制标签基线 r +1.003。验证 episode 的 k0-1
+     帧有 240/284 落在 PRE_LOOK 集合里。
+   - 拷贝在损失中的分量（用基线的标准化参数）：一份拷贝的标签平方和（9 个输出平均）是普通训练行的 16.6 倍；按"标签相对基线均值的
+     平方和"算，拷贝占 19.5%（K = 16）、49.2%（K = 64）、79.5%（K = 256）。
+   - C3_mechanisms.py 的干跑：用实验 A 的 ego 当作"新模型"的替身、C3-EM 两边都用 B-EM ego-novw，只为检查代码路径（输出在临时
+     目录，没有保存），数字与实验 A、B 一致（例如 reach_5cm 9.0% 对 0.5%）；判定分支用人造的结果字典逐一检查。
+   - 单元测试中的小子集训练（3 个训练 episode、1-2 个 epoch 的 ego-novw-trig 模型，K = 0-5），以及审查时的变异测试（在内存里改坏
+     train_policy.py，确认测试能发现）。
+   - 没有看过：任何用全部训练集训练的 ego-novw-trig 模型（K 16/64/256 的校准模型或正式 seed）的训练损失、探针值或闭环结果。
+1) 唯一变量：训练行
+   - 每个训练 episode（1613 个）除步长 9 的行之外，再加 K 份触发帧 k0（nav_done 的第一步）。k0 从 data/train 的 1 kHz 录制读取
+     （train_policy.py build-trigger-cache -> results/step3/cache/trigger，每列与录制逐位相同）。测量信号和标签按录制原样：
+     v = w = 0，力矩 = 专家 k0 步的力矩（干净指令），不合成标签。
+   - k0 = 0 的 2 个 episode（747、880，从停靠位姿出发，底盘静止、机械臂在初始姿态）：按方案的定义（k0 = nav_done 的第一步、
+     加入的行数 = K x 训练 episode 数）照样加入。
+   - 每份拷贝的 qd_arm 逐关节加 N(0, σ_hold,j)，其余输入不变。σ_hold,j = 训练行（步长 9，1613 个 episode）中 nav_done 为假的行
+     qd_arm 第 j 个关节的标准差（ddof 0，训练时计算，记在模型 meta；全部训练集上为 0.073、0.052、0.043、0.045、0.052、0.006、
+     0.037 rad/s）。噪声 = numpy default_rng(0).standard_normal((1613 K, 7)) x σ_hold，拷贝按 episode 排列（先是第一个 episode 的
+     K 份）；只生成一次，与训练 seed 无关，所有 seed 共用同一组加进来的行。
+   - 不变：特征 ego_novw；标准化参数只用原来的步长 9 行（K = 0 时与 ego-novw 完全相同）；网络、超参数、划分；验证集
+     （284 个 episode 的全部 1 kHz 步）与验证损失、early stopping。拷贝接在原来的行后面，每个 epoch 一起打乱。
+   - 模型名 ego-novw-trig；meta.trigger 记录 K、σ（用到的）、σ_hold、抖动 seed、加入行数、各 episode 的 k0 步、触发缓存
+     manifest 的 sha256；meta.standardisation 写明标准化只用原来的行。校准模型 trained/ego-novw-trig-k<K>_s0.npz，最终模型
+     trained/ego-novw-trig_s<k>.npz。
+   - 单元测试（tests/test_training.py TestTriggerCopies，11 个；冻结前全部 158 个测试通过，2 个慢测试按设置跳过）：K = 0 时与
+     ego-novw 同一 seed 的权重、标准化参数、每个 epoch 的损失逐位相同；run_train 交给 train_mlp 的矩阵：前面的行与 K = 0 逐位相同，
+     后面 K x 训练 episode 数行 = 用基线标准化参数标准化的拷贝（标签与录制逐位相同，只有 qd 列被抖动），验证矩阵不变，不同训练
+     seed 加进来的行逐位相同；拷贝的标签（v、w、7 个力矩）与录制逐位相同；抖动 = 固定 rng 的噪声 x σ、可复现；σ_hold 与直接从
+     录制重算的一致；train-many 传递设置（子进程与本进程逐位相同）；k0 = 0 的 episode；错误用法被拒绝（包括非触发模型的抖动参数、
+     train-many 在启动子进程之前检查）。变异测试：去掉拷贝的标准化、训练时不加抖动、用错标签的标准化参数，各有测试失败。
+2) K 的确定（只用训练集与验证集，不看 DEV；冻结之后、训练正式 seed 之前）
+   - seed 0 训练 K ∈ {16, 64, 256}，并行。加入 25,808 / 103,232 / 412,928 行，是原来 1,764,684 行的 1.5% / 5.8% / 23.4%；
+     按标签平方和算是 19.5% / 49.2% / 79.5%（见 0)）。作为对照：每个 episode 约 1,094 行，其中与 k0 相像、标为保持的约 74 行。
+   - results/step3/C3_probe.py：C0/probe_trigger.py 的帧集合代码原样执行，feats()、score() 照抄；k0 = 验证 episode 的第一个
+     nav_done 步。
+   - r 的基线（偏离方案原文，用户 2026-10-30 确认）：方案写"复用 C0 的 r 的定义"，C0 以模型自己在 k0-1 帧的预测为保持基线。
+     k0-1 与 k0 只差 1 ms（标准化距离 0.02），在拷贝的抖动云里（半径 1.31），学会触发的 C3 模型在 k0-1 也会伸，基线随被校准的
+     东西移动：门槛 (i) 对学会触发的模型几乎必然判不过，门槛 (ii) 也看不出误触发（见 0) 的人造模型）。所以改用录制的标签作
+     保持基线：r = <pred - tau[k0-1], tau[k0] - tau[k0-1]> / ||tau[k0] - tau[k0-1]||^2（7 个力矩；0 = 录制的保持力矩，1 = 录制的
+     第一步伸臂力矩；用该帧所属 episode 的 k0）。帧集合、方向和门槛数值不变；C0 定义的 r 作为对照列一起报告。
+   - 选同时满足下面两条的最小 K（三个 K 都训练、都测过才选；C3_probe.py 在网格不全时拒绝选择）：
+     (i)  EM 稳态 FROZEN(EM)（POST_STILL 帧的底盘位姿与 target、机械臂 q = q[k0-1]、qd_arm = 0、v = w = 0；8,923 帧，来自 141 个
+          episode）：r 的中位 >= 0.5。中位按帧取，与 C0 相同（同一 episode 的帧几乎是同一个输入，所以这是 141 个 episode 按停留
+          时长加权的中位；按 episode 的中位另报）。
+     (ii) 不误触发：验证集中 nav_done 为假、环距离 > 0.3 m 的帧（1,353,917 帧，244 个 episode），用该帧所属 episode 的
+          tau[k0-1]、tau[k0]：r 中位 < 0.1，并且 p95 < 0.3。
+   - 只报告、不作门槛：k0-1 帧的污染指标（模型在 k0-1 的预测的 r）；PRE_LOOK 帧（187,985；nav_done 之前、环 < 0.2 m、|beta| < 0.1、
+     机械臂在保持姿态、底盘在动）在触发方向上的 r（中位、p75、p95、> 0.5 的比例），即提前触发的倾向（与触发帧在单帧里分不开，
+     预计升高），以及 C0 原定义（以自身标签为方向）的 r；验证集录制 k0、k0+1、+2、+5 ms 帧的 r（held-out；方向
+     tau[k0+j] - tau[k0-1]，同 C0 的 probe_time）；训练 episode 录制 k0 帧（未抖动；1,611 个，k0 = 0 的 2 个没有 k0-1，不计）的 r，
+     即拷贝是否被拟合；FROZEN 的按 episode 中位；验证损失与导航段（nav_done 为假）(v, w) 的 nRMSE，与 ego-novw_s0 对比。
+   - 三个 K 都不满足：停下，向用户提方案（第 7) 条）。
+   - 选定 K 后训练 seed 0-4 与 100-104（10 个并行，run_expC3.sh train；已有同名模型时拒绝）。检查：选定 K 的 seed 0 模型必须与
+     校准模型 ego-novw-trig-k<K>_s0 逐位相同（确定性）；10 个模型的 meta 都是选定的 K、自动 σ、抖动 seed 0、1613 K 行，
+     train_policy.py 的 sha256 与冻结记录一致。
+3) 运行（run_expC3.sh 的各阶段；DEV 做所有决定；每个阶段先按第 7) 条检查上一阶段的判定，不满足就拒绝运行）
+   - C3-EM（诊断）：hybrid "base=expert;arm=trained/ego-novw-trig_s<k>.npz"，--no-early-stop，k = 0..4 ->
+     results/B-EM_ego-novw-trig_s<k>_dev；对照 B-EM_ego-novw_s<k>_dev（同样 --no-early-stop）。
+   - C3-MM（可部署、要判定的）：只在 C3-EM 判为"触发"时运行（方案第 4 节"不确定 / 不触发：停下"的读法；方案第 5 节第 6 步的
+     运行列表没有写这个条件）。bc_policy、trained/ego-novw-trig_s<k>.npz、早停（与 MM 相同），k = 0..4，--save-traj --traj-every 10
+     -> results/ego-novw-trig_s<k>_dev。按协议把 stalled 的 episode 用 --no-early-stop 重跑到 results/step3/nostall/
+     ego-novw-trig_s<k>_dev，报告 success 与决定指标（以及 reach_5cm、reach_2cm、arm_extended、arm_extended_toward、parked、类别）
+     有没有变化。敏感性（描述性）：两边都换成 stalled 重跑的行后重算决定指标的差值（MM 的 s0 没有 stalled 的 episode，s1-s4 的
+     重跑已有）。
+   - 分析：analyze_rollouts.py compare --a ego-novw --b ego-novw-trig --set <set> --seeds 0-4（CONFIRM：--seeds 100-104，
+     --allow-confirm）--predicted-classes parked_no_arm,circling（-> results/step3/A_ego-novw_vs_ego-novw-trig_<set>.*）；C3-EM 对
+     B-EM 用 --a-runs/--b-runs，输出改名为 results/step3/C3_EM_dev.*；全部判定由 results/step3/C3_mechanisms.py 按下面的规则计算
+     （-> C3_mechanisms.txt/.json）。C3_mechanisms.py 拒绝文件夹名与 config.json 不一致的运行（评估集、policy_arg 里的模型文件）。
+4) 竞争假设与预测（数字在运行前写死；seed 平均；两层 bootstrap 10,000 次、rng seed 0、percentile 95% CI，与按 seed 的 t 区间，
+   两者都要满足，另有说明的除外）
+   - C3-EM 的判定（指标 arm_extended_toward，DEV 300 个 episode x 5 个 seed；专家在同一批 episode 上 81.7%）。两个区间：
+     两层 bootstrap CI，和 5 个 seed 比例的单样本 t 区间（均值 ± t(0.975, 4) sd / sqrt(5)）。
+       触发（H-support：缺的是"从静止开始伸"的样本）：两个下界都 > 30%；
+       不触发：两个上界都 < 20%；
+       不确定：其余情况。停下报告，不做后续。
+     另报（描述性）：与 B-EM 的配对差值（arm_extended_toward、arm_extended、success、reach_5cm、reach_2cm）；伸臂时刻减影子
+     FSM nav_done 时刻（从 logs/ 读；专家 0.33-2.7 s，中位 0.47 s）；"在环上朝向时伸臂"的比例（定义见 6) (2)）。
+   - H-trajectory（触发了，但伸得不够准）：只在"触发"时判定。C3-EM 中 arm_extended_toward 的 seed x episode 合计 >= 30 个时，
+     看其中 10 mm 成功的比例：< 50% 即成立（专家 243/245）。失败类只在这些伸臂的单元里统计（报告）。
+   - H-cooperation（机械臂一伸，底盘就停；实验 B 的 ME 格）：C3-MM - MM 的 circling 比例差值，bootstrap 与 Welch 的 CI 上界
+     都 < 0，并且 parked_no_arm 比例差值的点估计 < 0（方案写"parked_no_arm 也下降"，这里具体化为点估计，CI 一起报告）。
+   - H-premature（加权把相像的帧也推向伸臂）：C3-MM 中伸臂（arm_extend_time 非空）的 seed x episode 合计 >= 30 个时判定（方案
+     没有写最少单元数，这里与 H-trajectory 一致；少于 30 个记为不可判定）：其中 ring_dist_at_arm_extend > 0.2 m 的比例 > 30%，
+     并且这些提前伸臂的单元中最多的失败类是 extended_not_reached 或 left_or_overshot（"主要失败类"具体化为提前伸臂单元中个数
+     最多的失败类；并列时，其中任一个是这两类即算，并列如实报告）。另报（描述性）：C3-EM 的伸臂时刻减影子 FSM nav_done（见上）；
+     C3-MM 的伸臂时刻减专家录制的 nav_done 时刻（底盘轨迹不同，只作参考）。
+   - 先验：C0 的推动对照显示机械臂一旦开始动就会自我维持，所以只要触发帧学到了，伸臂很可能接着发生；但触发帧在单帧特征里与
+     之前的 orient 帧分不开，学到的只能是"在环上、朝向 target 就伸"这条可观测规则，会比专家早触发（预测 H-premature 部分
+     成立）。
+5) 主指标与地板规则（沿用第 3 步预注册的顺序，不在看过数值后另选）
+   - 主指标：DEV success。两边 seed 平均都 < 5% 时，决定指标改为 reach_5cm；两边 reach_5cm 也都 < 5% 时，改为 parked。
+   - 局限：reach_5cm 在 MM 中主要来自不需要伸臂的短伸臂 episode（ego-novw 进入 5 cm 的 135 个单元中 84% 是这类），所以同时
+     报告 arm_extended_toward 作为机制证据。
+   - 决定指标只在 DEV 上确定，HARD、CONFIRM 沿用，不再重新应用地板规则。
+   - 决定指标不是 success 时，加一条"不变差"：DEV 上 C3-MM - MM 的 success 点估计 >= 0（只在 DEV 上作为条件；HARD、CONFIRM 上
+     只报告）。
+6) 统计、seed 与采纳规则（C3-MM 替代 MM 成为主线；全部满足才采纳）
+   - 统计同第 3 步：两层 bootstrap + 按 seed 的 Welch；分层和次要指标用 Holm（compare 的输出）。C3-MM 与 MM 是不同的网络，
+     seed 不配对；按 k 的配对 t 只作描述。seed 固定为 0-4（CONFIRM 100-104）；看过 DEV 结果之后不再加 seed、不换分析方法。
+     bootstrap 满足而 Welch 不满足：报告每个 seed 的差值和 Cochran Q，写成"效应只在部分 seed 上出现"，不采纳。
+   - (1) DEV 上决定指标的差值（C3-MM - MM）：bootstrap 与 Welch 的 95% CI 下界都 > 0。
+   - (2) 改进来自预测的机制：[MM 中"决定指标失败且类别为 parked_no_arm 或 circling"的单元比例 - C3-MM 中同样的比例]
+     / 决定指标的净改进 >= 50%，并且净改进 > 0（算法同实验 A；决定指标为 success 时就是 compare 的 "Share of the net difference
+     from parked_no_arm+circling"）。另报"在环上朝向时伸臂"的比例：arm_extended_toward 的单元中，ring_dist_at_arm_extend < 0.20 m
+     且 |target_bearing_err_at_arm_extend_deg| < 6 的比例（专家 DEV 236/245、HARD 159/181；DEV、HARD 都报告）。不用 parked_time
+     判断"先停后伸"（它是"静止 1 s"区间的结束时刻，专家 245 个伸臂中只有 8 个满足）。
+   - (3) n >= 30 的 d0 分层（DEV：M1 48、M2 0.08-0.5 46、M2 0.5-1.0 56、M2 >= 1.0 138）中，没有一层的决定指标差值 CI 上界低于
+     -10 个百分点（分层只用 bootstrap CI，与实验 A 相同）。
+   - (4) HARD：C3-MM 5 次，与 results/ego-novw_s<k>_hard 比较，决定指标差值的点估计 > 0（"方向一致"具体化为点估计，与实验 A 相同）。
+   - (5) CONFIRM：trained/ego-novw-trig_s10<k>.npz，与 results/ego-novw_s10<k>_confirm 比较，点估计 > 0。CONFIRM 只在 (1)-(3)、
+     "不变差"和 (4) 都满足之后打开一次（--allow-confirm）。这比方案第 4、5 节的"(1)-(3) 满足后跑 HARD、CONFIRM"更严，用户
+     2026-10-30 确认，与实验 A 的做法相同；HARD 不满足时不采纳，CONFIRM 不打开，留作以后的复现。
+   - 反方向（MM 明显更好）：(1) 两个 CI 上界都 < 0；(2) 净变差中 >= 50% 来自 parked_no_arm + circling 的增加（同一公式，净差值 < 0）；
+     (3) n >= 30 的分层中最高的 CI 下界 <= +10 个百分点；(4) HARD 点估计 < 0：四条都成立才记为"触发帧加权有害"的证据。DEV 上
+     (1)-(3) 镜像成立时，按第 7) 条停下提方案，HARD 作为提议的一部分（镜像 (4) 没有评估之前不算"有害"的证据）。注意：镜像 (2) 只
+     能记录"通过更多 parked_no_arm + circling 变差"；4) 预测的另一条变差途径（H-premature：extended_not_reached、
+     left_or_overshot）由 H-premature 和下面"明显更差"的写法报告。
+   - 都不满足：保留 MM。CI 包含 0 时写成"在约 X 个百分点的分辨率下没有检测到差异"（X 具体化为 bootstrap CI 的半宽）；C3-MM 明显
+     更差但镜像条件不全满足时如实写明，不算作"有害"的证据。
+7) 决定表（STEP3C_PLAN_PROMPT.md 第 4 节；run_expC3.sh 与 C3_mechanisms.py 的"下一步"按这张表）
+   - K 校准不过：停下提方案。候选：触发分类器门控（nav_done 标签、类别加权）；机械臂 qd 照抄的处理；Rodrigo 的 GRU 路线
+     （这里没有 torch，需与他协调）。
+   - C3-EM 不确定：停下报告。C3-EM 不触发：停下提方案（同上；并报告探针 r 与闭环的差异）。两种情况都不跑 C3-MM。
+   - C3-EM 触发且 H-trajectory 成立：先照常判定 C3-MM；然后报告触发与轨迹两部分的分解，停下提方案（例如机械臂单独建模、
+     按 z 分组）。这一行与下一行重叠时，这一行优先（即使 (1)-(3) 满足，也先停下提方案，HARD、CONFIRM 作为提议的一部分）。
+   - C3-EM 触发、C3-MM 满足 (1)-(3) 及"不变差"：跑 HARD；(4) 满足再跑 CONFIRM；按采纳规则决定。
+   - C3-EM 触发、C3-MM 不满足：报告原因（H-premature、绕圈或 seed 异质），停下提方案。
+   - 第 4 步（学习曲线、降采样步长）在 C3 之后、在 C3 采纳的模型上做；C3 没有通过时，第 4 步只报告离线指标和探针 r 随数据量 /
+     步长的变化（描述性），不跑闭环。
+8) 事先写明的局限
+   - C3 只改变训练行的权重：加进来的 k0 帧是专家真实访问过、真实标注的状态，没有合成标签，只给 qd 加了抖动。它针对的是
+     "学习者停在专家几乎不经过的状态（底盘已停、机械臂未动）"这一协变量偏移，属于 DAgger（Ross, Gordon, Bagnell, AISTATS 2011）、
+     DART（Laskey et al., CoRL 2017）一类的问题，但没有向专家查询新状态（见 [References]）。
+   - 拷贝也让每个 epoch 变长（batch 200 时每个 epoch 的 Adam 步数 +1.5% / +5.8% / +23.4%），而 patience 与 early stopping 按
+     epoch 计数：K 同时改变触发状态的权重和每个 epoch 的优化步数（验证集与停止规则不变）。
+   - C3-EM 的专家底盘给了完美的停靠，只作诊断。
+   - 探针 r 是离线的必要条件，不保证闭环触发；闭环结论只来自 DEV/HARD/CONFIRM。
+   - K 是在验证集上选的，不是在 DEV 上选的。
+   - 学到的触发是可观测规则，可能比专家早（H-premature）。
+
+
+[Results] 第 3 步续：实验 C3 的 K 校准（2026-10-30 19:07-19:22，按冻结的预注册；results/step3/C3_probe.txt/.json、run_expC3_calib.log）
+------------------------------------------------------------------------------------------------------------------------
+1) 训练（seed 0，3 个并行）：K = 16 / 64 / 256，加入 25,808 / 103,232 / 412,928 行；训练 215 / 332 / 805 s；停止 epoch 11 / 17 / 29，
+   最佳 epoch 6 / 12 / 24（ego-novw_s0：27 / 22）。验证损失 0.060 / 0.093 / 0.122（ego-novw_s0 0.026），最后一个 epoch 的训练损失
+   0.049 / 0.061 / 0.067（ego-novw_s0 0.013）；导航段 (v, w) nRMSE 0.257 / 0.316、0.262 / 0.309、0.265 / 0.335（ego-novw_s0
+   0.234 / 0.287）。
+2) 门槛（录制标签基线；预注册 2)）：
+   (i)  FROZEN(EM) r 中位 -0.007 / +0.296 / +0.484（ego-novw_s0 +0.004），r > 0.5 的帧 0% / 19.5% / 49.1%：三个都 < 0.5，判不过
+        （K = 256 差 0.016）。按 episode 的中位（只报告）-0.006 / +0.290 / +0.576。
+   (ii) 环距离 > 0.3 m 的导航帧 r 中位 -0.001 / +0.002 / +0.002，p95 0.099 / 0.097 / 0.097，r > 0.5 的帧 0：三个都满足。
+   -> 没有 K 同时满足两条。按决定表停下提方案：没有训练正式 seed，没有运行任何 DEV / HARD / CONFIRM。
+3) 只报告的量
+   - k0-1 帧的污染指标：r 中位 +0.122 / +0.283 / +0.485（> 0.5 的比例 11% / 39% / 48%），与验证集录制 k0 帧的 r（+0.121 / +0.297 /
+     +0.478）几乎相同：模型在 k0-1 与 k0 输出一样。冻结前审查指出的问题因此是真的：按 C0 的模型基线，FROZEN r 是 -0.062 / -0.051 /
+     -0.008，会把 K = 256 的约 0.48 读成 0。
+   - 训练 episode 的录制 k0 帧（拷贝的来源，未抖动，1,611 个）：r 中位 +0.117 / +0.347 / +0.638，> 0.5 的比例 10% / 44% / 55%。
+     即拷贝本身也没有被拟合到标签：在这个区域网络输出"保持"与"伸臂"的加权平均（C0 第 4 条预计的 MSE 条件均值）。
+   - PRE_LOOK 帧的触发方向 r：中位 -0.018 / +0.006 / +0.004，p95 0.25 / 0.49 / 0.59，> 0.5 的比例 1.6% / 4.9% / 6.1%：提前触发的
+     倾向随 K 升高（预注册预测的方向），只出现在少数帧。
+   - 验证集录制 k0+1 / +2 / +5 ms 的 r：0.62 / 0.76 / 0.87（K 16）、0.93 / 0.97 / 0.92（K 64）、1.01 / 0.98 / 0.89（K 256）。
+   - 训练曲线：验证损失随 K 成倍升高、逐 epoch 抖动大（K 16：0.117、0.081、0.083、0.076、0.066、0.060、0.067 ...），K 16 在第
+     6 个 epoch 就最好。推测（没有逐 epoch 测量相像帧上的误差）：early stopping 用的验证损失没有加权，拷贝拟合得越多，验证集上
+     相像帧的误差越大，所以停止可能发生在拷贝被拟合之前；K 256 训练了 29 个 epoch，训练拷贝的 r 也只有 0.64。
+4) 解读（描述性，不改变判定）：响应随 K 单调升高，K = 256 接近门槛。限制来自两处：(a) 单帧里触发帧与相像的保持帧分不开，
+   MSE 给出两者的加权平均（训练拷贝自己的 r 也只有 0.64）；(b) 可能还有 early stopping 的验证损失惩罚拷贝（推测，见上）。约 0.5 的部分响应在闭环里能否
+   启动伸臂，是离线探针回答不了的开放问题：C0 的推动对照显示机械臂一旦动起来就会自我维持（r 0.67-0.87）。
+5) 后续（用户 2026-10-30 选择"pilot 上闭环诊断"；运行前写下读法）：用已有的校准模型 K 64、K 256（seed 0）与对照 ego-novw_s0，
+   在 data/pilot（100 个 episode，第 3 步的冒烟集；不是 DEV / HARD / CONFIRM）上跑 EM 格（hybrid base=expert，--no-early-stop），
+   输出 results/step3/C3_pilot/B-EM_<模型>_s0_pilot，分析脚本 results/step3/C3_pilot.py。只作描述，不作判定，不改变冻结的规则。
+   读法：主要看 arm_extended_toward（相对专家停靠时保持姿态的误差小 2 cm 以上的伸臂），按 C3-EM 预注册的阈值读：> 30% 算"闭环里
+   能触发"，< 20% 算"不能"，其间不确定（只有 1 个 seed、100 个 episode，给 Wilson 区间）；另报 arm_extended、success、reach_5cm、
+   伸臂时刻减影子 FSM nav_done 的分布、伸臂单元的失败类。结果之后再向用户提方案：若 K 256 能触发，提议事后放宽门槛 (i)（写明是
+   看过 pilot 之后改的）并按冻结的 DEV 流程继续；若不能，提议改做触发分类器门控。
+6) pilot 诊断结果（2026-10-30 19:27-19:39；results/step3/C3_pilot/C3_pilot.txt；1 个 seed、100 个 episode，Wilson 95%）：
+   - 对照 ego-novw_s0：arm_extended_toward 0/100 [0.0, 3.7]%，success 0，reach_2cm 1，parked 96；失败类 parked_no_arm 75。
+   - K 64：arm_extended_toward 79/100 [70.0, 85.8]%（按读法：闭环里能触发），success 52/100 [42.3, 61.5]%，reach_5cm 86，reach_2cm 73；
+     伸臂时刻减影子 FSM nav_done 中位 0.33 s（p10 0.03、p90 0.58 s），6 个在 nav_done 之前（最早 -6.5 s）；伸臂的 79 个单元中
+     success 35、extended_not_reached 32、approached_other 10、circling 2，末端最小误差中位 13 mm。
+   - K 256：arm_extended_toward 79/100 [70.0, 85.8]%（能触发），success 36/100 [27.3, 45.8]%，reach_5cm 94，reach_2cm 57；侧翻 2；
+     伸臂时刻减 nav_done 中位 0.36 s（p10 0.25、p90 0.68 s），2 个在 nav_done 之前；伸臂的 80 个单元中 success 22、
+     extended_not_reached 54，末端最小误差中位 16 mm。
+   - 解读（描述性）：离线门槛 (i)（FROZEN r >= 0.5）比闭环需要的严：约 0.3-0.5 的部分响应在闭环里就足以启动伸臂，之后机械臂
+     自我维持（C0 的推动对照）。触发之后伸得不够准（大多停在 1-5 cm），这是 H-trajectory 的形态（pilot 上伸臂单元的成功比例
+     44% / 28%，DEV 上才判定）。K 256 比 K 64 的成功少、extended_not_reached 多，触发率相同。
+7) K 16 的 pilot 运行（在修订 1 冻结之后，19:41-19:44）与选 K（results/step3/C3_K_choice.txt）：
+   - K 16：arm_extended_toward 76/100 [66.8, 83.3]%，success 63/100 [53.2, 71.8]%，reach_5cm 85，reach_2cm 74，侧翻 1；伸臂时刻减
+     影子 FSM nav_done 中位 0.37 s（p10 0.26、p90 0.57 s），4 个在 nav_done 之前；伸臂的 77 个单元中 success 44、
+     extended_not_reached 21，末端最小误差中位 9 mm。
+   - 按修订 1：三个 K 都满足 (a) (b)，选最小的 K = 16。
+   - 注意：K 16 的离线 FROZEN r 中位是 -0.007（训练拷贝自己的 r 0.12），闭环里却有 76% 伸臂。离线探针对"闭环能否触发"几乎没有
+     预测力（三个 K 的 r 0.0 / 0.3 / 0.5，闭环触发率 76% / 79% / 79%）。可能的原因（推测，没有测量闭环中 nav_done 时机械臂的
+     状态）：FROZEN 状态（qd = 0、q = q[k0-1]）不代表闭环里专家底盘停下之后机械臂实际所处的状态。这一点写进 C3 的局限。
+   - 与第 5) 条事先写的提议不同：修订 1 不是"放宽"门槛 (i)，而是把它从选 K 的规则中去掉、改用 pilot 闭环；这样选出的 K 16
+     在任何放宽的门槛 (i) 下都不会通过（r -0.007）。第 6) 条"约 0.3-0.5 的部分响应就足够"的解读也被 K 16（r 约 0）推翻：闭环
+     触发与离线 r 基本无关。修订 1 由用户确认，在 K 16 的 pilot 运行之前冻结（19:41:26 对 19:41:38）。
+
+
+[Methodology] 第 3 步续预注册修订 1：实验 C3 的 K 选择规则（2026-10-30，事后修改：看过 K 校准与 K 64 / K 256 的 pilot 诊断之后、K 16 的 pilot 运行之前；用户确认；冻结记录 results/step3/prereg_C3_amend1_frozen.txt）
+------------------------------------------------------------------------------------------------------------------------
+1) 为什么改：预注册的离线门槛 (i)（FROZEN(EM) r 中位 >= 0.5）三个 K 都没过（上一节），但 pilot 闭环里 K 64、K 256 都能启动伸臂
+   （arm_extended_toward 79%，对照 0%）：约 0.3-0.5 的部分响应已经足够，门槛 (i) 比闭环需要的严。这是看过 pilot 结果之后的修改，
+   不是预先的计划；pilot 不是 DEV / HARD / CONFIRM，那三个集合上仍然没有任何 C3 结果。
+2) 新规则（只替换预注册 2) 中"选 K"的门槛，其余不变）：K = {16, 64, 256} 中同时满足下面两条的最小 K（三个 K 都要有两项结果）：
+   (a) 离线门槛 (ii)（不误触发，C3_probe.json，不变）；
+   (b) seed 0 校准模型在 data/pilot 上的 EM 格（hybrid base=expert，--no-early-stop）中，arm_extended_toward 的比例 > 30%
+       （点估计，100 个 episode；30% 取自 C3-EM 预注册的"触发"阈值）。
+   门槛 (i) 不再用于选 K，FROZEN r 照常报告。为此在 pilot 上补跑 K 16（results/step3/C3_pilot/B-EM_ego-novw-trig-k16_s0_pilot）。
+   计算：results/step3/C3_K_choice.py -> C3_K_choice.json / .txt。
+3) 随之改的代码（只改 K 的来源，判定规则不变）：run_expC3.sh 的 train 阶段从 C3_K_choice.json 读 K（原来读 C3_probe.json）；
+   C3_mechanisms.py 的模型一致性检查同样改读 C3_K_choice.json。新的 sha256 记在修订的冻结记录里。
+4) 不变：预注册 1) 与 3)-8) 的全部内容（C3-EM 判定、H-trajectory、H-cooperation、H-premature、地板规则、采纳规则 (1)-(5)、
+   CONFIRM 在 (4) 之后、决定表）；选定 K 的 seed 0 必须与校准模型逐位相同；10 个正式 seed。
+5) 修订之前已看到的（如实记录）：K 校准的全部探针值；K 64、K 256、对照在 pilot 上的结果（上一节第 6) 条）。pilot 上 K 64 的成功
+   比 K 256 多（52% 对 36%）；新规则只看触发（> 30%）并取最小的 K，不按 pilot 成功率选。若 K 16 也满足，就选 K 16。
+
+
+[Results] 第 3 步续：实验 C3 结果（2026-10-30，按冻结的预注册与修订 1 运行；K = 16；results/step3/C3_mechanisms.txt、C3_EM_dev.*）
+------------------------------------------------------------------------------------------------------------------------
+0) 运行：run_expC3.sh train（19:44-19:59，10 个模型并行）、em（19:59-20:44）。检查：选定 K = 16 的 seed 0 与校准模型逐位相同
+   （10 个数组）；10 个模型的 meta 都是 K 16、加入 25,808 行、自动 σ、抖动 seed 0，train_policy.py 的 sha256 与冻结记录一致；
+   停止 epoch 10-22。离线验证损失（seed 0-4）0.055-0.062（ego-novw 0.026）。没有 harness_error，所有配对运行的 episode 集合完整。
+1) C3-EM（DEV，专家底盘 + C3 机械臂，--no-early-stop；对照 B-EM ego-novw）
+   - arm_extended_toward：每个 seed 79.3 / 80.0 / 79.7 / 78.7 / 79.0%，seed 平均 79.3%，两层 bootstrap [74.7, 83.7]%，按 seed 的
+     t 区间 [78.7, 80.0]%（专家在同一批 episode 上 81.7%；B-EM 0.0%）。两个下界都 > 30%：判定"触发"（H-support 成立）。
+   - success：64.1% [55.3, 72.4]（每个 seed 68.0 / 50.3 / 76.0 / 67.0 / 59.3%），B-EM 0.1%，差值 +64.1 pp（bootstrap [+55.2, +72.3]，
+     Welch [+52.0, +76.1]）；reach_5cm 93.8%、reach_2cm 82.1%（B-EM 7.7%、1.6%）。
+   - 失败类（seed 平均）：parked_no_arm 83.9% -> 0.3%；extended_not_reached 7.6% -> 29.5%；approached_other 4.5%；circling 1.1%。
+     合并类：arrive_stay 50.5%、arrive_leave 13.6%、base_ok_ee_not 34.4%。每个 n >= 30 的 d0 分层都提高 55-70 pp（Holm 显著）；
+     M0（n 12，描述性）31.7%。
+   - 伸臂时刻减影子 FSM nav_done（1190 个伸臂单元）：中位 0.36 s（p25 0.30、p75 0.45、p95 0.98 s），66 个（5.5%）在 nav_done 之前，
+     12 个 > 2.7 s；专家 0.33-2.7 s、中位 0.47 s，从不在 nav_done 之前。在环上且朝向时伸臂：1139/1190 = 95.7%（专家 236/245 =
+     96.3%）。
+   - H-trajectory：伸臂（朝 target）的 1190 个单元中 10 mm 成功 691 个 = 58.1%（>= 50%）：不成立（专家 243/245）。这些单元的
+     失败主要是 extended_not_reached 430 个（末端进了 5 cm 但没进 1 cm）。
+   - 按决定表：C3-EM 触发、H-trajectory 不成立 -> 在 DEV 上跑 C3-MM。
+2) C3-MM（DEV）：run_expC3.sh mm 从 2026-10-30 20:44 开始；21:05 应用户要求暂停（关机）。此时 seed 0、1 已跑完，seed 2 跑到
+   113/300 个 episode，这个不完整的文件夹已删除；10-31 02:59 续跑（核对冻结文件的 sha256 全部一致），从 seed 2 重跑到 03:30
+   （与实验 A 中断时的处理相同）。没有 harness_error，episode 集合完整。
+   - 决定指标：两边 success 不都在地板上（MM 0.3%、C3-MM 60.5%），所以决定指标就是 success。
+   - success：C3-MM 每个 seed 70.0 / 52.3 / 63.3 / 60.0 / 56.7%，seed 平均 60.5% [53.8, 67.3]；MM 0.3% [0.0, 1.0]；专家 99.3%。
+     差值 +60.1 pp，bootstrap [+53.5, +66.9]，Welch [+51.8, +68.5]，p 3.5e-5；25 个 seed 对的差值 +51.3 至 +70.0 pp。
+   - 采纳条件 (1) 两个 CI 下界都 > 0：满足。(2) success 失败且为 parked_no_arm 或 circling 的单元比例 86.5% -> 12.1%，减少 74.4 pp，
+     是净改进 60.1 pp 的 123.7%（bootstrap [106.4, 143.8]）：满足。(3) n >= 30 的分层中 CI 上界最低的是 M1 +58.3 pp（M1 47.1%、
+     M2 0.08-0.5 63.9%、M2 0.5-1.0 66.1%、M2 >= 1.0 63.8%；M0 n 12 36.7%，描述性）：满足。决定指标是 success，"不变差"不适用。
+     镜像条件都不成立。-> 按决定表跑 HARD。
+   - 机制预测：
+     * H-cooperation（伸臂之后底盘就停）：circling 32.2% -> 12.1%，-20.1 pp，bootstrap [-39.8, -3.9]，但 Welch [-48.0, +7.9]（上界
+       > 0）；parked_no_arm 54.3% -> 0.0%。按预注册（两个 CI 上界都 < 0）：不成立。每个 seed 的 circling 个数（/300）：MM
+       207 / 116 / 62 / 35 / 63，C3-MM 44 / 41 / 24 / 55 / 18（两边是不同的网络，seed 不配对）：C3-MM 的 6-18% 与 MM 最低的几个
+       seed 重叠，MM 本身的 seed 差异很大，Welch 区间因此宽。CONFIRM 上连 bootstrap CI 也包含 0（见 4)）。parked（停靠并静止
+       1 s）11.9% -> 80.7%（描述性，不说明是伸臂让底盘停下）。
+     * H-premature：伸臂的 1226 个单元中，伸臂时环距离 > 0.2 m 的只有 25 个（2.0%，需要 > 30%）：按冻结的规则不成立（没有
+       离环较远的提前伸臂）。伸臂时环距离中位 0.063 m；在环上且朝向时伸臂 1111/1212 = 91.7%（专家 96.3%）。伸臂时刻减专家录制的
+       nav_done 时刻中位 0.72 s，303/1226 早于它（底盘轨迹不同，只作参考）。伸臂比专家早的部分见 C3-EM（1)、6)）。
+   - 次要指标（seed 平均，MM -> C3-MM，Holm 后都显著）：arm_extended_toward 0.4% -> 80.8%（专家 81.7%），reach_5cm 9.0% -> 92.1%，
+     reach_2cm 2.1% -> 79.5%，stable_5cm 7.5% -> 90.5%，held_10s 0.0% -> 26.9%。
+   - 新的失败形态：失败类 extended_not_reached 6.3% -> 18.7%，left_or_overshot 0.1% -> 2.1%，crash 0.1% -> 3.2%（全部是侧翻，
+     5 个 seed 共 48 个：23 / 7 / 8 / 10 / 0，集中在 seed 0）。合并类 arrive_stay 26.9%、arrive_leave 33.6%：到达之后有一半以上没有保持 10 s；这 504 个单元中保持
+     期间底盘最大位移中位 6.0 cm，末端离开 15 mm 的时刻中位 3.2 s，即到达后底盘蠕动（与 Rodrigo §6h 的"零指令残留"观察一致）。
+   - stalled 重跑（协议要求）：C3-MM 的 96 个 stalled episode 用 --no-early-stop 重跑，其中 5 个会成功（s1 ep 39、199，s2 ep 217，
+     s4 ep 31、155，t_reach 26-39 s）：早停规则在 C3-MM 上有少量误判（协议要求"没有一个会成功"，这里不满足，如实记录）。
+     MM 的 117 个 stalled 重跑没有任何变化。敏感性：两边都换成重跑的行后，success 60.8% 对 0.3%，差值 +60.5 pp [+54.0, +67.1]
+     （Welch [+52.5, +68.5]）：结论不变。
+3) HARD（03:30-03:58；run_expC3.sh hard 的门槛检查通过：C3-EM 触发、H-trajectory 不成立、DEV (1)-(3)）
+   - success：C3-MM 每个 seed 64.0 / 51.0 / 55.0 / 55.5 / 56.0%，seed 平均 56.3% [50.2, 62.9]；MM 0.4%；专家 97.0%。差值 +55.9 pp，
+     bootstrap [+49.8, +62.6]，Welch [+50.0, +61.8]：条件 (4)（点估计 > 0）满足。镜像 (1)-(4) 都不成立。
+   - 与 DEV 相同的形态：parked_no_arm 38.3% -> 0.2%，circling 52.0% -> 16.5%（-35.5 [-53.8, -18.5] pp），extended_not_reached
+     1.6% -> 18.3%，crash 0.1% -> 4.4%，left_or_overshot 0.0% -> 1.6%；arm_extended_toward 0.4% -> 86.0%，reach_5cm 89.2%，
+     reach_2cm 72.7%，held_10s 25.4%（arrive_leave 30.9%）。n >= 30 的分层都提高 47-64 pp。在环上且朝向时伸臂 734/860 = 85.3%
+     （专家 159/181 = 87.8%）。改进中 131.7% 来自 parked_no_arm + circling 的减少。
+   - -> 按决定表打开 CONFIRM（只一次，--allow-confirm）。
+4) CONFIRM（03:58-04:39；新训练的 seed 100-104；门槛检查通过：DEV (1)-(3) 与 HARD (4)；打开 CONFIRM 只为这一次复现）
+   - success：C3-MM 每个 seed 60.0 / 61.7 / 78.3 / 61.0 / 60.3%，seed 平均 64.3% [57.7, 72.1]；MM（ego-novw_s100-104）0.3%；专家 98.0%。
+     差值 +64.0 pp，bootstrap [+57.3, +71.8]，Welch [+54.2, +73.8]：条件 (5) 满足。
+   - 形态复现：parked_no_arm 57.7% -> 0.1%，circling 28.1% -> 14.0%（-14.1 [-31.7, +3.9] pp），extended_not_reached 4.9% -> 16.5%，
+     crash 1.4%；arm_extended_toward 1.9% -> 84.1%，reach_5cm 92.7%，reach_2cm 81.3%，held_10s 26.5%（arrive_leave 37.8%）；改进中
+     112.0% 来自 parked_no_arm + circling 的减少；在环上且朝向时伸臂 1153/1261 = 91.4%（专家 236/253 = 93.3%）。
+5) 决定（按冻结的预注册与修订 1）：(1)-(5) 全部满足，success 是决定指标（不在地板上），镜像条件都不成立
+   -> 采纳 C3-MM：主线从 ego-novw 改为 ego-novw-trig（K = 16）。DEV 60.5%、HARD 56.3%、CONFIRM 64.3%（MM 都 < 0.5%）。
+   注意这个决定的范围：它比的是 C3-MM 与 MM，两者的数据设置只差训练行，但加入的行同时改变了训练过程：每个 epoch 多 1.5% 的
+   Adam 步，early stopping 更早（最佳 epoch：C3 5-17，ego-novw 14-41），验证损失约为 2 倍（0.055-0.063 对 0.025-0.029）。
+   所以改进归因于"训练行的变化及其对训练过程的影响"，两者没有分开。离专家（97-99%）还很远。K 是用 pilot 闭环（修订 1，看过
+   K 64 / 256 的 pilot 之后定的规则）选的，不是按原预注册的离线门槛选的。
+6) 机制的读法
+   - 支持的：缺的是"从静止开始伸"的训练样本（H-support，C3-EM 判为触发）。每个 episode 只加 16 份触发帧（训练行的 1.5%），
+     arm_extended_toward 在专家底盘下（EM）从 0% 到 79%（专家 82%），在全模型（MM）中从 0.4% 到 81%；全模型的 success 从 0.3%
+     到 60%。success 的净改进中 124% 对应 parked_no_arm（54% -> 0%）与 circling（32% -> 12%）的减少（条件 (2)）。
+   - 不成立的：H-cooperation（"机械臂一伸，底盘就停"）按冻结的规则不成立：DEV 上 circling 的 Welch 上界 > 0，CONFIRM 上连
+     bootstrap CI 也包含 0。parked 的上升（12% -> 81%）与此相容，但只是描述性的相关，不能说明是伸臂让底盘停下。
+     H-trajectory 不成立（DEV 的 EM 伸臂中 58% 成功）。H-premature 按冻结的规则不成立（离环 > 0.2 m 的提前伸臂只有 2%）。
+   - 部分出现的：先验中"会比专家早触发"。C3-EM 的伸臂时刻减影子 FSM nav_done 中位 0.36 s（专家 0.47 s，最小 0.33 s），
+     37.6% 早于专家的最小值 0.33 s，5.5% 早于 nav_done（专家从不）；但这些伸臂几乎都在环上、朝向 target（95.7%），即比专家
+     早一点开始，而不是在远处提前伸。
+   - 离线探针对闭环的预测力很差：K 16 的 FROZEN r 约为 0，闭环里 arm_extended_toward 76%（pilot）至 79-81%（DEV）、84-86%
+     （CONFIRM、HARD）。拷贝没有被"拟合"（训练拷贝自己的 r 0.12），闭环里机械臂却开始伸；推测（没有测量）是拷贝把机械臂推离
+     保持姿态，之后机械臂自我维持（C0 的推动对照）。离线验证损失反而变差（0.026 -> 0.055-0.063）。描述性的 Spearman(val_loss,
+     DEV success) 加入 C3 模型后为 +0.54（p 0.021，n 18；原来 13 个模型 +0.36），升高来自 C3 这一族整体验证损失高、成功率也高
+     （13 个模型中大多数 success <= 1%），是族与族之间的对比，不是更强的逐模型关系。
+7) 新的瓶颈（下一步的依据，描述性）
+   - 到达后保持不住：成功的 episode 中一半以上没有保持 10 s（DEV arrive_leave 33.6% 对 arrive_stay 26.9%）；保持期间底盘位移中位
+     6 cm（底盘蠕动，Rodrigo §6h 的"零指令残留"）。
+   - 伸了但不够准：extended_not_reached 16-19%（末端进了 5 cm 没进 1 cm）；reach_2cm 73-81% 对 success 56-64%。
+   - 侧翻 1.4-4.4%（DEV 48 个中 23 个在 seed 0）；MM 几乎没有侧翻（机械臂几乎不伸：arm_extended 0.5-1.9%）。
+   - 仍有 12-17% 的 circling（底盘自身的问题，C0 第 5 条估计约 10%）。
+8) 局限
+   - K 的选择规则是看过 pilot 结果后修改的（修订 1）；DEV / HARD / CONFIRM 的判定规则没有改，修订在 K 16 的 pilot 运行之前冻结。
+   - 预注册的离线门槛 (i) 没有预测力（K 校准第 7) 条）：选 K 不能靠这个探针；闭环触发的原因只是推测。
+   - 训练过程的混杂（见 5)）：加入的行也改变了每个 epoch 的优化步数和 early stopping 的时机，改进没有在"触发帧样本"与
+     "训练过程变化"之间分开。
+   - C3 只重新加权专家访问过的触发帧，没有向专家查询学习者的状态（与 DAgger 不同，见 [References]）；qd 抖动只在输入上。
+   - 早停规则在 C3-MM 上有少量误判（DEV 96 个 stalled 中 5 个本可成功）；对结论没有影响（敏感性 +60.5 pp）。
+   - 每个格子只有 5 个 seed；seed 之间差别不小（DEV 52-70%），但 25 个 seed 对的差值全部 > +51 pp。
+   - test（seed 100）仍封存，没有打开。
+9) 图：results/step3/fig_step3_C3_arm.{png,pdf}（DEV 的 B-EM、C3-EM、MM、C3-MM、专家的 success 与 arm_extended_toward，seed 平均
+   与两层 bootstrap CI；由 results/step3/fig_C3_arm.py 画，计算与 C3_mechanisms.py 的 figure() 相同；改动只在版式：数字标签移到
+   CI 上方、纵轴上限 108 -> 110）。
+   results/step3/summary.txt 已用 analyze_rollouts.py --allow-confirm report --no-figures --predicted-classes
+   no_start,no_progress,left_or_overshot 更新（与实验 A 相同的参数）；A_*、B_* 文件逐字不变。
+
+
 [References] 参考文献（已核对出处）
 --------------------------------
 - P. de Haan, D. Jayaraman, S. Levine, "Causal Confusion in Imitation Learning", NeurIPS 2019. arXiv:1905.11979.
@@ -778,6 +1155,16 @@ results/step3/B_ego-novw_dev.txt、fig_step3_split2x2）
   * 用在：离线表必须带照抄基线的理由；实验 A（ego 对 ego 去掉 v̂、ŵ）的 H-copycat 假设；
     如果之后加历史输入的模型，要预先考虑 copycat 会更严重。
 
+- S. Ross, G. J. Gordon, J. A. Bagnell, "A Reduction of Imitation Learning and Structured Prediction to No-Regret Online
+  Learning", AISTATS 2011, PMLR 15:627-635. arXiv:1011.0686.（2026-10-30 核对：PMLR 页面与 CMU RI 页面）
+  * 内容：behaviour cloning 的训练状态来自专家，部署时学习者访问的是自己引起的状态（违反 i.i.d.，误差随时间累积）；
+    DAgger 迭代地在学习者访问的状态上向专家询问标签并聚合数据，可看作 no-regret 在线学习，给出在学习者自身状态分布下的保证。
+  * 用在：实验 C3 的局限：C3 只重新加权专家访问过、专家标注过的触发帧，没有在学习者的状态（底盘已停、机械臂未动）上询问专家。
+- M. Laskey, J. Lee, R. Fox, A. Dragan, K. Goldberg, "DART: Noise Injection for Robust Imitation Learning", CoRL 2017,
+  PMLR 78. arXiv:1703.09327.（2026-10-30 核对：arXiv 与 mlanthology 页面）
+  * 内容：示范时向专家的控制注入噪声，使数据覆盖学习者的误差会把它带到的状态；噪声大小按训练出的策略的误差来设定；
+    离策略，不需要在学习者的轨迹上询问专家。
+  * 用在：[Methodology] 数据采集设计（带噪 episode 的思路）；实验 C3 的局限（C3 对机械臂 qd 的抖动只在输入上，不改变专家轨迹）。
 
 [TODO] 待确定
 ------------

@@ -1,0 +1,4 @@
+ego dev parked 160 parked&ext 10 facing<6deg 55 of them ext 4 all ext 21 bearing err at park median 12.171478413048838
+ego hard parked 250 parked&ext 6 facing<6deg 70 of them ext 0 all ext 15 bearing err at park median 14.90587530991419
+ego-novw dev parked 178 parked&ext 4 facing<6deg 177 of them ext 4 all ext 8 bearing err at park median 0.9894970631755973
+ego-novw hard parked 119 parked&ext 4 facing<6deg 115 of them ext 3 all ext 5 bearing err at park median 1.1263572987963986

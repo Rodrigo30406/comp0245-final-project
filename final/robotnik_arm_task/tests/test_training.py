@@ -641,6 +641,249 @@ class TestLagAnalysis(unittest.TestCase):
         self.assertEqual((s["k_best"], s["mse_best"], s["flat"], s["boundary"]), (None, None, False, False))
 
 
+class TestTriggerCopies(unittest.TestCase):
+    """Experiment C3 (STEP3C_PLAN_PROMPT.md 3.1): K jittered copies of each training episode's trigger frame k0.
+    The small cache of TestCache plus a trigger cache of its 3 training episodes, in a temporary directory."""
+
+    @classmethod
+    def setUpClass(cls):
+        TestCache.setUpClass.__func__(cls)
+        cls.trig_dir = os.path.join(cls.tmp, "cache", "trigger")
+        cls.manifest = tp.build_trigger_cache(cls.split_path, cls.trig_dir, workers=2, train_episodes=cls.train_eps,
+                                              verbose=False)
+        cls.trig, _ = tp.load_trigger_rows(cls.train_eps, cls.trig_dir, cls.split_path, allow_subset=True)
+        cls.sigma = tp.hold_qd_sigma(cls.tr.cols)
+        cls.models = {}
+
+    @classmethod
+    def tearDownClass(cls):
+        shutil.rmtree(cls.tmp)
+
+    def train(self, name, k=None, seed=1, epochs=2, **kw):
+        """A model trained by run_train on the small cache (memoised by its settings)."""
+        key = (name, k, seed, epochs, tuple(sorted(kw.items())))
+        if key not in self.models:
+            out = os.path.join(self.tmp, f"{name}_k{k}_s{seed}_e{epochs}_{len(self.models)}.npz")
+            tp.run_train(name, seed=seed, out=out, cache_dir=self.cache_dir, split_path=self.split_path,
+                         max_epochs=epochs, max_train_episodes=N_MINI_TRAIN, log=lambda s: None, trigger_copies_k=k,
+                         trigger_dir=self.trig_dir, **kw)
+            self.models[key] = bcf.load_model(out)
+        return self.models[key]
+
+    def k0_of(self, e):
+        with np.load(os.path.join(tp.TRAIN_DIR, self.split["episodes"][str(e)]["file"])) as d:
+            return int(np.argmax(d["nav_done"].astype(bool)))
+
+    def test_trigger_rows_are_the_recorded_k0(self):
+        """One row per training episode, the first nav_done step, every column bit-identical to the recording."""
+        self.assertEqual(self.manifest["n_rows"], N_MINI_TRAIN)
+        np.testing.assert_array_equal(self.trig["episode"], self.train_eps)
+        for i, e in enumerate(self.train_eps):
+            k0 = self.k0_of(e)
+            self.assertEqual(int(self.trig["step"][i]), k0)
+            ref, a = npz_rows(os.path.join(tp.TRAIN_DIR, self.split["episodes"][str(e)]["file"]), np.array([k0]))
+            self.assertTrue(a["nav_done"][k0] and (k0 == 0 or not a["nav_done"][k0 - 1]))
+            for name, value in ref.items():
+                got = self.trig[name][i:i + 1]
+                self.assertEqual(got.dtype, np.dtype(tp.CACHE_COLUMNS[name][0]), name)
+                np.testing.assert_array_equal(got, np.asarray(value, dtype=got.dtype), err_msg=name)
+
+    def test_k0_zero_episode(self):
+        """An episode with nav_done from step 0 (training episode 747) gets the trigger frame k0 = 0."""
+        if 747 not in self.split["train_episodes"]:
+            self.skipTest("episode 747 not in the training split")
+        tmp = os.path.join(self.tmp, "trigger747")
+        m = tp.build_trigger_cache(self.split_path, tmp, workers=1, train_episodes=[747], verbose=False)
+        self.assertEqual((m["k0_steps"], m["k0_zero_episodes"]), ([0], [747]))
+
+    def test_k0_identical_to_ego_novw(self):
+        """K = 0: same arrays as ego-novw trained with the same seed, bit for bit (weights, standardisation, losses)."""
+        a, b = self.train("ego-novw"), self.train("ego-novw-trig", k=0)
+        for key in ("x_mean", "x_scale", "y_mean", "y_scale"):
+            np.testing.assert_array_equal(a[key], b[key], err_msg=key)
+        for wa, wb in zip(a["weights"] + a["biases"], b["weights"] + b["biases"]):
+            np.testing.assert_array_equal(wa, wb)
+        self.assertEqual(a["meta"]["history"]["val_loss"], b["meta"]["history"]["val_loss"])
+        self.assertEqual(a["meta"]["history"]["train_loss"], b["meta"]["history"]["train_loss"])
+        self.assertEqual(b["meta"]["trigger"]["n_rows_added"], 0)
+        self.assertEqual(b["meta"]["n_train_rows"], a["meta"]["n_train_rows"])
+        self.assertNotIn("trigger", a["meta"])
+
+    def test_added_rows(self):
+        """K x training episodes rows are added to the fitted rows (train_mlp checks sklearn's sample count against
+        them every epoch), standardisation unchanged."""
+        k = 5
+        m0, m = self.train("ego-novw-trig", k=0), self.train("ego-novw-trig", k=k)
+        t = m["meta"]["trigger"]
+        n_base = m0["meta"]["n_train_rows"]
+        self.assertEqual(t["n_rows_added"], k * N_MINI_TRAIN)
+        self.assertEqual(t["n_train_rows_base"], n_base)
+        self.assertEqual(m["meta"]["n_train_rows"], n_base + k * N_MINI_TRAIN)
+        self.assertEqual(t["n_train_rows_total"], n_base + k * N_MINI_TRAIN)
+        self.assertEqual((t["copies"], t["n_episodes"], t["jitter_seed"]), (k, N_MINI_TRAIN, tp.TRIGGER_JITTER_SEED))
+        self.assertEqual(t["k0_steps"], [self.k0_of(e) for e in self.train_eps])
+        np.testing.assert_array_equal(t["qd_sigma"], self.sigma)
+        for key in ("x_mean", "x_scale", "y_mean", "y_scale"):   # from the original stride-9 rows only
+            np.testing.assert_array_equal(m0[key], m[key], err_msg=key)
+        self.assertFalse(np.array_equal(m0["weights"][0], m["weights"][0]))
+        X, Y, noise = tp.trigger_copies(self.trig, "ego_novw", 7, self.sigma)
+        self.assertEqual((X.shape, Y.shape, noise.shape), ((7 * N_MINI_TRAIN, 20), (7 * N_MINI_TRAIN, 9),
+                                                           (7 * N_MINI_TRAIN, 7)))
+        self.assertEqual(tp.trigger_copies(self.trig, "ego_novw", 0, self.sigma)[0].shape, (0, 20))
+
+    def test_training_matrices(self):
+        """The matrices run_train hands to train_mlp: the K = 0 rows unchanged at the top, then the copies standardised
+        with the base scalers (labels as recorded, only qd jittered), validation unchanged; the same appended block
+        for every training seed."""
+        captured = {}
+        real = tp.train_mlp
+
+        def capture(Xs, Ys, Xvs, Yvs, seed, **kw):
+            captured[(Xs.shape[0], seed)] = (Xs.copy(), Ys.copy(), Xvs.copy(), Yvs.copy())
+            return real(Xs, Ys, Xvs, Yvs, seed, **kw)
+
+        k = 4
+        with mock.patch.object(tp, "train_mlp", side_effect=capture):
+            self.train("ego-novw-trig", k=0, seed=7, epochs=1)
+            m = self.train("ego-novw-trig", k=k, seed=7, epochs=1)
+            self.train("ego-novw-trig", k=k, seed=8, epochs=1)
+        n_base = m["meta"]["trigger"]["n_train_rows_base"]
+        X0, Y0, Xv0, Yv0 = captured[(n_base, 7)]
+        X4, Y4, Xv4, Yv4 = captured[(n_base + k * N_MINI_TRAIN, 7)]
+        X8, Y8, _, _ = captured[(n_base + k * N_MINI_TRAIN, 8)]
+        for a, b in ((X4[:n_base], X0), (Y4[:n_base], Y0), (Xv4, Xv0), (Yv4, Yv0)):
+            np.testing.assert_array_equal(a, b)
+        Xt, Yt, _ = tp.trigger_copies(self.trig, "ego_novw", k, self.sigma)
+        np.testing.assert_array_equal(X4[n_base:], (Xt - m["x_mean"]) / m["x_scale"])
+        np.testing.assert_array_equal(Y4[n_base:], (Yt - m["y_mean"]) / m["y_scale"])
+        np.testing.assert_array_equal(X4[n_base:], X8[n_base:])
+        np.testing.assert_array_equal(Y4[n_base:], Y8[n_base:])
+        names = bcf.FEATURE_SETS["ego_novw"]
+        other = [c for c, n in enumerate(names) if not n.startswith("qd")]
+        X0t = tp.trigger_copies(self.trig, "ego_novw", k, np.zeros(7))[0]
+        np.testing.assert_array_equal(X4[n_base:, other], ((X0t - m["x_mean"]) / m["x_scale"])[:, other])
+
+    def test_labels_bitwise(self):
+        """Every copy's labels are the recorded labels of k0: v, w (from wheel_cmds) and the 7 torques, bit for bit."""
+        k = 4
+        _, Y, _ = tp.trigger_copies(self.trig, "ego_novw", k, self.sigma)
+        for i, e in enumerate(self.train_eps):
+            k0 = self.k0_of(e)
+            with np.load(os.path.join(tp.TRAIN_DIR, self.split["episodes"][str(e)]["file"])) as d:
+                v, w = bcf.wheels_to_vw(d["wheel_cmds"][k0])
+                tau = d["torque_arm"][k0].astype(np.float64)
+            ref = np.concatenate([[v, w], tau])
+            for c in range(k):
+                np.testing.assert_array_equal(Y[i * k + c], ref)
+            self.assertEqual((float(v), float(w)), (0.0, 0.0))   # the recorded trigger step: base command 0
+
+    def test_only_qd_jittered_and_reproducible(self):
+        k = 6
+        X, _, noise = tp.trigger_copies(self.trig, "ego_novw", k, self.sigma)
+        X0, _, noise0 = tp.trigger_copies(self.trig, "ego_novw", k, np.zeros(7))
+        self.assertFalse(noise0.any())
+        names = bcf.FEATURE_SETS["ego_novw"]
+        qd_cols = [names.index(f"qd{j}") for j in range(1, 8)]
+        other = [c for c in range(len(names)) if c not in qd_cols]
+        np.testing.assert_array_equal(X[:, other], X0[:, other])
+        np.testing.assert_array_equal(X[:, qd_cols], X0[:, qd_cols] + noise)
+        self.assertTrue(np.all(noise != 0))
+        # unjittered copies = the features of the recorded k0 rows, each repeated k times (episode-major)
+        ref = tp.cache_features(self.trig, "ego_novw", slice(0, N_MINI_TRAIN))
+        np.testing.assert_array_equal(X0, np.repeat(ref, k, axis=0))
+        # reproducible (one fixed rng, independent of the training seed), and the noise follows sigma per joint
+        X2, _, noise2 = tp.trigger_copies(self.trig, "ego_novw", k, self.sigma)
+        np.testing.assert_array_equal(X, X2)
+        np.testing.assert_array_equal(noise,
+                                      np.random.default_rng(tp.TRIGGER_JITTER_SEED).standard_normal((k * N_MINI_TRAIN, 7))
+                                      * self.sigma)
+        self.assertFalse(np.array_equal(noise, tp.trigger_copies(self.trig, "ego_novw", k, self.sigma,
+                                                                 jitter_seed=1)[2]))
+        big = tp.trigger_copies(self.trig, "ego_novw", 3000, self.sigma)[2]
+        np.testing.assert_allclose(big.std(axis=0) / self.sigma, 1.0, atol=0.05)
+        # the same added rows for every training seed: the meta of two seeds records the same sigma and k0 steps
+        a, b = self.train("ego-novw-trig", k=3, seed=1, epochs=1), self.train("ego-novw-trig", k=3, seed=2, epochs=1)
+        self.assertEqual(a["meta"]["trigger"], b["meta"]["trigger"])
+
+    def test_sigma_hold(self):
+        """sigma_hold = per-joint std of arm qd over the training rows with nav_done False, from the recordings."""
+        offsets = dict(zip(self.split["train_episodes"], self.split["train_offsets"]))
+        qd = []
+        for e in self.train_eps:
+            with np.load(os.path.join(tp.TRAIN_DIR, self.split["episodes"][str(e)]["file"])) as d:
+                steps = np.arange(offsets[e], len(d["t"]), 9)
+                keep = ~d["nav_done"][steps].astype(bool)
+                qd.append(d["qd_mes"][steps[keep], 4:11].astype(np.float64))
+        np.testing.assert_allclose(self.sigma, np.concatenate(qd).std(axis=0), rtol=1e-12)
+        self.assertTrue(np.all(self.sigma > 0))
+        fixed = tp.parse_qd_jitter("0.01")
+        np.testing.assert_array_equal(fixed, np.full(7, 0.01))
+        self.assertIsNone(tp.parse_qd_jitter("auto"))
+        with self.assertRaises(SystemExit):
+            tp.parse_qd_jitter("1,2")
+        m = self.train("ego-novw-trig", k=2, epochs=1, trigger_qd_jitter="0")
+        self.assertEqual(m["meta"]["trigger"]["qd_sigma"], [0.0] * 7)
+        np.testing.assert_array_equal(m["meta"]["trigger"]["qd_sigma_hold"], self.sigma)
+
+    def test_refusals(self):
+        kw = dict(seed=1, cache_dir=self.cache_dir, split_path=self.split_path, max_epochs=1,
+                  max_train_episodes=N_MINI_TRAIN, log=lambda s: None, trigger_dir=self.trig_dir)
+        with self.assertRaises(SystemExit):   # the trigger model needs K
+            tp.run_train("ego-novw-trig", out=os.path.join(self.tmp, "r1.npz"), **kw)
+        with self.assertRaises(SystemExit):   # K only for the trigger model
+            tp.run_train("ego-novw", out=os.path.join(self.tmp, "r2.npz"), trigger_copies_k=2, **kw)
+        with self.assertRaises(SystemExit):   # a jitter setting only for the trigger model
+            tp.run_train("ego-novw", out=os.path.join(self.tmp, "r3.npz"), trigger_qd_jitter="0.5", **kw)
+        with mock.patch.object(tp, "run_train_many") as many:   # train-many checks before spawning any seed
+            for argv in (["train-many", "--model", "ego-novw-trig", "--seeds", "1"],
+                         ["train-many", "--model", "ego-novw", "--seeds", "1", "--trigger-copies", "2"]):
+                with self.assertRaises(SystemExit):
+                    tp.main(argv)
+            many.assert_not_called()
+        with self.assertRaises(RuntimeError):   # a subset trigger cache never feeds an official model
+            tp.load_trigger_rows(self.train_eps, self.trig_dir, self.split_path)
+        with self.assertRaises(RuntimeError):   # an episode the trigger cache lacks
+            tp.load_trigger_rows([self.split["train_episodes"][N_MINI_TRAIN]], self.trig_dir, self.split_path,
+                                 allow_subset=True)
+        other = os.path.join(self.tmp, "other_split_trig.json")
+        tp.write_split(other, split_seed=1)
+        with self.assertRaises(RuntimeError):   # built from another split file
+            tp.load_trigger_rows(self.train_eps, self.trig_dir, other, allow_subset=True)
+
+    def test_train_many_passes_the_trigger_settings(self):
+        out_dir = os.path.join(self.tmp, "many_trig")
+        os.makedirs(out_dir)
+        extra = ["--max-epochs", "1", "--max-train-episodes", str(N_MINI_TRAIN), "--trigger-copies", "3",
+                 "--trigger-qd-jitter", "auto", "--trigger-cache", self.trig_dir]
+        with mock.patch.object(tp, "TRAINED_DIR", out_dir), mock.patch("builtins.print"):
+            rc = tp.run_train_many("ego-novw-trig", [5], jobs=1, cache_dir=self.cache_dir,
+                                   split_path=self.split_path, extra_args=extra)
+        self.assertEqual(rc, {5: 0})
+        m = bcf.load_model(os.path.join(out_dir, "ego-novw-trig_s5.npz"))
+        self.assertEqual((m["meta"]["model"], m["meta"]["seed"], m["meta"]["trigger"]["copies"]), ("ego-novw-trig", 5, 3))
+        ref = self.train("ego-novw-trig", k=3, seed=5, epochs=1)   # the same in this process, bit for bit
+        for a, c in zip(ref["weights"] + ref["biases"], m["weights"] + m["biases"]):
+            np.testing.assert_array_equal(a, c)
+
+    def test_full_trigger_cache(self):
+        manifest = os.path.join(tp.TRIGGER_DIR, "manifest.json")
+        if not (os.path.exists(manifest) and os.path.exists(tp.SPLIT_PATH)):
+            self.skipTest("full trigger cache not built")
+        split = tp.load_split(tp.SPLIT_PATH)
+        cols, _ = tp.load_trigger_rows(split["train_episodes"])
+        self.assertEqual(len(cols["episode"]), 1613)
+        self.assertTrue(np.all(cols["label_v"] == 0) and np.all(cols["label_w"] == 0))
+        rng = np.random.default_rng(3)
+        for i in rng.choice(1613, size=5, replace=False):
+            e = split["train_episodes"][i]
+            ref, a = npz_rows(os.path.join(tp.TRAIN_DIR, split["episodes"][str(e)]["file"]),
+                              np.array([int(np.argmax(np.load(os.path.join(
+                                  tp.TRAIN_DIR, split["episodes"][str(e)]["file"]))["nav_done"]))]))
+            for name, value in ref.items():
+                np.testing.assert_array_equal(cols[name][i:i + 1], np.asarray(value, dtype=cols[name].dtype),
+                                              err_msg=name)
+
+
 class TestLabelConventions(unittest.TestCase):
     """Plan 3.1 (b)-(d): wheel round trip, ego invariance, sign conventions of the labels."""
 
