@@ -37,6 +37,7 @@ GEOMETRY_NAMES = FEATURE_NAMES[:10]
 TARGET_NAMES = FEATURE_NAMES[7:10]  # target in the base frame: no expert goal construction involved
 POLAR_NAMES = ["target_distance_xy", "cos_heading_error_to_target", "sin_heading_error_to_target"]
 VELOCITY_NAMES = ["base_forward_speed_fd", "base_lateral_speed_fd", "base_yaw_rate_fd"]
+PREV_WHEEL_NAMES = ["prev_wheel_right_cmd", "prev_wheel_left_cmd"]
 CLOCK_NAME = "episode_clock_fraction"
 # Input layouts. The lecturer's 21 explicit inputs may be kept and extended (not replaced):
 #   egocentric_clock_v1       : 10 relative geometry + 14 joint + clock (25); replaces the 7 absolute pose/target inputs
@@ -52,14 +53,60 @@ CLOCK_NAME = "episode_clock_fraction"
 #                               consecutive observations (forward and lateral speed in the base frame, yaw rate) (31).
 #                               The lecturer's inputs carry no base velocity; this is the one-step memory a robot's
 #                               odometry provides. Zero on the first step of an episode (the robot starts at rest).
+#   raw21_targetpolar_prevwheel_clock_v1: raw21_targetpolar_clock_v1 plus the policy's OWN wheel command of the previous
+#                               step (30). In training it is the demonstrated command of the previous row (teacher
+#                               forcing), in closed loop the policy's previous output; zero on the first step. No expert
+#                               state is read: a controller always knows what it commanded a millisecond ago.
 VARIANTS = {VARIANT: list(FEATURE_NAMES),
             "raw21_clock_v1": list(INPUT_NAMES) + [CLOCK_NAME],
             "raw21_egocentric_clock_v1": list(INPUT_NAMES) + list(GEOMETRY_NAMES) + [CLOCK_NAME],
             "raw21_target_clock_v1": list(INPUT_NAMES) + list(TARGET_NAMES) + [CLOCK_NAME],
             "raw21_targetpolar_clock_v1": list(INPUT_NAMES) + list(TARGET_NAMES) + POLAR_NAMES + [CLOCK_NAME],
-            "raw21_targetpolar_vel_clock_v1": list(INPUT_NAMES) + list(TARGET_NAMES) + POLAR_NAMES + VELOCITY_NAMES + [CLOCK_NAME]}
-STATEFUL_VARIANTS = {"raw21_targetpolar_vel_clock_v1"}  # need the previous observation: live inference keeps it
+            "raw21_targetpolar_vel_clock_v1": list(INPUT_NAMES) + list(TARGET_NAMES) + POLAR_NAMES + VELOCITY_NAMES + [CLOCK_NAME],
+            "raw21_targetpolar_prevwheel_clock_v1": list(INPUT_NAMES) + list(TARGET_NAMES) + POLAR_NAMES + PREV_WHEEL_NAMES + [CLOCK_NAME]}
+ACTION_INPUT_VARIANTS = {"raw21_targetpolar_prevwheel_clock_v1"}  # need the previous wheel command
+STATEFUL_VARIANTS = {"raw21_targetpolar_vel_clock_v1", *ACTION_INPUT_VARIANTS}  # live inference keeps a previous step
+POLAR_VARIANTS = {"raw21_targetpolar_clock_v1", "raw21_targetpolar_vel_clock_v1", *ACTION_INPUT_VARIANTS}
 KIND = "egocentric_mlp_regressor"
+# Training options (config block "egocentric_options", overridable with --option KEY=VALUE). Defaults reproduce the
+# lecturer's MLP recipe exactly: L2 on all nine outputs, uniform rows, continuous wheel outputs.
+DEFAULT_OPTIONS = {"wheel_loss": "l2",            # l2 | l1 on the two wheel outputs (the arm is always L2)
+                   "stop_weight": 1.0,            # weight of the wheel loss on rows whose demonstrated wheels are exactly zero
+                   "wheel_output": "regression",  # regression | categorical (softmax over wheel_bins velocity bins, argmax decode)
+                   "wheel_bins": 41,              # odd, so one bin is exactly zero; range = max |demonstrated wheel command|
+                   "prev_wheel_shuffle_p": 0.0,   # action-input variants: fraction of rows whose previous command is swapped within the batch
+                   "prev_wheel_noise_std": 0.0}   # action-input variants: N(0, std) noise on the normalized previous command
+
+
+def resolve_options(config, variant, overrides=None):
+    opts = {**DEFAULT_OPTIONS, **config.get("egocentric_options", {}), **(overrides or {})}
+    if set(opts) != set(DEFAULT_OPTIONS):
+        raise ValueError(f"Unknown egocentric options {sorted(set(opts) - set(DEFAULT_OPTIONS))}")
+    if opts["wheel_loss"] not in ("l2", "l1") or opts["wheel_output"] not in ("regression", "categorical"):
+        raise ValueError("wheel_loss must be l2|l1 and wheel_output regression|categorical")
+    if opts["wheel_output"] == "categorical" and opts["wheel_loss"] != "l2":
+        raise ValueError("categorical wheels are trained with cross-entropy; wheel_loss must stay l2 (unused)")
+    if type(opts["wheel_bins"]) is not int or opts["wheel_bins"] < 3 or opts["wheel_bins"] % 2 == 0:
+        raise ValueError("wheel_bins must be an odd integer >= 3")
+    for key, low in (("stop_weight", 1.0), ("prev_wheel_shuffle_p", 0.0), ("prev_wheel_noise_std", 0.0)):
+        if not isinstance(opts[key], (int, float)) or isinstance(opts[key], bool) or not math.isfinite(opts[key]) or opts[key] < low:
+            raise ValueError(f"{key} must be a finite number >= {low}")
+        opts[key] = float(opts[key])
+    if opts["prev_wheel_shuffle_p"] > 1:
+        raise ValueError("prev_wheel_shuffle_p is a probability")
+    if (opts["prev_wheel_shuffle_p"] or opts["prev_wheel_noise_std"]) and variant not in ACTION_INPUT_VARIANTS:
+        raise ValueError("prev_wheel options need an action-input variant")
+    return opts
+
+
+def decode_outputs(out, y_mean, y_scale, wheel_bin_centres=None):
+    """Network outputs -> nine controls in physical units; categorical wheels take the centre of the argmax bin."""
+    out = np.asarray(out, dtype=np.float64)
+    if wheel_bin_centres is None:
+        return out * y_scale + y_mean
+    b = len(wheel_bin_centres)
+    wheels = np.stack([wheel_bin_centres[out[:, :b].argmax(axis=1)], wheel_bin_centres[out[:, b:2 * b].argmax(axis=1)]], axis=1)
+    return np.concatenate([wheels, out[:, 2 * b:] * y_scale[2:] + y_mean[2:]], axis=1)
 
 
 def validate_spec(spec):
@@ -86,8 +133,11 @@ def wrap(angle):
     return (angle + np.pi) % (2 * np.pi) - np.pi
 
 
-def encode(observations, times, spec, previous=None):
+def encode(observations, times, spec, previous=None, previous_wheels=None):
     """(N, 21) raw observations and (N,) seconds since episode start -> (N, F) features of spec["variant"].
+
+    `previous` is the observation before the first row (stateful velocity variant); `previous_wheels` the (N, 2) wheel
+    command issued before each row (action-input variants: demonstrated in training, the policy's own in closed loop).
 
     Reproduces the expert's goal construction from `Episode._initialize`: bearing from the
     world origin to the target, standoff interpolated on target height, goal behind the
@@ -132,12 +182,19 @@ def encode(observations, times, spec, previous=None):
         features = np.concatenate([x, geometry, clock[:, None]], axis=1)
     elif variant == "raw21_target_clock_v1":
         features = np.concatenate([x, geometry[:, 7:10], clock[:, None]], axis=1)
-    elif variant in ("raw21_targetpolar_clock_v1", "raw21_targetpolar_vel_clock_v1"):
+    elif variant in POLAR_VARIANTS:
         target_distance = np.hypot(target_b[:, 0], target_b[:, 1])
         heading_to_target = np.arctan2(target_b[:, 1], target_b[:, 0])  # already relative to the base heading
         polar = np.stack([target_distance, np.cos(heading_to_target), np.sin(heading_to_target)], axis=1)
         if variant == "raw21_targetpolar_clock_v1":
             features = np.concatenate([x, geometry[:, 7:10], polar, clock[:, None]], axis=1)
+        elif variant in ACTION_INPUT_VARIANTS:
+            if previous_wheels is None:
+                raise ValueError(f"{variant} needs the previous wheel command of every row")
+            pw = np.asarray(previous_wheels, dtype=np.float64)
+            if pw.shape != (len(x), 2) or not np.isfinite(pw).all():
+                raise ValueError("previous_wheels must be finite (N, 2)")
+            features = np.concatenate([x, geometry[:, 7:10], polar, pw, clock[:, None]], axis=1)
         else:
             # Finite-difference base velocity from consecutive observations of ONE episode in order; the row before the
             # first is the first itself (zero velocity: every episode starts at rest) unless `previous` is given.
@@ -155,13 +212,18 @@ def encode(observations, times, spec, previous=None):
 class EgocentricPolicy:
     """ReLU MLP over egocentric features with an internal episode clock; NumPy inference."""
 
-    def __init__(self, spec, x_mean, x_scale, y_mean, y_scale, weights, biases):
+    def __init__(self, spec, x_mean, x_scale, y_mean, y_scale, weights, biases, wheel_bin_centres=None):
         validate_spec(spec)
         self.spec = spec
         self.x_mean = np.asarray(x_mean); self.x_scale = np.asarray(x_scale)
         self.y_mean = np.asarray(y_mean); self.y_scale = np.asarray(y_scale)
         self.weights = [np.asarray(w) for w in weights]; self.biases = [np.asarray(b) for b in biases]
         self.names = list(VARIANTS[spec["variant"]])
+        self.wheel_bin_centres = None if wheel_bin_centres is None else np.asarray(wheel_bin_centres, dtype=np.float64)
+        if self.wheel_bin_centres is not None:
+            c = self.wheel_bin_centres
+            if c.ndim != 1 or len(c) < 3 or not np.isfinite(c).all() or np.any(np.diff(c) <= 0):
+                raise ValueError("wheel_bin_centres must be an increasing finite vector")
         n = len(self.names)
         if any(v.shape != (k,) for v, k in [(self.x_mean, n), (self.x_scale, n), (self.y_mean, 9), (self.y_scale, 9)]):
             raise ValueError("Invalid normalization shapes")
@@ -172,13 +234,17 @@ class EgocentricPolicy:
             if w.ndim != 2 or w.shape[0] != width or b.shape != (w.shape[1],):
                 raise ValueError("Invalid layer shapes")
             width = w.shape[1]
-        if width != 9:
-            raise ValueError("Output width must be nine controls")
+        if width != self.output_width:
+            raise ValueError("Output width must be nine controls (or 2 x wheel bins + 7 arm torques)")
         if np.any(self.x_scale <= 0) or np.any(self.y_scale <= 0):
             raise ValueError("Scales must be positive")
         if not all(np.isfinite(v).all() for v in self.arrays().values() if v.dtype.kind == "f"):
             raise ValueError("Non-finite parameters")
-        self._count = 0; self._dt = spec["dt_s"]; self._prev = None
+        self._count = 0; self._dt = spec["dt_s"]; self._prev = None; self._prev_wheels = np.zeros(2)
+
+    @property
+    def output_width(self):
+        return 9 if self.wheel_bin_centres is None else 2 * len(self.wheel_bin_centres) + 7
 
     @property
     def input_features(self):
@@ -191,6 +257,8 @@ class EgocentricPolicy:
                   "clock": np.array([self.spec["horizon_s"], self.spec["dt_s"]], dtype=np.float64)}
         result.update({f"weight_{i}": w for i, w in enumerate(self.weights)})
         result.update({f"bias_{i}": b for i, b in enumerate(self.biases)})
+        if self.wheel_bin_centres is not None:
+            result["wheel_bin_centres"] = self.wheel_bin_centres
         return result
 
     def predict_features(self, features, block=65536):
@@ -203,27 +271,38 @@ class EgocentricPolicy:
             hidden = hidden @ w + b
             if i < len(self.weights) - 1:
                 np.maximum(hidden, 0, out=hidden)
-        return hidden * self.y_scale + self.y_mean
+        return decode_outputs(hidden, self.y_mean, self.y_scale, self.wheel_bin_centres)
 
     def predict(self, observations, times=None):
-        """Batch inference for ONE episode in order; times default to step*dt from zero."""
+        """Batch inference for ONE episode in order; times default to step*dt from zero.
+
+        Action-input variants run sequentially on their own previous outputs (what closed loop does); their
+        teacher-forced features come from `load_episode_features`.
+        """
         x = np.atleast_2d(np.asarray(observations, dtype=np.float64))
         t = np.arange(len(x)) * self.spec["dt_s"] if times is None else np.asarray(times, dtype=np.float64)
-        return self.predict_features(encode(x, t, self.spec))
+        if self.spec["variant"] not in ACTION_INPUT_VARIANTS:
+            return self.predict_features(encode(x, t, self.spec))
+        out = np.empty((len(x), 9)); prev = np.zeros((1, 2))
+        for i in range(len(x)):
+            out[i] = self.predict_features(encode(x[i:i + 1], t[i:i + 1], self.spec, previous_wheels=prev))[0]
+            prev = out[i:i + 1, :2]
+        return out
 
     def predict_action(self, observation):
         x = np.asarray(observation, dtype=np.float64)
         if x.shape != (21,):
             raise ValueError("Live inference takes one 21D observation")
         t = self._count * self._dt; self._count += 1
-        features = encode(x[None], np.array([t]), self.spec, previous=self._prev)
-        self._prev = x
-        return expand_actions(self.predict_features(features)[0])
+        features = encode(x[None], np.array([t]), self.spec, previous=self._prev, previous_wheels=self._prev_wheels[None])
+        action = self.predict_features(features)[0]
+        self._prev = x; self._prev_wheels = action[:2].copy()
+        return expand_actions(action)
 
     def reset(self, dt=None):
         if dt is not None and not np.isclose(dt, self.spec["dt_s"], rtol=0, atol=1e-12):
             raise ValueError("Policy clock dt differs from simulator dt")
-        self._count = 0; self._prev = None
+        self._count = 0; self._prev = None; self._prev_wheels = np.zeros(2)
 
     def save(self, path):
         np.savez_compressed(path, **self.arrays())
@@ -236,7 +315,8 @@ class EgocentricPolicy:
                     "standoff_distances": data["standoff_distances"].tolist(),
                     "horizon_s": float(data["clock"][0]), "dt_s": float(data["clock"][1])}
             return cls(spec, data["x_mean"], data["x_scale"], data["y_mean"], data["y_scale"],
-                       [data[f"weight_{i}"] for i in range(count)], [data[f"bias_{i}"] for i in range(count)])
+                       [data[f"weight_{i}"] for i in range(count)], [data[f"bias_{i}"] for i in range(count)],
+                       data["wheel_bin_centres"] if "wheel_bin_centres" in data.files else None)
 
 
 def load_episode_features(directory, record, spec):
@@ -248,7 +328,10 @@ def load_episode_features(directory, record, spec):
     with np.load(path, allow_pickle=False) as data:
         validate_episode_sampling(data, read_json(path.with_suffix(".json")), {"dt_s": spec["dt_s"]})
         times = data["time"].astype(np.float64)
-    return encode(x, times, spec), y
+    previous_wheels = None
+    if spec["variant"] in ACTION_INPUT_VARIANTS:  # the demonstrated command of the previous row; none before the first
+        previous_wheels = np.vstack([np.zeros((1, 2)), np.asarray(y, dtype=np.float64)[:-1, :2]])
+    return encode(x, times, spec, previous_wheels=previous_wheels), y
 
 
 def load_group(directory, records, spec):
@@ -260,7 +343,7 @@ def load_group(directory, records, spec):
             list(zip(np.r_[0, np.cumsum(rows)[:-1]].tolist(), np.cumsum(rows).tolist())))
 
 
-def train(dataset, split_path, config_path, output, horizon_s=40.0, device_name="cuda", variant=VARIANT):
+def train(dataset, split_path, config_path, output, horizon_s=40.0, device_name="cuda", variant=VARIANT, options=None):
     os.environ.setdefault("CUBLAS_WORKSPACE_CONFIG", ":4096:8")
     import torch
     if variant not in VARIANTS:
@@ -270,6 +353,9 @@ def train(dataset, split_path, config_path, output, horizon_s=40.0, device_name=
     config = read_json(config_path); hp = config["mlp"]
     if config.get("model") != "mlp" or config.get("backend") != "pytorch":
         raise ValueError("Egocentric variant reuses the PyTorch MLP recipe")
+    opts = resolve_options(config, variant, options)
+    categorical = opts["wheel_output"] == "categorical"
+    augment = variant in ACTION_INPUT_VARIANTS and (opts["prev_wheel_shuffle_p"] > 0 or opts["prev_wheel_noise_std"] > 0)
     saved = read_json(split_path)
     if Path(saved["dataset"]).resolve() != dataset:
         raise ValueError("Split belongs to another dataset")
@@ -291,7 +377,7 @@ def train(dataset, split_path, config_path, output, horizon_s=40.0, device_name=
     torch.manual_seed(hp["seed"]); torch.use_deterministic_algorithms(True)
     torch.set_float32_matmul_precision("highest"); torch.backends.cuda.matmul.allow_tf32 = False
     output.mkdir(parents=True, exist_ok=False)
-    write_json(output / "config.json", {**config, "input_features": variant, "clock_horizon_s": horizon_s})
+    write_json(output / "config.json", {**config, "input_features": variant, "clock_horizon_s": horizon_s, "egocentric_options": opts})
     shutil.copy2(split_path, output / "split.json")
     source_paths = sorted((PROJECT_ROOT / "src/robot_learning/learning").glob("*.py"))
     source_hashes = {str(p.relative_to(PROJECT_ROOT)): sha256(p) for p in source_paths}
@@ -306,7 +392,7 @@ def train(dataset, split_path, config_path, output, horizon_s=40.0, device_name=
                 "versions": {name: importlib.metadata.version(name) for name in ["numpy", "scipy", "torch"]},
                 "python": sys.version, "command": sys.argv, "input_names": names,
                 "raw_observation_names": INPUT_NAMES, "output_names": OUTPUT_NAMES,
-                "feature_spec": spec, "backend": "pytorch",
+                "feature_spec": spec, "backend": "pytorch", "egocentric_options": opts,
                 "test_set": "none; development train/validation only",
                 "closed_loop_evaluation": "not run by the trainer"}
     write_json(output / "run.json", manifest)
@@ -320,7 +406,26 @@ def train(dataset, split_path, config_path, output, horizon_s=40.0, device_name=
         xn = ((x - x_mean) / x_scale).astype(np.float32); yn = ((y - y_mean) / y_scale).astype(np.float32)
         vxn = ((vx - x_mean) / x_scale).astype(np.float32)
         tx = torch.from_numpy(xn).to(device); ty = torch.from_numpy(yn).to(device); tvx = torch.from_numpy(vxn).to(device)
-        widths = [len(names), *hp["hidden_layer_sizes"], 9]
+        centres = None; tb = None; tw = None
+        if categorical:
+            # Symmetric bins over the demonstrated wheel envelope; an odd count puts one bin centre exactly at zero.
+            limit = float(np.abs(y[:, :2]).max())
+            if limit <= 0:
+                raise ValueError("Demonstrated wheel commands are all zero; nothing to bin")
+            centres = np.linspace(-limit, limit, opts["wheel_bins"])
+            bins = np.rint((y[:, :2] + limit) / (2 * limit) * (opts["wheel_bins"] - 1)).astype(np.int64)
+            tb = torch.from_numpy(bins).to(device)
+        if opts["stop_weight"] != 1.0:
+            stopped = (y[:, :2] == 0).all(axis=1)
+            tw = torch.from_numpy(np.where(stopped, opts["stop_weight"], 1.0).astype(np.float32)).to(device)
+            stop_rows = int(stopped.sum())
+        else:
+            stop_rows = int((y[:, :2] == 0).all(axis=1).sum())
+        if augment:
+            prev_cols = [names.index(n) for n in PREV_WHEEL_NAMES]
+            col_mask = torch.zeros(len(names), dtype=torch.bool, device=device); col_mask[prev_cols] = True
+        out_width = 9 if centres is None else 2 * len(centres) + 7
+        widths = [len(names), *hp["hidden_layer_sizes"], out_width]
         layers = []
         for i, (a, b) in enumerate(zip(widths[:-1], widths[1:])):
             layers.append(torch.nn.Linear(a, b))
@@ -338,24 +443,55 @@ def train(dataset, split_path, config_path, output, horizon_s=40.0, device_name=
         def export():
             return EgocentricPolicy(spec, x_mean, x_scale, y_mean, y_scale,
                                     [l.weight.detach().cpu().numpy().T.copy() for l in network[::2]],
-                                    [l.bias.detach().cpu().numpy().copy() for l in network[::2]])
+                                    [l.bias.detach().cpu().numpy().copy() for l in network[::2]], centres)
 
         def score():
             with torch.no_grad():
                 pred = np.concatenate([network(tvx[s:s + 16384]).double().cpu().numpy() for s in range(0, len(tvx), 16384)])
-            pred = pred * y_scale + y_mean
+            pred = decode_outputs(pred, y_mean, y_scale, centres)
             return float(np.mean([errors(vy[a:b], pred[a:b], y_scale)["balanced_nrmse"] for a, b in vranges]))
+
+        def row_objective(xb, idx):
+            """Per-row loss: wheel term (L2 / L1 / cross-entropy, optionally stop-weighted) + half-sum L2 on the arm."""
+            out = network(xb)
+            if categorical:
+                b = len(centres)
+                wheel = (torch.nn.functional.cross_entropy(out[:, :b], tb[idx, 0], reduction="none") +
+                         torch.nn.functional.cross_entropy(out[:, b:2 * b], tb[idx, 1], reduction="none"))
+                arm = out[:, 2 * b:]
+            else:
+                diff = out[:, :2] - ty[idx, :2]
+                wheel = .5 * diff.square().sum(dim=1) if opts["wheel_loss"] == "l2" else diff.abs().sum(dim=1)
+                arm = out[:, 2:]
+            if tw is not None:
+                wheel = wheel * tw[idx]
+            return wheel + .5 * (arm - ty[idx, 2:]).square().sum(dim=1)
+
+        def augmented(xb, size):
+            """Anti-copycat on the previous-command columns: swap them between rows and add noise, both in normalized units."""
+            if opts["prev_wheel_shuffle_p"] > 0:
+                swap = torch.from_numpy(rng.random(size) < opts["prev_wheel_shuffle_p"]).to(device)
+                perm = torch.from_numpy(rng.permutation(size)).to(device)
+                xb = torch.where(swap[:, None] & col_mask[None, :], xb[perm], xb)
+            if opts["prev_wheel_noise_std"] > 0:
+                noise = np.zeros((size, len(names)), dtype=np.float32)
+                noise[:, prev_cols] = rng.normal(0.0, opts["prev_wheel_noise_std"], (size, 2))
+                xb = xb + torch.from_numpy(noise).to(device)
+            return xb
 
         best = math.inf; patience_score = math.inf; stale = 0; best_epoch = 0; history = []; epoch = 0; n = len(tx)
         while stale < hp["patience"] and (hp["max_epochs"] is None or epoch < hp["max_epochs"]):
             epoch += 1; t0 = time.perf_counter(); order = torch.from_numpy(rng.permutation(n)).to(device); total = 0.0
             for s in range(0, n, hp["batch_size"]):
                 idx = order[s:s + hp["batch_size"]]
-                squared = (network(tx[idx]) - ty[idx]).square()
-                objective = .5 * squared.sum(dim=1).mean() + (.5 * hp["alpha"] / len(idx)) * sum(
+                xb = tx[idx]
+                if augment:
+                    xb = augmented(xb, len(idx))
+                rows = row_objective(xb, idx)
+                objective = rows.mean() + (.5 * hp["alpha"] / len(idx)) * sum(
                     l.weight.square().sum() for l in network[::2])
                 optimizer.zero_grad(set_to_none=True); objective.backward(); optimizer.step()
-                total += float(.5 * squared.detach().mean()) * len(idx)
+                total += float(rows.detach().sum()) / 9
             current = score()
             if not math.isfinite(current):
                 raise ValueError("Non-finite validation score")
@@ -395,17 +531,28 @@ def train(dataset, split_path, config_path, output, horizon_s=40.0, device_name=
         policy.reset()
         if any(sha256(PROJECT_ROOT / p) != d for p, d in source_hashes.items()):
             raise ValueError("Training source changed during execution")
+        wheel_loss_text = ("cross-entropy over wheel velocity bins (argmax decode)" if categorical else
+                           f"{opts['wheel_loss']} on the two wheel outputs")
+        if opts["stop_weight"] != 1.0:
+            wheel_loss_text += f", weighted x{opts['stop_weight']:g} on the {stop_rows} training rows with zero demonstrated wheels"
         info = {"kind": KIND, "variant": variant, "backend": "pytorch", "training_device": str(device),
-                "hidden_layer_sizes": hp["hidden_layer_sizes"], "activation": "relu", "output_activation": "identity",
+                "hidden_layer_sizes": hp["hidden_layer_sizes"], "activation": "relu",
+                "output_activation": "identity" if not categorical else "identity (wheel logits) + argmax bin centre",
+                "egocentric_options": opts, "wheel_output": opts["wheel_output"],
+                "wheel_bin_centres": None if centres is None else centres.tolist(),
+                "stop_rows_in_training": stop_rows, "training_rows": int(n),
+                "prev_wheel_augmentation": None if not augment else {"shuffle_p": opts["prev_wheel_shuffle_p"], "noise_std_normalized": opts["prev_wheel_noise_std"]},
                 "regression_parameters": sum(p.numel() for p in network.parameters()), "weight_dtype": "float32",
                 "input_features": len(names), "input_names": names, "independent_outputs": 9,
                 "feature_spec": spec,
-                "feature_provenance": "Deterministic functions of the 21 baseline inputs, the expert standoff table and the controller clock; no expert memory or actions",
+                "feature_provenance": ("Deterministic functions of the 21 baseline inputs, the expert standoff table and the controller clock; no expert memory or actions"
+                                       if variant not in ACTION_INPUT_VARIANTS else
+                                       "Deterministic functions of the 21 baseline inputs, the controller clock and the policy's own previous wheel command (demonstrated command in training); no expert state"),
                 "epochs_completed": epoch, "best_epoch": best_epoch,
                 "best_validation_episode_macro_balanced_nrmse": best,
                 "stop_reason": "patience" if stale >= hp["patience"] else "max_epochs",
                 "checkpoint_selection": "minimum validation episode-macro balanced NRMSE",
-                "training_loss": "half output-sum MSE gradients with alpha/(2*batch_rows) weight L2; sklearn convention",
+                "training_loss": f"{wheel_loss_text}; half-sum MSE on the seven arm outputs; alpha/(2*batch_rows) weight L2 (sklearn convention)",
                 "constant_training_inputs": constant_inputs,
                 "inference_single_observation_us": {"median": float(np.median(timings) / 1000),
                                                     "p95": float(np.percentile(timings, 95) / 1000), "samples": len(timings)},
@@ -437,9 +584,20 @@ def main(argv=None):
     parser.add_argument("--horizon-s", type=float, default=40.0, help="Clock normalization; the evaluation horizon")
     parser.add_argument("--device", default="cuda")
     parser.add_argument("--inputs", default=VARIANT, choices=sorted(VARIANTS),
-                        help="egocentric_clock_v1 (25) | raw21_clock_v1 (21 explicit + clock) | raw21_egocentric_clock_v1 (21 + 10 + clock)")
+                        help="egocentric_clock_v1 (25) | raw21_clock_v1 (21 explicit + clock) | raw21_egocentric_clock_v1 (21 + 10 + clock) | ... see VARIANTS")
+    parser.add_argument("--option", action="append", default=[], metavar="KEY=JSON",
+                        help=f"Override an egocentric_options entry, e.g. --option stop_weight=8 --option wheel_output='\"categorical\"'; keys: {sorted(DEFAULT_OPTIONS)}")
     args = parser.parse_args(argv)
-    _, metrics = train(args.dataset, args.split, args.config, args.output_dir, args.horizon_s, args.device, args.inputs)
+    overrides = {}
+    for item in args.option:
+        key, _, value = item.partition("=")
+        if not _:
+            raise SystemExit(f"--option expects KEY=VALUE, got {item!r}")
+        try:
+            overrides[key] = json.loads(value)
+        except json.JSONDecodeError:
+            overrides[key] = value  # bare strings such as l1 / categorical
+    _, metrics = train(args.dataset, args.split, args.config, args.output_dir, args.horizon_s, args.device, args.inputs, overrides)
     for name, result in metrics.items():
         print(f"{name}: episode-macro balanced NRMSE={result['model']['episode_macro']['balanced_nrmse']:.6f}; "
               f"mean baseline={result['mean_baseline']['episode_macro']['balanced_nrmse']:.6f}")

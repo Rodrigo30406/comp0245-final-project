@@ -22,7 +22,10 @@ class ConfigurationTests(unittest.TestCase):
         for change in ({"episodes": 0}, {"seed": -1}, {"max_steps": True},
                        {"target_box": {"z": [1, 0]}}, {"max_step": 20},
                        {"targets": [[0, 1, float("nan")]]},
-                       {"initial_base": {"mode": "uniform_xy", "x": [-1, 1]}}):
+                       {"initial_base": {"mode": "uniform_xy", "x": [-1, 1]}},
+                       {"initial_base": {"mode": "near_target", "distance": [0, 1]}},
+                       {"initial_base": {"mode": "near_target", "distance": [0.3, 1], "x": [0, 1]}},
+                       {"initial_base": {"mode": "uniform_xy", "x": [-1, 1], "y": [-1, 1], "distance": [0.3, 1]}}):
             with self.subTest(change=change), self.assertRaises(ValueError):
                 resolve_config(change)
 
@@ -43,6 +46,19 @@ class ConfigurationTests(unittest.TestCase):
         a, b = generate_scenarios(base), generate_scenarios(randomized)
         self.assertEqual([s["target"] for s in a], [s["target"] for s in b])
         self.assertTrue(all(-2 <= s["initial_base"]["x"] <= 2 for s in b))
+
+    def test_near_target_start_lies_on_the_ring_around_its_own_target(self):
+        base = resolve_config({"episodes": 16})
+        ring = resolve_config({"episodes": 16, "initial_base": {"mode": "near_target", "distance": [0.25, 1.3]}})
+        self.assertEqual(ring["initial_base"]["yaw"], [-np.pi, np.pi])
+        a, b = generate_scenarios(base), generate_scenarios(ring)
+        self.assertEqual([s["target"] for s in a], [s["target"] for s in b])
+        for s in b:
+            d = np.hypot(s["initial_base"]["x"] - s["target"][0], s["initial_base"]["y"] - s["target"][1])
+            self.assertTrue(0.25 <= d <= 1.3, d)
+            self.assertTrue(-np.pi <= s["initial_base"]["yaw"] <= np.pi)
+        self.assertGreater(np.std([s["initial_base"]["yaw"] for s in b]), 0.5)
+        self.assertEqual(b, generate_scenarios(resolve_config({"episodes": 16, "initial_base": {"mode": "near_target", "distance": [0.25, 1.3]}})))
 
 
 class CollectionIntegrationTests(unittest.TestCase):

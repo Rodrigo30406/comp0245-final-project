@@ -16,7 +16,8 @@ from robot_learning.data.schema import dataset_schema
 from robot_learning.data.storage import write_json, sha256
 from robot_learning.learning.model import expand_actions
 from robot_learning.learning.egocentric import (
-    encode, FEATURE_NAMES, VARIANTS, EgocentricPolicy, VARIANT, validate_spec, spec_from_episode_config)
+    encode, FEATURE_NAMES, VARIANTS, EgocentricPolicy, VARIANT, validate_spec, spec_from_episode_config,
+    PREV_WHEEL_NAMES, ACTION_INPUT_VARIANTS, STATEFUL_VARIANTS, resolve_options, decode_outputs, DEFAULT_OPTIONS)
 from robot_learning.learning.model import INPUT_NAMES
 
 TORCH_AVAILABLE = importlib.util.find_spec('torch') is not None
@@ -174,6 +175,100 @@ class ExtendedVariantTests(unittest.TestCase):
                              [rng.normal(size=(25, 5)), rng.normal(size=(5, 9))], [np.zeros(5), np.zeros(9)])
 
 
+class PreviousWheelVariantTests(unittest.TestCase):
+    """30 inputs = 28 pure transforms + the policy's own previous wheel command; a latch through the input."""
+    V = "raw21_targetpolar_prevwheel_clock_v1"
+
+    def test_layout_requires_and_places_the_previous_command(self):
+        spec = {**SPEC, "variant": self.V}
+        self.assertEqual(len(VARIANTS[self.V]), 30)
+        self.assertEqual(VARIANTS[self.V][27:29], PREV_WHEEL_NAMES)
+        self.assertIn(self.V, ACTION_INPUT_VARIANTS); self.assertIn(self.V, STATEFUL_VARIANTS)
+        rng = np.random.default_rng(11)
+        x = np.stack([observation(rng.normal(size=2), 0.4, [1.0, -0.5, 0.6]) for _ in range(5)]); t = np.arange(5) * 1e-3
+        with self.assertRaisesRegex(ValueError, "previous wheel"):
+            encode(x, t, spec)
+        pw = rng.normal(size=(5, 2))
+        f = encode(x, t, spec, previous_wheels=pw)
+        np.testing.assert_array_equal(f[:, 27:29], pw)
+        np.testing.assert_array_equal(f[:, :27], encode(x, t, {**SPEC, "variant": "raw21_targetpolar_clock_v1"})[:, :27])
+        with self.assertRaises(ValueError):
+            encode(x, t, spec, previous_wheels=pw[:3])
+        from robot_learning.learning.gru_policy import MODES
+        self.assertNotIn(self.V, MODES)
+
+    def test_live_runs_on_its_own_previous_output_and_matches_sequential_batch(self):
+        spec = {**SPEC, "variant": self.V}; rng = np.random.default_rng(12)
+        policy = EgocentricPolicy(spec, np.zeros(30), np.ones(30), np.zeros(9), np.ones(9),
+                                  [rng.normal(size=(30, 6)), rng.normal(size=(6, 9))], [np.zeros(6), np.zeros(9)])
+        x = np.stack([observation(rng.normal(size=2), 0.1 * i, [1.0, 1.0, 0.5]) for i in range(6)])
+        policy.reset(1e-3); live = np.stack([policy.predict_action(o) for o in x])
+        np.testing.assert_allclose(live, expand_actions(policy.predict(x)), rtol=1e-9, atol=1e-9)
+        # The first step sees a zero previous command; the second sees the first output.
+        first = policy.predict_features(encode(x[:1], np.array([0.0]), spec, previous_wheels=np.zeros((1, 2))))[0]
+        np.testing.assert_allclose(expand_actions(first), live[0])
+        second = policy.predict_features(encode(x[1:2], np.array([1e-3]), spec, previous_wheels=first[None, :2]))[0]
+        np.testing.assert_allclose(expand_actions(second), live[1])
+        self.assertFalse(np.allclose(policy.predict_features(encode(x[1:2], np.array([1e-3]), spec, previous_wheels=np.zeros((1, 2))))[0], second))
+        policy.reset(1e-3)
+        np.testing.assert_allclose(policy.predict_action(x[0]), live[0])
+
+    def test_training_features_use_the_demonstrated_previous_command(self):
+        from robot_learning.learning.egocentric import load_episode_features
+        from robot_learning.learning.dataset import inventory
+        with tempfile.TemporaryDirectory() as tmp:
+            data = Path(tmp) / "d"; data.mkdir(); make_dense_dataset(data, episodes=2, rows=20)
+            record = inventory(data)[0]
+            f, y = load_episode_features(data, record, {**SPEC, "variant": self.V})
+            np.testing.assert_array_equal(f[0, 27:29], 0.0)
+            np.testing.assert_allclose(f[1:, 27:29], y[:-1, :2])
+
+
+class CategoricalWheelTests(unittest.TestCase):
+    def test_decode_takes_bin_centres_and_regresses_the_arm(self):
+        centres = np.linspace(-3, 3, 5); y_mean = np.arange(9.0); y_scale = np.full(9, 2.0)
+        out = np.zeros((2, 2 * 5 + 7)); out[0, 4] = 1; out[0, 5 + 0] = 1; out[1, 2] = 1; out[1, 5 + 2] = 1; out[:, 10:] = 1.0
+        dec = decode_outputs(out, y_mean, y_scale, centres)
+        np.testing.assert_array_equal(dec[:, :2], [[3.0, -3.0], [0.0, 0.0]])
+        np.testing.assert_array_equal(dec[:, 2:], np.broadcast_to(1.0 * 2.0 + np.arange(2.0, 9.0), (2, 7)))
+        np.testing.assert_array_equal(decode_outputs(out[:, :9], y_mean, y_scale), out[:, :9] * 2.0 + y_mean)
+
+    def test_policy_with_bins_outputs_centres_and_roundtrips(self):
+        rng = np.random.default_rng(13); n = len(FEATURE_NAMES); centres = np.linspace(-3, 3, 7)
+        policy = EgocentricPolicy(SPEC, np.zeros(n), np.ones(n), np.zeros(9), np.ones(9),
+                                  [rng.normal(size=(n, 8)), rng.normal(size=(8, 21))], [np.zeros(8), np.zeros(21)], centres)
+        self.assertEqual(policy.output_width, 21)
+        x = rng.normal(size=(12, 21)); pred = policy.predict(x)
+        self.assertEqual(pred.shape, (12, 9))
+        self.assertTrue(all(w in centres for w in pred[:, :2].ravel()))
+        with tempfile.TemporaryDirectory() as tmp:
+            policy.save(Path(tmp) / "m.npz"); loaded = EgocentricPolicy.load(Path(tmp) / "m.npz")
+        np.testing.assert_array_equal(loaded.wheel_bin_centres, centres)
+        np.testing.assert_array_equal(loaded.predict(x), pred)
+        policy.reset(1e-3)
+        np.testing.assert_array_equal(np.stack([policy.predict_action(o) for o in x]), expand_actions(pred))
+        with self.assertRaises(ValueError):  # nine outputs do not fit seven bins per wheel
+            EgocentricPolicy(SPEC, np.zeros(n), np.ones(n), np.zeros(9), np.ones(9),
+                             [rng.normal(size=(n, 8)), rng.normal(size=(8, 9))], [np.zeros(8), np.zeros(9)], centres)
+        with self.assertRaises(ValueError):
+            EgocentricPolicy(SPEC, np.zeros(n), np.ones(n), np.zeros(9), np.ones(9),
+                             [rng.normal(size=(n, 8)), rng.normal(size=(8, 21))], [np.zeros(8), np.zeros(21)], centres[::-1])
+
+
+class OptionTests(unittest.TestCase):
+    def test_defaults_and_rejections(self):
+        self.assertEqual(resolve_options({}, VARIANT), DEFAULT_OPTIONS)
+        self.assertEqual(resolve_options({"egocentric_options": {"stop_weight": 8}}, VARIANT)["stop_weight"], 8.0)
+        self.assertEqual(resolve_options({}, VARIANT, {"wheel_loss": "l1"})["wheel_loss"], "l1")
+        for bad in ({"wheel_loss": "huber"}, {"stop_weight": 0.5}, {"wheel_bins": 40}, {"wheel_bins": 2}, {"nonsense": 1},
+                    {"wheel_output": "categorical", "wheel_loss": "l1"}, {"prev_wheel_shuffle_p": 1.5}, {"prev_wheel_noise_std": -1},
+                    {"prev_wheel_shuffle_p": 0.2}):  # last one: not an action-input variant
+            with self.subTest(bad=bad), self.assertRaises(ValueError):
+                resolve_options({}, VARIANT, bad)
+        ok = resolve_options({}, "raw21_targetpolar_prevwheel_clock_v1", {"prev_wheel_shuffle_p": 0.25, "prev_wheel_noise_std": 0.1})
+        self.assertEqual((ok["prev_wheel_shuffle_p"], ok["prev_wheel_noise_std"]), (0.25, 0.1))
+
+
 class PolicyTests(unittest.TestCase):
     def policy(self):
         rng = np.random.default_rng(3); n = len(FEATURE_NAMES)
@@ -204,7 +299,8 @@ class PolicyTests(unittest.TestCase):
             np.testing.assert_array_equal(loaded.predict(x), policy.predict(x))
 
 
-def make_dense_dataset(root, episodes=5, rows=80, dt=0.001):
+def make_dense_dataset(root, episodes=5, rows=80, dt=0.001, stop_tail=0):
+    """Synthetic dense episodes; `stop_tail` rows at the end of each episode have exactly zero wheel commands."""
     (root / 'episodes').mkdir()
     rng = np.random.default_rng(21)
     scenarios = []
@@ -213,6 +309,8 @@ def make_dense_dataset(root, episodes=5, rows=80, dt=0.001):
         target = [float(rng.uniform(-2, 2)), float(rng.uniform(-2, 2)), float(rng.uniform(.3, .8))]
         x = rng.normal(scale=.3, size=(rows, 21)).astype(np.float32); x[:, -3:] = target
         y = (encode(x, np.arange(rows) * dt, SPEC)[:, :9] * .5).astype(np.float32)
+        if stop_tail:
+            y[rows - stop_tail:, :2] = 0.0
         scenario = {'episode_id': eid, 'scenario_id': str(i), 'target': target}
         scenarios.append(scenario)
         npz = root / 'episodes' / f'{eid}.npz'
@@ -254,6 +352,52 @@ class TrainingRunTests(unittest.TestCase):
             loaded = EgocentricPolicy.load(root / 'run/model.npz')
             x = np.random.default_rng(9).normal(size=(3, 21))
             np.testing.assert_array_equal(loaded.predict(x), policy.predict(x))
+
+
+@unittest.skipUnless(TORCH_AVAILABLE, 'Optional PyTorch environment is not installed')
+class TrainingOptionTests(unittest.TestCase):
+    """Stop-weighted / L1 / categorical wheels and the previous-command input train end to end and export loadable policies."""
+
+    def run_training(self, variant, options, tmp):
+        from robot_learning.learning.egocentric import train
+        from robot_learning.learning.dataset import inventory
+        from robot_learning.learning.train import DEFAULT_CONFIG
+        from robot_learning.data.storage import read_json
+        root = Path(tmp); data = root / 'data'; data.mkdir(); make_dense_dataset(data, stop_tail=20)
+        records = inventory(data)
+        write_json(root / 'split.json', {'dataset': str(data), 'training': records[:4], 'validation': records[4:]})
+        cfg = read_json(DEFAULT_CONFIG.parent / 'mlp_pytorch.json')
+        cfg['mlp'].update(hidden_layer_sizes=[16, 16], batch_size=16, max_epochs=3, patience=100)
+        cfg['torch']['device'] = 'cpu'; write_json(root / 'cfg.json', cfg)
+        policy, metrics = train(data, root / 'split.json', root / 'cfg.json', root / 'run', 40.0, 'cpu', variant, options)
+        info = read_json(root / 'run/model_info.json'); manifest = read_json(root / 'run/run.json')
+        self.assertEqual(manifest['status'], 'complete'); self.assertEqual(manifest['egocentric_options'], info['egocentric_options'])
+        self.assertEqual(info['stop_rows_in_training'], 4 * 20)
+        loaded = EgocentricPolicy.load(root / 'run/model.npz')
+        return policy, loaded, info
+
+    def test_stop_weight_and_l1(self):
+        with tempfile.TemporaryDirectory() as tmp, threadpool_limits(limits=1):
+            policy, loaded, info = self.run_training("raw21_targetpolar_clock_v1", {"stop_weight": 8, "wheel_loss": "l1"}, tmp)
+            self.assertEqual(info['egocentric_options']['stop_weight'], 8.0); self.assertIn('l1', info['training_loss']); self.assertIn('x8', info['training_loss'])
+            x = np.random.default_rng(9).normal(size=(3, 21)); np.testing.assert_array_equal(loaded.predict(x), policy.predict(x))
+
+    def test_categorical_wheels(self):
+        with tempfile.TemporaryDirectory() as tmp, threadpool_limits(limits=1):
+            policy, loaded, info = self.run_training("raw21_targetpolar_clock_v1", {"wheel_output": "categorical", "wheel_bins": 11}, tmp)
+            centres = np.asarray(info['wheel_bin_centres']); self.assertEqual(len(centres), 11); self.assertEqual(centres[5], 0.0)
+            self.assertEqual(policy.output_width, 2 * 11 + 7); np.testing.assert_array_equal(loaded.wheel_bin_centres, centres)
+            x = np.random.default_rng(9).normal(size=(30, 21)); pred = loaded.predict(x)
+            np.testing.assert_array_equal(pred, policy.predict(x)); self.assertTrue(all(w in centres for w in pred[:, :2].ravel()))
+            self.assertIn('cross-entropy', info['training_loss'])
+
+    def test_previous_command_with_augmentation(self):
+        with tempfile.TemporaryDirectory() as tmp, threadpool_limits(limits=1):
+            policy, loaded, info = self.run_training("raw21_targetpolar_prevwheel_clock_v1", {"prev_wheel_shuffle_p": 0.25, "prev_wheel_noise_std": 0.1}, tmp)
+            self.assertEqual(info['input_features'], 30); self.assertEqual(info['prev_wheel_augmentation'], {"shuffle_p": 0.25, "noise_std_normalized": 0.1})
+            self.assertIn('previous wheel command', info['feature_provenance'])
+            x = np.random.default_rng(9).normal(size=(5, 21)); loaded.reset(1e-3)
+            np.testing.assert_allclose(np.stack([loaded.predict_action(o) for o in x]), expand_actions(policy.predict(x)), rtol=1e-6, atol=1e-6)
 
 
 @unittest.skipUnless(TORCH_AVAILABLE, 'Optional PyTorch environment is not installed')

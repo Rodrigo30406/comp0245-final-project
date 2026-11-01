@@ -73,15 +73,28 @@ def resolve_config(requested):
             vector(target, 3, "targets")
     validate_action_noise(cfg["action_noise"])
     initial = cfg["initial_base"]
-    if not isinstance(initial, dict) or set(initial) - {"mode", "x", "y", "yaw"}:
+    if not isinstance(initial, dict) or set(initial) - {"mode", "x", "y", "yaw", "distance"}:
         raise ValueError("Invalid initial_base fields")
     if initial.get("mode") == "uniform_xy":
+        if "distance" in initial:
+            raise ValueError("initial_base.distance belongs to the near_target mode")
         for axis in ("x", "y"):
             interval(initial.get(axis), f"initial_base.{axis}")
         initial.setdefault("yaw", [0.0, 0.0])
         interval(initial["yaw"], "initial_base.yaw")
+    elif initial.get("mode") == "near_target":
+        # Base placed on a ring around the episode's target: planar distance in `distance`, direction from the
+        # target uniform on the circle, world yaw uniform in `yaw`. Coverage of the stop region (E2), not a
+        # different task: the expert still drives to its own goal from wherever it is put.
+        if set(initial) - {"mode", "distance", "yaw"}:
+            raise ValueError("near_target takes distance and yaw bounds only")
+        interval(initial.get("distance"), "initial_base.distance")
+        if initial["distance"][0] <= 0:
+            raise ValueError("initial_base.distance must be positive")
+        initial.setdefault("yaw", [-np.pi, np.pi])
+        interval(initial["yaw"], "initial_base.yaw")
     elif initial != {"mode": "nominal"}:
-        raise ValueError("initial_base must be nominal or uniform_xy with x/y/yaw bounds")
+        raise ValueError("initial_base must be nominal, uniform_xy with x/y/yaw bounds, or near_target with distance/yaw bounds")
     cfg.update(resolve_episode_config({k: cfg[k] for k in episode_defaults()}))
     return cfg
 
@@ -96,6 +109,11 @@ def generate_scenarios(cfg):
         initial = None
         if cfg["initial_base"]["mode"] == "uniform_xy":
             initial = {axis: float(rng.uniform(*cfg["initial_base"][axis])) for axis in ("x", "y", "yaw")}
+        elif cfg["initial_base"]["mode"] == "near_target":
+            ring = cfg["initial_base"]
+            distance = float(rng.uniform(*ring["distance"])); direction = float(rng.uniform(-np.pi, np.pi))
+            initial = {"x": float(target[0] + distance * np.cos(direction)), "y": float(target[1] + distance * np.sin(direction)),
+                       "yaw": float(rng.uniform(*ring["yaw"]))}
         condition = {"target": target, "initial_base": initial}
         scenario_id = hashlib.sha256(json.dumps(condition, sort_keys=True).encode()).hexdigest()[:20]
         scenarios.append({"episode_id": f"episode_{i:06d}", "scenario_id": scenario_id,
