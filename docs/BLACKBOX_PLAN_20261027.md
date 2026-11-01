@@ -828,6 +828,12 @@ before anything is launched (provenance guards). Results in §6l onwards.
   towards the target). Third architecture to show the hold is a coverage/latch problem, not a memory problem.
 - 1 Nov: stop head ruled out (the brief fixes two outputs); four remedies planned in §6k (stop-weighted loss, L1
   wheels, categorical wheels, previous wheel command as input) plus E2 near-target starts. Decision: run all.
+- E7 + E2 launched 1 Nov 15:10 (`chain_e7.sh`, commit `9fc5ec0`): E2 collection (2048 near-target starts, 24 workers) in the
+  background; then on the GPU, one trainer at a time, 3 seeds each on the 4096 mixture: E7a stop_weight 8, E7b L1 wheels,
+  E7c categorical wheels (41 bins), E7d previous wheel command input (shuffle 0.25, noise 0.1); then on the 6144 mixture
+  (`runs/splits/e2_mixture_6144.json`): MLP 28 pure, categorical, GRU 28 pure. Every arm evaluated on the 205 nominal and
+  205 random-start goals (`runs/evaluation/{e7a,e7b,e7c,e7d,e2}_*_20261101`). Trainer options are recorded in each run's
+  `config.json` / `model_info.json` (`egocentric_options`). Expected to finish 2 Nov morning.
 - 28-input pure-transform variant done and reported in §6e (branch `rodrigo-pure28` merged).
 - Next, on request: E6 (§6c, nominal data without the clock) — the cheapest test of the reach-trigger mechanism.
 - E2 needs a collector mode; nothing in `src/` is edited while a collector,
