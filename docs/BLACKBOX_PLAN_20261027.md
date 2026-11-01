@@ -753,6 +753,32 @@ pure inputs cannot offer.
 Cost: 455–768 s per seed on the GPU (6 s per epoch, 18.7 GB), 46 µs per physics step at inference, so a
 transformer is not expensive here; it is just not what is missing.
 
+## 6k. Remedies for the hold without a third output (plan, 1 Nov)
+
+The assignment brief fixes the regressor's outputs: arm commands and wheel commands. A separate stop head
+(§6i remedy 2) is therefore out. What the brief leaves open, and asks about, is the data ("quantity and quality",
+"extra sensors/input data"), the input window, the regressor architecture and the training methodology. The four
+remedies below each live in one of those boxes, all on the 4096 mixture of §6f as base data, 3 seeds each, pure
+28 inputs unless stated, both validations (205 nominal, 205 random starts) as in E4/E5. Decision (Rodrigo, 1 Nov):
+run all of them.
+
+| Arm | Box in the brief | What changes | Expected mechanism |
+|---|---|---|---|
+| **E7a** stop-weighted loss | training methodology | wheel loss of rows whose demonstrated wheels are exactly zero weighted ×8 (20% of rows) | the regressor's zero moves closer to zero; does not touch states outside the demonstrations |
+| **E7b** L1 wheel loss | training methodology | L1 instead of L2 on the wheel outputs (arm stays L2) | L1 fits the conditional median, which is exactly zero where most of the mass is zero; L2 fits the mean, pulled by neighbouring driving rows |
+| **E7c** categorical wheels | regressor architecture | the wheel output is a softmax over 41 velocity bins (−3…3, one bin exactly zero), command = argmax; arm unchanged; still two outputs | zero becomes a class that wins or loses, not a residual to integrate; nothing to creep with |
+| **E7d** previous wheel command as input | extra input data | 30 inputs = 28 pure + the policy's own wheel command of the previous step (demonstrated command during training, own output in closed loop); anti-copycat: in training the two columns are shuffled across the batch in 25% of the rows and get N(0, 0.1) noise | a latch implemented through the input ("I was stopped, I stay stopped"); the copycat risk of §6g measured, not assumed |
+| **E2** near-target starts | data | 2048 new demonstrations (2 per plan target) with the base placed 0.25–1.3 m from the target at a random heading, DART low as before; mixture 4096 + 2048 = 6144; trained with MLP 28, GRU 28 and E7c | the demonstrated stop states stop being a thin shell: from inside the shell the expert turns and drives back, from the box it latches at once |
+
+Black-box check: every input is still a function of observations, the task target and the policy's own past
+outputs; the stop-weight label is "demonstrated wheels are zero", read from the recorded actions, not from the
+expert's phase. Placing the base near the target in the collector is a choice of the data designer, as the random
+starts of E1/E3 were.
+
+Order: E7a–d first (they only need the existing data, ~30 min per seed on the GPU), E2 collected in parallel
+(~20 min for 2048 episodes at 24 workers), then the E2 arms, one trainer at a time. The code for all of it goes in
+before anything is launched (provenance guards). Results in §6l onwards.
+
 ## 7. Status
 
 - Done: decomposition (§1), variant `raw21_target_clock_v1`; E1 collected,
@@ -800,6 +826,8 @@ transformer is not expensive here; it is just not what is missing.
   models (0.130–0.142) and the cleanest open-loop stop (1–2% residual), 81 / 76 / 47 arrivals nominal, 60 / 32 / 29
   random; parked and restarted in 105–148 episodes by the §6i creep (11–17% residual while parked, 7.5–15 cm
   towards the target). Third architecture to show the hold is a coverage/latch problem, not a memory problem.
+- 1 Nov: stop head ruled out (the brief fixes two outputs); four remedies planned in §6k (stop-weighted loss, L1
+  wheels, categorical wheels, previous wheel command as input) plus E2 near-target starts. Decision: run all.
 - 28-input pure-transform variant done and reported in §6e (branch `rodrigo-pure28` merged).
 - Next, on request: E6 (§6c, nominal data without the clock) — the cheapest test of the reach-trigger mechanism.
 - E2 needs a collector mode; nothing in `src/` is edited while a collector,
