@@ -1400,7 +1400,7 @@ Random starts: E8a entered 33 / 56 / 63, met the stop condition in 16 / 24 / 24,
   and leaves; the expert's `orient` phase before `done` lasts 0.5 s (0.3–1.4) at 0.36 rad/s with 0.015 m/s of translation
   and ends with the base still. The stillness the gate waits for is the stillness only the gate can produce: a
   confirmer in a loop with its own effect never gets its cue. The 54 / 71 zeros of seed 1 happen outside, at 0.40–0.48 m
-  from the goal, where the head's base stalls on its own (what the stop score does there is measured in §6v.1).
+  from the goal, with the base still moving (§6v.1 measures what the stop score does there).
 - Once the gate has closed, the arm starts: it moves more than 10 cm after the zero in 43 of 54 nominal and 59 of 71
   random closures (80%), against 0 of 205 for every stateless model under an exact stop in §6t.1. The gate as an input
   to the arm head is the "base stopped" signal the arm lacked. The stops being 0.4–0.6 m off, "both" is 14 / 19 (seed 1)
@@ -1428,6 +1428,41 @@ still from moving), latched by the same cummax, and trained with a target derive
 zero-wheel row of the demonstration onwards, 0 before — a function of the labels, not of the expert's phases, so inside
 the black-box rule). With teacher forcing (the label's own gate during training) the head and the gate become row-wise
 models trainable by the MLP recipe, which also removes the recipe handicap above. Proposed as E8g; not launched.
+
+### 6v.1 The gate in closed loop, re-simulated (seed 1, 205 nominal goals, gate and stop score logged every 100 ms)
+
+The re-simulation reproduces the evaluation exactly (final goal distances identical to 1e-5 m in all 205 episodes).
+
+| time window | 0–5 s | 5–10 s | 10–20 s | 20–40 s |
+|---|---:|---:|---:|---:|
+| stop score, median | 0.001 | 0.31 | 0.34 | 0.43 |
+| gate, median (p10) | 0.94 (0.67) | 0.57 (0.002) | 0.42 (0.002) | 0.24 (0.002) |
+
+- **The gate does fall in every episode, slowly, and not at a stop.** It passes 0.5 in all 205 episodes, at 7.8 s (median)
+  with the base 0.30 m from the goal, 0.25 rad off the goal bearing and moving at 0.125 m/s over the previous second
+  (0.24 m/s two to three seconds earlier); in none of the 205 was the base still (< 2 cm/s) when the gate passed 0.5, and
+  only 38 of the 205 half-closures happened inside the box. The per-episode peak of the stop score (0.87 median) comes
+  at 31.5 s, 1.2 m from the goal, with the base moving at 8 cm/s — nothing resembling a stop. The score is a function of
+  the policy's own trajectories that the demonstrations never showed it: during the drive it is 0.03 when the heading is
+  within 0.1 rad of the goal bearing and 0.37–0.50 (p90 0.91) when it is off by more than 0.3 rad. The expert drives
+  aligned (median |heading error to the goal bearing| 0.05 rad while moving, nominal goals, because it aligns first and
+  then drives); every policy drives in arcs instead (E8a head 0.45–0.99 rad, MLP 28 control 1.03, GRU seed 1 0.74), so
+  the detector spends the whole approach in states off its training distribution, and the cummax turns each excursion of
+  the score into a permanent loss of gate.
+- **Inside the box the score never saturates.** In the 47 episodes where the head met the expert's stop condition the
+  score peaks at 0.57 (p90 0.65) with the base down to 1.4 cm/s; on the demonstrations the same stillness at the goal gives
+  0.998. The confirmer (§6v) needs the demonstration's exact stillness and the demonstration's approach history; the
+  policy's approach supplies neither, so the gate half-closes (0.42 median) and the base leaves the box at half command.
+- **The leak brings the creep back.** Final gate below 0.05 in 115 of 205 episodes, but the wheels are exactly zero to the
+  end in only 54: in 61 episodes the gate sits at 0.002–0.05 of a head that still commands 1–5 rad/s, so the base crawls
+  at 0.04 rad/s of wheel command (median after 35 s), the evaluator's "moving at 40 s" (98 of 205 for this seed). The
+  demonstrations' closed value is 0.002 because the score saturates there; off distribution it does not.
+
+Mechanism, in one line: a learned stop detector with a non-reopening latch is only as good as its false-positive rate on
+the policy's own states, and end-to-end training from zero labels gives it no false positives to learn from — every
+training history is the expert's. (A DAgger-style relabelling would supply them; the brief excludes it, §6k.) The stateless
+geometry gate of E8g has no history to drift on and an explicit 0/1 target on every row, including the rows where the
+expert drives misaligned in the random-start demonstrations.
 
 ## 7. Status
 
