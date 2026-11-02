@@ -31,7 +31,8 @@ for p in sorted((ev/"traces").glob(f"{label}_episode_*.npz"))[:80]:
     f_before=np.median([frac(pe[i,2:9]) for i in range(max(0,k0-5),k0)]); f_after=np.median([frac(pe[i,2:9]) for i in range(k0,min(len(pe),k0+10))]); f_later=np.median([frac(pe[i,2:9]) for i in range(min(len(pe)-1,k0+10),min(len(pe),k0+30))])
     t=z["time"]; obs=z["observation"]; act=z["action"]
     sp=[s for s in spells(np.abs(act[:,:4]).max(axis=1)==0,t) if t[s[1]]-t[s[0]]>=0.5]
-    if not sp: continue
+    if not sp:  # no exact stop of >= 0.5 s in this closed-loop episode: use the first parked-like row (min base speed) instead
+        v=np.linalg.norm(np.diff(obs[:,:2],axis=0),axis=1)/np.maximum(np.diff(t),1e-9); a=int(np.argmin(v)); sp=[(a,a)]
     a,b=sp[0]
     pol.reset(); pz=np.asarray(pol.predict(obs[:b+1], t[:b+1])); f_stop=np.median([frac(pz[i,2:9]) for i in range(a,b+1)])
     # swap: expert done row with the policy's base pose / clock

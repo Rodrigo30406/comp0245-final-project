@@ -299,7 +299,7 @@ class PolicyTests(unittest.TestCase):
             np.testing.assert_array_equal(loaded.predict(x), policy.predict(x))
 
 
-def make_dense_dataset(root, episodes=5, rows=80, dt=0.001, stop_tail=0):
+def make_dense_dataset(root, episodes=5, rows=80, dt=0.001, stop_tail=0, failures=0):
     """Synthetic dense episodes; `stop_tail` rows at the end of each episode have exactly zero wheel commands."""
     (root / 'episodes').mkdir()
     rng = np.random.default_rng(21)
@@ -316,8 +316,9 @@ def make_dense_dataset(root, episodes=5, rows=80, dt=0.001, stop_tail=0):
         npz = root / 'episodes' / f'{eid}.npz'
         np.savez_compressed(npz, observation=x, action=expand_actions(y), expert_phase=np.full(rows, 'drive'),
                             step=np.arange(rows), time=np.arange(rows) * dt)
+        failed = i >= episodes - failures   # the last `failures` episodes are expert failures (navigation timeout)
         write_json(root / 'episodes' / f'{eid}.json', {
-            **scenario, 'status': 'complete', 'success': True, 'termination': 'success', 'dt': dt,
+            **scenario, 'status': 'complete', 'success': not failed, 'termination': 'stalled' if failed else 'success', 'dt': dt,
             'actual_initial_observation': x[0].tolist(), 'recorded_transitions': rows,
             'data_file': npz.name, 'data_sha256': sha256(npz)})
     write_json(root / 'scenarios.json', scenarios)
@@ -439,6 +440,45 @@ class TriggerRowTests(unittest.TestCase):
                     {"trigger_qd_jitter": "std"}):
             with self.assertRaises(ValueError):
                 resolve_options({}, "raw21_targetpolar_clock_v1", bad)
+
+
+class ExpertFailureFilterTests(unittest.TestCase):
+    def test_drop_expert_failures_keeps_only_successes_and_counts(self):
+        from robot_learning.learning.dataset import drop_expert_failures
+        part = {'training': [{'episode_id': 'a', 'success': True}, {'episode_id': 'b', 'success': False}, {'episode_id': 'c', 'success': True}],
+                'validation': [{'episode_id': 'd', 'success': True}, {'episode_id': 'e', 'success': False}]}
+        kept, counts = drop_expert_failures(part)
+        self.assertEqual([r['episode_id'] for r in kept['training']], ['a', 'c']); self.assertEqual([r['episode_id'] for r in kept['validation']], ['d'])
+        self.assertEqual(counts, {'training': {'kept': 2, 'dropped_expert_failures': 1}, 'validation': {'kept': 1, 'dropped_expert_failures': 1}})
+        with self.assertRaises(ValueError):
+            drop_expert_failures({'training': part['training'], 'validation': [{'episode_id': 'e', 'success': False}]})
+
+
+@unittest.skipUnless(TORCH_AVAILABLE, 'Optional PyTorch environment is not installed')
+class ExpertFailureTrainingTests(unittest.TestCase):
+    def test_config_keep_expert_failures_false_drops_failed_episodes_from_training_and_validation(self):
+        from robot_learning.learning.egocentric import train
+        from robot_learning.learning.dataset import inventory
+        from robot_learning.learning.train import DEFAULT_CONFIG
+        from robot_learning.data.storage import read_json
+        with tempfile.TemporaryDirectory() as tmp, threadpool_limits(limits=1):
+            root = Path(tmp); data = root / 'data'; data.mkdir(); make_dense_dataset(data, episodes=6, failures=2)
+            records = inventory(data)   # episodes 4 and 5 are expert failures
+            write_json(root / 'split.json', {'dataset': str(data), 'training': records[:3] + records[4:5], 'validation': records[3:4] + records[5:6]})
+            cfg = read_json(DEFAULT_CONFIG.parent / 'mlp_pytorch_successes.json')
+            self.assertFalse(cfg['keep_expert_failures'])
+            cfg['mlp'].update(hidden_layer_sizes=[16, 16], batch_size=16, max_epochs=2, patience=100); cfg['torch']['device'] = 'cpu'
+            write_json(root / 'cfg.json', cfg)
+            train(data, root / 'split.json', root / 'cfg.json', root / 'run', 40.0, 'cpu', "raw21_targetpolar_clock_v1")
+            info = read_json(root / 'run/model_info.json'); manifest = read_json(root / 'run/run.json')
+            self.assertEqual(info['episode_filter'], {'keep_expert_failures': False, 'training': {'kept': 3, 'dropped_expert_failures': 1}, 'validation': {'kept': 1, 'dropped_expert_failures': 1}})
+            self.assertEqual((info['training_episodes'], info['validation_episodes'], info['training_rows']), (3, 1, 3 * 80))
+            self.assertEqual(manifest['episode_filter'], info['episode_filter'])
+            # default config keeps them, as every run before 2 Nov 2026
+            cfg['keep_expert_failures'] = True; write_json(root / 'cfg2.json', cfg)
+            train(data, root / 'split.json', root / 'cfg2.json', root / 'run2', 40.0, 'cpu', "raw21_targetpolar_clock_v1")
+            info2 = read_json(root / 'run2/model_info.json')
+            self.assertEqual((info2['episode_filter'], info2['training_rows']), ({'keep_expert_failures': True}, 4 * 80))
 
 
 @unittest.skipUnless(TORCH_AVAILABLE, 'Optional PyTorch environment is not installed')

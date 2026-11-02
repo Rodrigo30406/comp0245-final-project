@@ -120,6 +120,17 @@ def validate_partition(records, partition):
     return partition
 
 
+def drop_expert_failures(partition):
+    """Keep only the episodes whose expert run succeeded (record 'success' true) on both sides of a validated split.
+    Rule of 2 Nov 2026: policies are trained and selected on expert successes only; failed scenarios are re-collected
+    with another start pose / noise seed and discarded if they fail again. Returns (partition, counts)."""
+    kept = {k: [r for r in v if r.get('success') is True] for k, v in partition.items()}
+    counts = {k: {'kept': len(kept[k]), 'dropped_expert_failures': len(partition[k]) - len(kept[k])} for k in partition}
+    if any(not kept[k] for k in kept):
+        raise ValueError('Dropping expert failures emptied one side of the split')
+    return kept, counts
+
+
 def nested_partition(records, previous, fraction, seed):
     """Extend a frozen partition without moving any previous episode across sides."""
     lookup = {r['episode_id']: r for r in records}

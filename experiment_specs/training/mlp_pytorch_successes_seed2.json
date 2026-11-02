@@ -1,0 +1,30 @@
+{
+  "name": "mlp_128_128_pytorch_cuda_patience_only_seed2_expert_successes_only",
+  "model": "mlp",
+  "split_seed": 20261025,
+  "validation_fraction": 0.2,
+  "normalization": "standard_scaler_training_only",
+  "sample_weighting": "uniform_transition",
+  "primary_metric": "episode_macro_balanced_nrmse",
+  "keep_expert_failures": false,
+  "mlp": {
+    "hidden_layer_sizes": [
+      128,
+      128
+    ],
+    "learning_rate": 0.001,
+    "alpha": 0.0001,
+    "batch_size": 1024,
+    "seed": 2,
+    "max_epochs": null,
+    "patience": 8,
+    "min_delta": 0.0001
+  },
+  "backend": "pytorch",
+  "torch": {
+    "device": "cuda",
+    "data_placement": "auto",
+    "validation_batch_size": 16384,
+    "deterministic": true
+  }
+}

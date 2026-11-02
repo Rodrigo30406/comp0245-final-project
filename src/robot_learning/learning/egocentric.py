@@ -22,7 +22,7 @@ import numpy as np
 from robot_learning.data.storage import read_json, write_json, sha256, utc_now, git_info
 from robot_learning.settings import PROJECT_ROOT
 from robot_learning.simulation.config import episode_defaults, resolve_episode_config
-from .dataset import inventory, load_episode, validate_partition, inventory_fingerprint, extra_inventory, record_directory
+from .dataset import inventory, load_episode, validate_partition, inventory_fingerprint, extra_inventory, record_directory, drop_expert_failures
 from .metrics import errors, aggregate
 from .model import INPUT_NAMES, OUTPUT_NAMES, expand_actions
 
@@ -406,6 +406,10 @@ def train(dataset, split_path, config_path, output, horizon_s=40.0, device_name=
         raise ValueError("Split belongs to another dataset")
     records = inventory(dataset) + extra_inventory(saved)
     split = validate_partition(records, {k: saved[k] for k in ["training", "validation"]})
+    keep_failures = bool(config.get("keep_expert_failures", True))
+    episode_filter = {"keep_expert_failures": keep_failures}
+    if not keep_failures:
+        split, counts = drop_expert_failures(split); episode_filter.update(counts)
     source_cfg = read_json(dataset / "config.json")
     episode_cfg = resolve_episode_config({k: v for k, v in source_cfg.items() if k in episode_defaults()})
     dt = read_json(dataset / "episodes" / f"{records[0]['episode_id']}.json")["dt"]
@@ -437,7 +441,7 @@ def train(dataset, split_path, config_path, output, horizon_s=40.0, device_name=
                 "versions": {name: importlib.metadata.version(name) for name in ["numpy", "scipy", "torch"]},
                 "python": sys.version, "command": sys.argv, "input_names": names,
                 "raw_observation_names": INPUT_NAMES, "output_names": OUTPUT_NAMES,
-                "feature_spec": spec, "backend": "pytorch", "egocentric_options": opts,
+                "feature_spec": spec, "backend": "pytorch", "egocentric_options": opts, "episode_filter": episode_filter,
                 "test_set": "none; development train/validation only",
                 "closed_loop_evaluation": "not run by the trainer"}
     write_json(output / "run.json", manifest)
@@ -598,6 +602,7 @@ def train(dataset, split_path, config_path, output, horizon_s=40.0, device_name=
                 "egocentric_options": opts, "wheel_output": opts["wheel_output"],
                 "wheel_bin_centres": None if centres is None else centres.tolist(),
                 "stop_rows_in_training": stop_rows, "training_rows": int(n), "trigger_copies": trigger_info,
+                "episode_filter": episode_filter, "training_episodes": len(split["training"]), "validation_episodes": len(split["validation"]),
                 "prev_wheel_augmentation": None if not augment else {"shuffle_p": opts["prev_wheel_shuffle_p"], "noise_std_normalized": opts["prev_wheel_noise_std"]},
                 "regression_parameters": sum(p.numel() for p in network.parameters()), "weight_dtype": "float32",
                 "input_features": len(names), "input_names": names, "independent_outputs": 9,
