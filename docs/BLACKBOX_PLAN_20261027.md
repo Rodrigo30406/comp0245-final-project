@@ -1464,6 +1464,37 @@ training history is the expert's. (A DAgger-style relabelling would supply them;
 geometry gate of E8g has no history to drift on and an explicit 0/1 target on every row, including the rows where the
 expert drives misaligned in the random-start demonstrations.
 
+## 6w. E8b results (2 Nov 12:34): the encoder does not make the latch easier to find
+
+Runs `gru_e8b_mlpgru_mixture4096_polar_seed{0,1,2}` (44 / 97 / 75 epochs, 5–10 min each), evaluations
+`runs/evaluation/e8b_mlpgru_on_{clean,e1_random}_validation_20261102`. Architecture: relu encoder of 64 units → GRU 128
+(20 ms) → head on [h, x], 28 pure features, the 4096 mixture, the same recipe as the E4 GRU.
+
+| E8b MLP→GRU | offline NRMSE | nominal 1 / 2 / 5 cm | parked / arm ext. / both | held ≥ 10 s | stopped outside (median dist) / moving at 40 s | random 1 / 2 / 5 cm | parked / arm ext. / both |
+|---|---:|---|---|---:|---|---|---|
+| seed 0 | 0.162 | 23 / 31 / 55 | 29 / 50 / 1 | 24 | 47 (0.24 m) / 157 | 6 / 24 / 62 | 7 / 61 / 0 |
+| seed 1 | 0.136 | 7 / 17 / 44 | 31 / 157 / 26 | 16 | 24 (0.21 m) / 180 | 7 / 20 / 49 | 8 / 142 / 7 |
+| seed 2 | 0.144 | 9 / 33 / 79 | 10 / 50 / 2 | 20 | 37 (0.24 m) / 167 | 3 / 13 / 43 | 2 / 27 / 0 |
+| E4 GRU 28 (same data, no encoder) | 0.136–0.153 | 6 / 6 / 32 · 19 / 50 / 102 · 4 / 8 / 27 | 4 / 9 · 29 / 38 · 0 / 2 (parked / arm) | 38 (seed 1) | — | 29 / 99 / 26 (5 cm) | — |
+
+Prediction (iii) of §6u was "like the base GRU — one seed latching, two not — unless the encoder makes the latch easier
+to find, which would show as all three seeds latching". Neither: **no seed latches.** Wheels exactly zero to the end of the
+episode in 0 / 10 / 0 nominal episodes (`gate_closure_probe.py`), against 25 s holds for the GRU seed 1 under the band
+(§6t); the base parks and restarts in 38 / 81 / 120 episodes (`creep_profile.py`) with 13–25% of the drive command while
+parked, creeping 2.7–7.6 cm towards the target in 2.3–3.5 s before the restart — the stateless creep of §6i, not the
+recurrent latch of §6q. The box is entered in 99 / 57 / 82 episodes with the stop condition met in 47 / 43 / 22, and the
+wheels never go to zero there. Open loop on the validation demonstrations the residual after the stop is 1–2% of the drive
+command for E8b, for the base GRU and for the MLP 28 alike (all on the expert's states), so the open-loop residual does not
+separate the families; the closed-loop residual does (13–25% here, 6–10% MLP, 1–4% GRU seed 1 and the E2 GRU in §6q).
+
+The arrivals are the more even of the recurrent family (44–79 nominal, 43–62 random, no 102 and no 27): the encoder gives
+the three seeds the same, middling policy — the base GRU's seeds 0 and 2 without the seed-1 latch. The arm extends in
+157 nominal episodes for seed 1 (as the GRU seed 1 and E8a seed 1 do: the recurrent models that get the arm moving are those
+whose base decelerates most), but "both" stays at 26 because the base is parked 21–24 cm off the goal. Conclusion: a
+feature encoder in front of the GRU changes neither of the two measured defects (approach 16–17 cm off the box at closest,
+no latch in closed loop); the latch of §6q was a seed-dependent solution of the same optimisation, not something the
+input layer withheld. E8b closed.
+
 ## 7. Status
 
 - Done: decomposition (§1), variant `raw21_target_clock_v1`; E1 collected,
@@ -1571,7 +1602,10 @@ expert drives misaligned in the random-start demonstrations.
   value only after the labels are zero, and in closed loop it never closes inside the box (0 of the 25–47 episodes where
   the head met the expert's stop condition), only where the base stalls by itself at 0.4–0.6 m. The gated head also fits
   the demonstrations worse than the MLP 28 control (drive wheels 0.43 vs 0.23 rad/s) under the recurrent training recipe.
-  Proposal E8g (stateless geometry-only gate, label-derived target, teacher forcing) written, not launched. E8b evaluating.
+  Proposal E8g (stateless geometry-only gate, label-derived target, teacher forcing) written, not launched.
+- 2 Nov 12:34: E8b done and reported in §6w: 55 / 44 / 79 nominal, 62 / 49 / 43 random, offline 0.136–0.162. No seed
+  latches (wheels zero to the end in 0 / 10 / 0), parks and restarts with 13–25% residual like the stateless models; the
+  encoder evens the seeds out at the base GRU's non-latching level. E8a + E8b closed; E8c and E8e next, one trainer at a time.
 - Next, on request: E6 (§6c, nominal data without the clock) — the cheapest test of the reach-trigger mechanism.
 - E2 needs a collector mode; nothing in `src/` is edited while a collector,
   trainer or evaluator is running (provenance guards).
