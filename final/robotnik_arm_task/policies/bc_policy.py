@@ -8,9 +8,12 @@ training (bc_features.measured_signals + build_features, feature set stored in t
 9 outputs with bc_features.forward, and converts the base command (v, w) to the 4 wheel speeds with
 collect_data.wheel_speeds and BaseControllerParams(nav_timeout=25.0) (the expert's skid-steer model).
 
-Inputs: only obs["base_pos"], obs["base_bearing"], obs["q_mes"], obs["qd_mes"] and obs["target"]. The policy uses
-nothing from info (no robot model, no start pose, no time step) and not obs["t"], so it is a pure function of the
-current observation: no internal state, no clock.
+Inputs: only obs["base_pos"], obs["base_bearing"], obs["q_mes"], obs["qd_mes"] and obs["target"]. For the feature
+sets of bc_features.FEATURES_NEED_EE (ego_novw_ee, experiment D) also obs["base_ori"] and, from info at reset, the
+robot's kinematic model (info["dyn_model"], info["ee_frame_id"]): the end-effector position is computed at every step
+with exactly the expert's forward-kinematics call (evaluate_policy.ExpertPolicy.act). The policy uses nothing else from
+info (no start pose, no time step, no expert goal) and not obs["t"], so it is a pure function of the current
+observation: no internal state, no clock.
 """
 import os
 import sys
@@ -39,14 +42,35 @@ class BCPolicy:
         self.model = bc_features.load_model(self.model_path)  # loaded once per process
         self.feature_set = self.model["feature_set"]
         self.base_params = BASE_PARAMS
+        self.needs_ee = self.feature_set in bc_features.FEATURES_NEED_EE
+        self.kin_model = self.ee_frame_id = None
 
     def reset(self, target, info):
-        """Nothing to reset: the target is read from obs at every step, and info is not used."""
+        """The target is read from obs at every step. info is used only by the feature sets that need the end-effector
+        position: the robot model and the end-effector frame (refused when missing; never replaced by zeros)."""
+        if self.needs_ee:
+            if not info or info.get("dyn_model") is None or info.get("ee_frame_id") is None:
+                raise ValueError(f"feature set {self.feature_set} needs info['dyn_model'] and info['ee_frame_id'] "
+                                 f"(the robot's kinematic model) at reset")
+            self.kin_model, self.ee_frame_id = info["dyn_model"], info["ee_frame_id"]
+
+    def ee_position(self, obs):
+        """End-effector position (world frame) by forward kinematics of the full base pose and q_mes: the same calls
+        as evaluate_policy.ExpertPolicy.act and collect_data (the recorded ee_pos)."""
+        import pinocchio as pin
+        if self.kin_model is None:
+            raise ValueError(f"feature set {self.feature_set} needs reset(target, info) with the robot model first")
+        m = self.kin_model
+        q_pin = m.ReoderJoints2PinVec(np.concatenate((obs["base_pos"], obs["base_ori"], obs["q_mes"])), "pos")
+        pin.forwardKinematics(m.pin_model, m.pin_data, q_pin)
+        pin.updateFramePlacements(m.pin_model, m.pin_data)
+        return m.pin_data.oMf[self.ee_frame_id].translation.copy()
 
     def predict(self, obs):
         """Model outputs (9,) in physical units for one observation: v (m/s), w (rad/s), tau1..tau7 (N m)."""
+        ee_pos = self.ee_position(obs) if self.needs_ee else None
         signals = bc_features.measured_signals(obs["base_pos"], obs["base_bearing"], obs["q_mes"], obs["qd_mes"],
-                                               obs["target"])
+                                               obs["target"], ee_pos=ee_pos)
         return bc_features.forward(self.model, bc_features.build_features(self.feature_set, signals))[0]
 
     def act(self, obs):

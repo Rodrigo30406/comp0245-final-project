@@ -1,0 +1,359 @@
+"""Resumable, gated execution of the frozen step-5 plan."""
+import argparse
+import datetime
+import importlib.util
+import json
+import os
+import shutil
+import subprocess
+import sys
+import time
+import traceback
+from pathlib import Path
+
+import numpy as np
+
+from f_common import HERE, TASK, OLD, NEW, SEEDS, ar, check_freeze, sha, write_json
+import bc_features as bcf
+import train_policy as tp
+from evaluate_policy import load_eval_set
+from F_mechanisms import dev_pass, hard_pass
+
+CACHE = TASK / "results" / "step3" / "cache" / "dagger1"
+WORKERS = int(os.environ.get("WORKERS", "22"))
+JOBS = int(os.environ.get("FJOBS", "6"))
+
+
+def now():
+    return datetime.datetime.now(datetime.timezone.utc).isoformat()
+
+
+def event(stage, status, **fields):
+    record = {"time": now(), "stage": stage, "status": status, **fields}
+    with open(HERE / "stage_events.jsonl", "a") as f:
+        f.write(json.dumps(record, ensure_ascii=False) + "\n")
+    print(json.dumps(record, ensure_ascii=False), flush=True)
+
+
+def command(args, log):
+    """Run in the approved interpreter; all children inherit MPLCONFIGDIR."""
+    env = {**os.environ, "MPLCONFIGDIR": "/tmp/mplcfg", "OPENBLAS_NUM_THREADS": "1",
+           "OMP_NUM_THREADS": "1", "MKL_NUM_THREADS": "1", "PYTHONUNBUFFERED": "1"}
+    with open(log, "a") as f:
+        subprocess.run([sys.executable, *map(str, args)], cwd=TASK, env=env,
+                       stdout=f, stderr=subprocess.STDOUT, check=True)
+
+
+def selection():
+    split = tp.load_split()
+    chosen = sorted(np.random.default_rng(5).choice(split["train_episodes"], 400, replace=False).tolist())
+    if set(chosen) & set(split["val_episodes"]):
+        raise RuntimeError("F2 selection overlaps expert validation")
+    episodes, _ = load_eval_set(str(TASK / "data" / "train"))
+    by = {e["episode"]: e for e in episodes}
+    rows = sorted([{"episode": e, "seed": k % 5} for k, e in enumerate(chosen)],
+                  key=lambda r: (r["seed"], r["episode"]))
+    rng = np.random.default_rng(6)
+    for row in rows:
+        e = row["episode"]
+        row["offset"] = int(rng.integers(0, 9))
+        path = Path(tp.TRAIN_DIR) / split["episodes"][str(e)]["file"]
+        if path.resolve() != Path(by[e]["recorded_file"]).resolve():
+            raise RuntimeError("split and evaluation episode numbering differ")
+        with np.load(path) as z:
+            np.testing.assert_array_equal(z["target"], by[e]["target"])
+    out = {"rng_selection": 5, "rng_offsets": 6, "split_sha256": sha(tp.SPLIT_PATH),
+           "selected_episodes": chosen, "pilot_episodes": chosen[:2], "rollouts": rows,
+           "rule": "Sorted sample of 400 distinct train_episodes; round robin to seeds 0-4. "
+                   "Offsets in sorted (seed,episode) trajectory order; same offsets in pilot and full cache."}
+    p = HERE / "F2_selection.json"
+    if p.exists() and json.loads(p.read_text()) != out:
+        raise RuntimeError("existing F2 selection differs")
+    if not p.exists():
+        write_json(p, out)
+    return out
+
+
+def validate_run(folder, expected, model=None, no_early=True, trajectories=False):
+    r = ar.load_run(str(folder))
+    # The plan explicitly names training-distribution folders c3_s<k>_train,
+    # while their model file is ego-novw-trig_s<k>.npz. The shared evaluation
+    # analyser correctly warns about that alias; verify this one mapping here.
+    train_alias = (r.meta.get("set") == "train" and r.meta.get("model") == "c3"
+                   and r.meta.get("policy_arg") == f"trained/{OLD}_s{r.meta.get('seed')}.npz")
+    if (sorted(r.by_episode) != sorted(expected) or len(r.rows) != len(expected)
+            or (r.meta.get("warnings") and not train_alias)
+            or (no_early and r.meta.get("no_early_stop") is not True)):
+        raise RuntimeError(f"run config/coverage mismatch: {folder}")
+    if model is not None and r.meta.get("policy_arg") != str(model):
+        raise RuntimeError(f"wrong model: {folder}")
+    errors = {key: sum(row.get("stop_reason") == key for row in r.rows)
+              for key in ("harness_error", "policy_error")}
+    errors["extended_hold_errors"] = sum(row.get("hold10_stop") == "policy_error" for row in r.rows)
+    if any(errors.values()) or any(row.get("error_message") for row in r.rows):
+        raise RuntimeError(f"run errors: {folder}: {errors}")
+    if trajectories:
+        for e in expected:
+            if not (Path(folder) / "traj" / f"ep_{e:04d}.npz").exists():
+                raise RuntimeError(f"missing trajectory in {folder}: {e}")
+    event("run", "validated", folder=str(Path(folder).relative_to(TASK)), n=len(r.rows), **errors)
+
+
+def evaluate(model, set_name, folder, episodes=None, save_every=None):
+    require_gate(set_name)
+    folder = Path(folder)
+    model_arg = str(Path(model).relative_to(TASK))
+    if episodes is None:
+        with open(TASK / "data" / set_name / "config.json") as f:
+            episodes = list(range(json.load(f)["n_episodes"]))
+    if (folder / "summary.txt").exists():
+        validate_run(folder, episodes, model_arg, trajectories=save_every is not None)
+        print(f"skip complete run {folder}", flush=True)
+        return
+    if folder.exists():
+        event("run", "interrupted_directory_deleted", folder=str(folder.relative_to(TASK)))
+        shutil.rmtree(folder)
+    folder.parent.mkdir(parents=True, exist_ok=True)
+    args = ["evaluate_policy.py", "--policy", "policies/bc_policy.py:make_policy", "--policy-arg", model_arg,
+            "--eval-set", "data/" + set_name, "--out-dir", folder.relative_to(TASK),
+            "--workers", WORKERS, "--no-early-stop", "--episodes", ",".join(map(str, episodes))]
+    if save_every is not None:
+        args += ["--save-traj", "--traj-every", save_every]
+    event("run", "start", folder=str(folder.relative_to(TASK)), n=len(episodes))
+    command(args, str(folder) + ".log")
+    validate_run(folder, episodes, model_arg, trajectories=save_every is not None)
+    event("run", "end", folder=str(folder.relative_to(TASK)), n=len(episodes))
+
+
+def pilot():
+    j = selection()
+    for r in j["rollouts"]:
+        if r["episode"] in j["pilot_episodes"]:
+            evaluate(TASK / "trained" / f"{OLD}_s{r['seed']}.npz", "train",
+                     HERE / "pilot" / f"c3_s{r['seed']}_train", [r["episode"]], 1)
+    command([HERE / "build_dagger_cache.py", "--directory", HERE / "pilot_cache", "--pilot",
+             "--workers", WORKERS], HERE / "F2_F3_pilot.log")
+    m = json.loads((HERE / "pilot_cache" / "manifest.json").read_text())
+    j = {"n_trajectories": m["n_trajectories"], "n_rows": m["n_rows"],
+         "trajectories": m["trajectories"], "validated": True}
+    write_json(HERE / "F_pilot.json", j)
+    (HERE / "F_pilot.txt").write_text("F2→F3 pilot 验证通过：文件大小、耗时、影子标签范围如下。\n"
+                                     + json.dumps(j, indent=2, ensure_ascii=False) + "\n")
+
+
+def rollouts():
+    j = selection()
+    for s in range(5):
+        eps = [r["episode"] for r in j["rollouts"] if r["seed"] == s]
+        evaluate(TASK / "trained" / f"{OLD}_s{s}.npz", "train", HERE / "rollouts" / f"c3_s{s}_train", eps, 1)
+
+
+def matrix_hash(module):
+    """Hash the actual standardised matrices handed to train_mlp, before fitting."""
+    result = {}
+
+    class Captured(Exception):
+        pass
+
+    def capture(X, Y, Xv, Yv, *args, **kwargs):
+        for name, a in zip(("X", "Y", "Xv", "Yv"), (X, Y, Xv, Yv)):
+            import hashlib
+            h = hashlib.sha256()
+            for start in range(0, len(a), 65536):
+                h.update(np.ascontiguousarray(a[start:start + 65536]).tobytes())
+            result[name] = {"sha256": h.hexdigest(), "shape": list(a.shape), "dtype": str(a.dtype)}
+        raise Captured()
+
+    original = module.train_mlp
+    module.train_mlp = capture
+    try:
+        module.run_train(OLD, seed=0, out=str(HERE / "matrix_capture_unused.npz"), cache_dir=tp.CACHE_DIR,
+                         split_path=tp.SPLIT_PATH, trigger_copies_k=16, trigger_dir=tp.TRIGGER_DIR,
+                         log=lambda s: None)
+    except Captured:
+        pass
+    finally:
+        module.train_mlp = original
+    if len(result) != 4:
+        raise RuntimeError("did not capture all training matrices")
+    return result
+
+
+def compatibility():
+    # Preserve the old test suite and run it together with the F1 and new
+    # integration tests; no diagnostics env vars may overwrite F1 evidence.
+    env_names = ("DAGGER_F1_DIAGNOSTICS", "DAGGER_F1_PILOT_DIAGNOSTICS")
+    for n in env_names:
+        os.environ.pop(n, None)
+    command(["-m", "unittest", "discover", "-s", "tests", "-v"], HERE / "tests_all.log")
+    out = HERE / "C3_retrain_s0.npz"
+    if not out.exists():
+        command(["train_policy.py", "train", "--model", OLD, "--seed", "0", "--trigger-copies", "16",
+                 "--out", out], HERE / "C3_retrain_s0.log")
+    with np.load(out) as a, np.load(TASK / "trained" / f"{OLD}_s0.npz") as b:
+        keys = sorted(set(a.files) - {"meta"})
+        checks = {k: bool(np.array_equal(a[k], b[k])) for k in keys}
+    j = {"new_model_sha256": sha(out), "original_model_sha256": sha(TASK / "trained" / f"{OLD}_s0.npz"),
+         "arrays_bit_identical": checks, "passed": all(checks.values())}
+    if not j["passed"]:
+        old_path = HERE / "train_policy_before_F.py.txt"
+        loader = importlib.machinery.SourceFileLoader("step5_before", str(old_path))
+        spec = importlib.util.spec_from_loader(loader.name, loader)
+        old = importlib.util.module_from_spec(spec)
+        loader.exec_module(old)
+        old.TASK_DIR = str(TASK)
+        j["old_matrices"] = matrix_hash(old)
+        j["new_matrices"] = matrix_hash(tp)
+        j["passed"] = j["old_matrices"] == j["new_matrices"]
+    write_json(HERE / "backward_compatibility.json", j)
+    if not j["passed"]:
+        raise RuntimeError("old training path changed")
+    print("old training path: PASS", flush=True)
+
+
+def train():
+    available = next(int(line.split()[1]) / 1024 for line in Path("/proc/meminfo").read_text().splitlines()
+                     if line.startswith("MemAvailable:"))
+    if available < JOBS * 3300:
+        raise RuntimeError(f"available memory {available:.0f} MiB insufficient for {JOBS} training jobs")
+    command(["train_policy.py", "train-many", "--model", NEW, "--seeds", "0-9,100-104",
+             "--jobs", JOBS, "--trigger-copies", "16", "--extra-rows", CACHE.relative_to(TASK)],
+            HERE / f"train_{NEW}.log")
+
+
+def model_checks():
+    cm = json.loads((CACHE / "manifest.json").read_text())
+    with np.load(TASK / "trained" / f"{OLD}_s0.npz") as z:
+        baseline = json.loads(str(z["meta"]))
+        scalers = {k: z[k] for k in ("x_mean", "x_scale", "y_mean", "y_scale")}
+    checks = []
+    for seed in list(range(10)) + list(range(100, 105)):
+        path = TASK / "trained" / f"{NEW}_s{seed}.npz"
+        with np.load(path) as z:
+            m = json.loads(str(z["meta"]))
+            t, e = m["trigger"], m["extra_rows"]
+            good = (m["model"] == NEW and m["seed"] == seed and m["feature_set"] == "ego_novw"
+                    and t["copies"] == 16 and t["qd_jitter"] == "auto" and t["jitter_seed"] == 0
+                    and t["qd_sigma"] == baseline["trigger"]["qd_sigma"]
+                    and t["n_rows_added"] == 16 * 1613 and e["n_rows"] == cm["n_rows"]
+                    and e["manifest_sha256"] == sha(CACHE / "manifest.json")
+                    and m["cache_manifest_sha256"] == sha(Path(tp.CACHE_DIR) / "manifest.json")
+                    and t["trigger_cache_manifest_sha256"] == sha(Path(tp.TRIGGER_DIR) / "manifest.json")
+                    and m["split_sha256"] == sha(tp.SPLIT_PATH)
+                    and m["n_train_rows"] == baseline["n_train_rows"] + cm["n_rows"]
+                    and m["n_val_rows"] == baseline["n_val_rows"]
+                    and all(m["code_sha256"][f] == sha(TASK / f) for f in ("train_policy.py", "bc_features.py"))
+                    and all(np.array_equal(z[k], a) for k, a in scalers.items())
+                    and all(m["hyperparameters"][k] == baseline["hyperparameters"][k]
+                            for k in ("hidden_layer_sizes", "activation", "solver", "learning_rate_init", "alpha",
+                                      "batch_size", "shuffle", "max_epochs", "patience", "rel_tol")))
+        checks.append({"seed": seed, "passed": bool(good), "model_sha256": sha(path),
+                       "epochs_run": m["epochs_run"], "best_epoch": m["best_epoch"], "val_loss": m["val_loss"]})
+    write_json(HERE / "model_checks.json", {"n": len(checks), "passed": all(c["passed"] for c in checks), "models": checks})
+    if not all(c["passed"] for c in checks):
+        raise RuntimeError("F model metadata check failed")
+    print("F model checks: all 15 PASS", flush=True)
+
+
+def require_gate(set_name):
+    """Check before any HARD/CONFIRM control read or evaluation data access."""
+    if set_name not in ("hard", "confirm"):
+        return
+    evidence = HERE / "F_mechanisms.json"
+    j = json.loads(evidence.read_text()) if evidence.exists() else {}
+    passed = dev_pass(j) if set_name == "hard" else hard_pass(j)
+    if not passed:
+        raise RuntimeError(f"{set_name} gate failed")
+
+
+def stalled_controls(set_name):
+    # This is F5-only. In particular, F0 never requires these reruns.
+    require_gate(set_name)
+    for s in SEEDS[set_name]:
+        folder = TASK / "results" / f"{OLD}_s{s}_{set_name}"
+        r = ar.load_run(str(folder))
+        eps = [row["episode"] for row in r.rows if row["stop_reason"] == "stalled"]
+        if r.meta.get("no_early_stop") is True or not eps:
+            continue
+        existing = TASK / "results" / "step3" / "nostall" / folder.name
+        if (existing / "summary.txt").exists():
+            validate_run(existing, eps, f"trained/{OLD}_s{s}.npz")
+        else:
+            evaluate(TASK / "trained" / f"{OLD}_s{s}.npz", set_name, HERE / "nostall" / folder.name, eps)
+
+
+def evaluations(set_name):
+    require_gate(set_name)
+    model_checks()
+    if set_name == "dev" and not (HERE / "F_data.txt").exists():
+        raise RuntimeError("F_data.txt must precede DEV")
+    if set_name == "confirm":
+        ar.ALLOW_CONFIRM = True
+        if not (HERE / "confirm_opened.json").exists():
+            write_json(HERE / "confirm_opened.json", {"time": now(), "gate_evidence": sha(HERE / "F_mechanisms.json"),
+                                                       "rule": "one gated CONFIRM opening; resume skips completed runs"})
+    stalled_controls(set_name)
+    for seed in SEEDS[set_name]:
+        evaluate(TASK / "trained" / f"{NEW}_s{seed}.npz", set_name,
+                 TASK / "results" / f"{NEW}_s{seed}_{set_name}", save_every=10 if set_name == "dev" else None)
+    args = [HERE / "F_mechanisms.py", "--through", set_name]
+    if set_name == "confirm":
+        args += ["--allow-confirm"]
+    command(args, HERE / f"F_mechanisms_{set_name}.log")
+
+
+def stage(name, fn):
+    check_freeze()
+    marker = HERE / "completed" / (name + ".json")
+    if marker.exists():
+        print(f"skip completed stage {name}", flush=True)
+        return
+    event(name, "start")
+    fn()
+    marker.parent.mkdir(exist_ok=True)
+    write_json(marker, {"finished": now()})
+    event(name, "end")
+
+
+def main():
+    p = argparse.ArgumentParser()
+    p.add_argument("--stage", choices=("all", "F0", "pilot", "F2", "F3", "compatibility", "F4", "models", "dev", "hard", "confirm"), default="all")
+    a = p.parse_args()
+    os.chdir(TASK)
+    functions = {
+        "F0": lambda: command([HERE / "tolerance_curve.py"], HERE / "F0.log"),
+        "pilot": pilot, "F2": rollouts,
+        "F3": lambda: command([HERE / "build_dagger_cache.py", "--directory", CACHE, "--workers", WORKERS,
+                                "--describe"], HERE / "F3.log"),
+        "compatibility": compatibility, "F4": train, "models": model_checks,
+        "dev": lambda: evaluations("dev"), "hard": lambda: evaluations("hard"),
+        "confirm": lambda: evaluations("confirm")}
+    current = a.stage
+    try:
+        if a.stage != "all":
+            stage(a.stage, functions[a.stage])
+            return
+        for name in ("compatibility", "F0", "pilot", "F2", "F3", "F4", "models", "dev"):
+            current = name
+            stage(name, functions[name])
+        j = json.loads((HERE / "F_mechanisms.json").read_text())
+        if dev_pass(j):
+            current = "hard"
+            stage("hard", functions["hard"])
+            j = json.loads((HERE / "F_mechanisms.json").read_text())
+            if hard_pass(j):
+                current = "confirm"
+                stage("confirm", functions["confirm"])
+        j = json.loads((HERE / "F_mechanisms.json").read_text())
+        write_json(HERE / "chainF_complete.json", {"finished": now(), "verdict": j["verdict"],
+                                                   "mechanisms_sha256": sha(HERE / "F_mechanisms.json")})
+        event("chain", "complete", verdict=j["verdict"])
+    except Exception as exc:
+        event(current, "blocked", error=repr(exc))
+        write_json(HERE / "chainF_blocked.json", {"time": now(), "stage": current, "error": repr(exc),
+                     "traceback": traceback.format_exc(), "resume": "nohup bash results/step5/run_expF.sh all >> results/step5/chainF.log 2>&1 < /dev/null & wait $!"})
+        raise
+
+
+if __name__ == "__main__":
+    main()

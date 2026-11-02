@@ -1,0 +1,15 @@
+{
+  "untouched_sha256_checks": {
+    "results/step5/F1_verification.json": true,
+    "results/step5/F1_verification.log": true,
+    "results/step5/initial_sha256.txt": true,
+    "bc_features.py": true,
+    "policies/bc_policy.py": true,
+    "evaluate_policy.py": true,
+    "analyze_rollouts.py": true,
+    "dagger_relabel.py": true
+  },
+  "all_parsed": true,
+  "frozen_registration_checks": true,
+  "stop": "compatibility tests: forkserver listener.bind PermissionError; no later stage run"
+}

@@ -9,6 +9,12 @@ Feature sets:
                  beta in the base frame, arm q (7), arm qd (7), measured base speeds (v_mes, w_mes)
   ego_novw  (20) ego without (v_mes, w_mes)
   raw       (23) base x, y, sin/cos yaw, arm q (7), arm qd (7), (v_mes, w_mes), target x, y, z (world frame)
+  ego_novw_ee (23) ego_novw plus the near-field end-effector error (experiment D): e = target - ee_pos (world frame,
+                 ee_pos = forward kinematics of the full base pose and q), clipped to length EE_CLIP
+                 (e * min(1, EE_CLIP / |e|)), its horizontal part rotated into the current base frame (ee_dx, ee_dy)
+                 and its z part (ee_dz). Needs the signal ee_pos: in training the recorded ee_pos, in deployment the
+                 forward kinematics with the robot model of info (policies/bc_policy.py). Unlike the other sets it
+                 uses the robot's kinematic model.
 (v_mes, w_mes) are the measured wheel speeds converted with the skid-steer model of base_controller.
 
 Outputs (9): base (v, w) and the 7 arm torques. The policy converts (v, w) back to the 4 wheel speeds with
@@ -33,7 +39,10 @@ FEATURE_SETS = {
     "ego": ["ego_dx", "ego_dy", "target_z", "rho", "cos_beta", "sin_beta", *_Q, *_QD, "v_mes", "w_mes"],
     "ego_novw": ["ego_dx", "ego_dy", "target_z", "rho", "cos_beta", "sin_beta", *_Q, *_QD],
     "raw": ["base_x", "base_y", "sin_yaw", "cos_yaw", *_Q, *_QD, "v_mes", "w_mes", "target_x", "target_y", "target_z"],
+    "ego_novw_ee": ["ego_dx", "ego_dy", "target_z", "rho", "cos_beta", "sin_beta", *_Q, *_QD, "ee_dx", "ee_dy", "ee_dz"],
 }
+FEATURES_NEED_EE = ("ego_novw_ee",)   # feature sets built from the end-effector position (signal ee_pos)
+EE_CLIP = 0.10            # m, length at which the end-effector error is clipped (near-field feature)
 OUTPUT_NAMES = ["v", "w", *[f"tau{j}" for j in range(1, 8)]]
 FORMAT_VERSION = 1
 
@@ -50,11 +59,13 @@ def wheels_to_vw(wheels):
     return WHEEL_RADIUS * (rw + lw) / 2, WHEEL_RADIUS * (rw - lw) / WHEEL_BASE_WIDTH
 
 
-def measured_signals(base_pos, base_bearing, q_mes, qd_mes, target):
+def measured_signals(base_pos, base_bearing, q_mes, qd_mes, target, ee_pos=None):
     """Measured signals the features are built from, as float64 arrays with a leading sample axis.
 
     Accepts one observation (base_pos (3,), base_bearing scalar, q_mes / qd_mes (17,), target (3,)) or a recorded
-    episode (base_pos (T, 3), base_bearing (T,), q_mes / qd_mes (T, 17), target (3,) or (T, 3))."""
+    episode (base_pos (T, 3), base_bearing (T,), q_mes / qd_mes (T, 17), target (3,) or (T, 3)). ee_pos (3,) or
+    (T, 3): the end-effector position (world frame), only needed by FEATURES_NEED_EE; without it the signal is
+    absent."""
     base_pos = np.atleast_2d(np.asarray(base_pos, dtype=float))
     n = base_pos.shape[0]
     qd_mes = np.atleast_2d(np.asarray(qd_mes, dtype=float))
@@ -67,6 +78,7 @@ def measured_signals(base_pos, base_bearing, q_mes, qd_mes, target):
         "v_mes": v_mes,
         "w_mes": w_mes,
         "target": np.broadcast_to(np.asarray(target, dtype=float), (n, 3)),
+        **({} if ee_pos is None else {"ee_pos": np.atleast_2d(np.asarray(ee_pos, dtype=float)).reshape(n, 3)}),
     }
 
 
@@ -77,19 +89,32 @@ def ego_target(base_xy, yaw, target_xy):
     return c * delta[:, 0] + s * delta[:, 1], -s * delta[:, 0] + c * delta[:, 1]
 
 
+def clip_ee_error(e):
+    """Near-field end-effector error: e * min(1, EE_CLIP / |e|) row by row ((N, 3); a zero vector stays zero)."""
+    e = np.asarray(e, dtype=float)
+    norm = np.linalg.norm(e, axis=1, keepdims=True)
+    return e * np.minimum(1.0, EE_CLIP / np.maximum(norm, 1e-300))
+
+
 def build_features(feature_set, signals):
     """(N, F) float64 feature matrix of one of FEATURE_SETS, columns in the order of FEATURE_SETS[feature_set]."""
     if feature_set not in FEATURE_SETS:
         raise ValueError(f"unknown feature set {feature_set!r}, expected one of {list(FEATURE_SETS)}")
     s = signals
     vw = [s["v_mes"][:, None], s["w_mes"][:, None]]
-    if feature_set in ("ego", "ego_novw"):
+    if feature_set in ("ego", "ego_novw", "ego_novw_ee"):
         dx, dy = ego_target(s["base_xy"], s["yaw"], s["target"][:, :2])
         beta = np.arctan2(dy, dx)
         parts = [dx[:, None], dy[:, None], s["target"][:, 2:3], np.hypot(dx, dy)[:, None],
                  np.cos(beta)[:, None], np.sin(beta)[:, None], s["q_arm"], s["qd_arm"]]
         if feature_set == "ego":
             parts += vw
+        if feature_set == "ego_novw_ee":
+            if "ee_pos" not in s:
+                raise ValueError("feature set ego_novw_ee needs the signal ee_pos (end-effector position)")
+            e = clip_ee_error(s["target"] - s["ee_pos"])
+            c, sn = np.cos(s["yaw"]), np.sin(s["yaw"])
+            parts += [(c * e[:, 0] + sn * e[:, 1])[:, None], (-sn * e[:, 0] + c * e[:, 1])[:, None], e[:, 2:3]]
     else:
         parts = [s["base_xy"], np.sin(s["yaw"])[:, None], np.cos(s["yaw"])[:, None], s["q_arm"], s["qd_arm"],
                  *vw, s["target"]]

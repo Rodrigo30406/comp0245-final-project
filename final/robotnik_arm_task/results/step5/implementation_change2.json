@@ -1,0 +1,30 @@
+{
+  "time": "2026-11-02T04:02:04.081403+00:00",
+  "reason": "用户批准的 F0 修订 2：主曲线用原始行，DEV 独立 60.8% 敏感性曲线；登记新计划哈希，保留原始冻结文件；为 F5 HARD/CONFIRM stalled 重跑及评估入口增加门槛防护和顺序测试。§1、冻结 §3 与统计判定均未变。",
+  "observed_results": "修改前仅有 F1、已通过的兼容性检查和 F0 失败诊断；F2-F5 均未开始。",
+  "files": {
+    "STEP5_DAGGER_PLAN_PROMPT.md": {
+      "old_sha256": "e1ea8a1b4cc6da21e979e6d4640bfd5727b7e619e2296a6c26ea37b2c7b59c86",
+      "new_sha256": "554caf7ffea7364ac870b08eb85bbca80d06503d241a68d63e3e330066c8b43b"
+    },
+    "results/step5/f_common.py": {
+      "old_sha256": "9e0748d69f20431774dea107540672c92912a231c508a2fb57f2cca8b55a547d",
+      "new_sha256": "3ec16480972676438ae4c3e6d31cda7418ee01b900e307536a87417aa3beb377"
+    },
+    "results/step5/step5_pipeline.py": {
+      "old_sha256": "1d158f713925cf6b3a63d10f6d0b3e56f7703c36763719547389975cb3e92325",
+      "new_sha256": "721c81a85f11592400d4113e9a1398eb2c90b0ce9f9f60f5c3b4d5db0ab70234"
+    },
+    "results/step5/tolerance_curve.py": {
+      "old_sha256": "010e166be37827121f084f57f322c0ef94fea6a9cf4fd8518a845f454221fa1c",
+      "new_sha256": "f178c94d756954c45957892dc8ad05f0534c4b88c0135b5e26dbcbc34cba1dca"
+    },
+    "tests/test_f_gates.py": {
+      "old_sha256": "9e352912031e9bf5d0ae65703791dbb03d0a21bc79ab866db65b193dbdad7451",
+      "new_sha256": "003ade2d72f82d8852e033a36de8a09da448450e6e319155e4262f7703819aec"
+    }
+  },
+  "gates_test": "tests_amendment2_gates.log: Ran 3 tests; OK",
+  "compatibility": "保留 completed/compatibility.json；原共享训练代码与模型哈希不变，旧路径逐位一致证据继续有效。",
+  "frozen_records": "prereg_F_frozen.txt、prereg_F_hashes.json 原样保留；每阶段检查修订段移除后的旧计划哈希和原冻结 section3 哈希。"
+}

@@ -1,0 +1,14 @@
+{
+  "time": "2026-11-02T03:57:28.175597+00:00",
+  "status": "PASS",
+  "initial_record": "resume_integrity_20261102.json",
+  "files": {
+    "prereg_F_frozen.txt": "492ad376f2e1995d3ec94f86652cef64b9588076ca050ef7749c2c6dfe07fb40",
+    "prereg_F_hashes.json": "34a16818717cf5f32329219270b7b4ce465987a53e8fa11dca16ddb0d709e6e0",
+    "implementation_F_sha256.json": "2f0e9c2d00ac40515dfea792a3044f1cb18d218ae13ea1aa48ec32ddbef70508"
+  },
+  "implementation_files_verified": 107,
+  "implementation_changes": [],
+  "plan_section_1_unchanged": true,
+  "frozen_section_3_unchanged": true
+}

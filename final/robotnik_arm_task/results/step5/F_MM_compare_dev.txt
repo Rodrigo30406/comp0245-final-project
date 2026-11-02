@@ -1,0 +1,64 @@
+== Experiment A: dag1 (B) vs C3 (A), 300 common episodes, seeds A 10, B 10 ==
+Differences are B - A (seed-mean over training seeds; two-level bootstrap: seeds resampled within each arm, one shared episode resample; 10000 draws, rng seed 0; percentile 95% CI). Calibrated companion: Welch t on the per-seed rates (one-sample t when an arm is a single run), 95% CI.
+Per-seed success (Wilson 95%):
+  C3: 0: 210/300 70.0 [64.6, 74.9]; 1: 159/300 53.0 [47.3, 58.6]; 2: 191/300 63.7 [58.1, 68.9]; 3: 180/300 60.0 [54.4, 65.4]; 4: 172/300 57.3 [51.7, 62.8]; 5: 167/300 55.7 [50.0, 61.2]; 6: 189/300 63.0 [57.4, 68.3]; 7: 229/300 76.3 [71.2, 80.8]; 8: 195/300 65.0 [59.4, 70.2]; 9: 172/300 57.3 [51.7, 62.8]
+  dag1: 0: 42/300 14.0 [10.5, 18.4]; 1: 43/300 14.3 [10.8, 18.8]; 2: 48/300 16.0 [12.3, 20.6]; 3: 142/300 47.3 [41.8, 53.0]; 4: 83/300 27.7 [22.9, 33.0]; 5: 79/300 26.3 [21.7, 31.6]; 6: 68/300 22.7 [18.3, 27.7]; 7: 37/300 12.3 [9.1, 16.5]; 8: 31/300 10.3 [7.4, 14.3]; 9: 92/300 30.7 [25.7, 36.1]
+Seed-mean success: C3 62.1 [56.8, 67.8]%, dag1 22.2 [15.7, 29.7]%; expert 99.3% on the same episodes
+Paired difference B - A: bootstrap -40.0 [-48.2, -31.2] pp, p 1.0e-04; Welch t (per-seed rates) -40.0 [-49.0, -31.0] pp, df 15.1, p 9.8e-08
+Floor rule (both seed-mean successes < 5%): not active
+Seed x seed (all pairs; seeds of different arms are not paired): success difference B - A in pp, exact McNemar p (descriptive) [n A fails & B succeeds / n A succeeds & B fails]:
+  A \ B                      0                     1                     2                     3                     4                     5                     6                     7                     8                     9
+  0      -56.0 p 4.0e-43 [7/175] -55.7 p 2.5e-41 [9/176] -54.0 p 4.1e-43 [5/167] -22.7 p 9.3e-11 [23/91] -42.3 p 1.4e-28 [12/139] -43.7 p 1.1e-27 [16/147] -47.3 p 2.2e-34 [9/151] -57.7 p 2.2e-45 [6/179] -59.7 p 1.9e-45 [8/187] -39.3 p 8.3e-28 [9/127]
+  1      -39.0 p 1.5e-27 [9/126] -38.7 p 4.1e-23 [18/134] -37.0 p 6.5e-26 [9/120]  -5.7 p    0.14 [50/67] -25.3 p 2.4e-13 [19/95] -26.7 p 1.8e-12 [27/107] -30.3 p 3.4e-19 [12/103] -40.7 p 1.7e-23 [21/143] -42.7 p 3.2e-34 [4/132] -22.3 p 4.9e-10 [26/93]
+  2      -49.7 p 2.5e-36 [9/158] -49.3 p 8.8e-35 [11/159] -47.7 p 2.0e-33 [11/154] -16.3 p 6.8e-06 [34/83] -36.0 p 3.8e-21 [18/126] -37.3 p 1.2e-19 [26/138] -41.0 p 4.4e-26 [15/138] -51.3 p 3.7e-39 [7/161] -53.3 p 1.1e-41 [6/166] -33.0 p 5.7e-19 [18/117]
+  3      -46.0 p 5.7e-30 [15/153] -45.7 p 8.5e-29 [17/154] -44.0 p 2.2e-29 [13/145] -12.7 p  0.0011 [46/84] -32.3 p 2.7e-16 [26/123] -33.7 p 6.3e-17 [27/128] -37.3 p 4.2e-21 [21/133] -47.7 p 2.0e-33 [11/154] -49.7 p 1.6e-38 [6/155] -29.3 p 5.0e-15 [23/111]
+  4      -43.3 p 7.5e-29 [13/143] -43.0 p 4.2e-28 [14/143] -41.3 p 4.6e-30 [8/132] -10.0 p    0.01 [49/79] -29.7 p 2.7e-16 [19/108] -31.0 p 5.6e-15 [28/121] -34.7 p 4.3e-22 [13/117] -45.0 p 1.1e-26 [21/156] -47.0 p 1.8e-33 [10/151] -26.7 p 9.7e-14 [21/101]
+  5      -41.7 p 4.7e-27 [14/139] -41.3 p 9.0e-28 [12/136] -39.7 p 3.1e-24 [17/136]  -8.3 p   0.019 [40/65] -28.0 p 4.2e-13 [28/112] -29.3 p 9.9e-14 [29/117] -33.0 p 9.2e-18 [22/121] -43.3 p 1.0e-31 [8/138] -45.3 p 1.5e-28 [17/153] -25.0 p 5.8e-10 [37/112]
+  6      -49.0 p 3.5e-37 [7/154] -48.7 p 3.6e-36 [8/154] -47.0 p 4.4e-37 [5/146] -15.7 p 7.7e-06 [31/78] -35.3 p 1.3e-22 [13/119] -36.7 p 6.0e-21 [20/130] -40.3 p 6.7e-30 [7/128] -50.7 p 3.6e-34 [14/166] -52.7 p 5.8e-42 [5/163] -32.3 p 3.5e-21 [11/108]
+  7      -62.3 p 1.5e-48 [7/194] -62.0 p 4.7e-50 [5/191] -60.3 p 1.1e-47 [6/187] -29.0 p 1.3e-18 [11/98] -48.7 p 4.2e-33 [13/159] -50.0 p 1.3e-32 [16/166] -53.7 p 2.2e-40 [8/169] -64.0 p 3.8e-55 [2/194] -66.0 p 2.5e-58 [1/199] -45.7 p 8.5e-32 [11/148]
+  8      -51.0 p 7.1e-39 [7/160] -50.7 p 7.5e-38 [8/160] -49.0 p 1.7e-34 [11/158] -17.7 p 1.0e-06 [32/85] -37.3 p 4.0e-22 [18/130] -38.7 p 9.8e-22 [22/138] -42.3 p 3.0e-26 [17/144] -52.7 p 8.0e-39 [9/167] -54.7 p 3.7e-39 [11/175] -34.3 p 4.0e-18 [24/127]
+  9      -43.3 p 2.1e-32 [7/137] -43.0 p 3.3e-30 [10/139] -41.3 p 8.5e-27 [14/138] -10.0 p  0.0078 [45/75] -29.7 p 2.7e-16 [19/108] -31.0 p 9.0e-15 [29/122] -34.7 p 1.1e-21 [14/118] -45.0 p 3.6e-30 [13/148] -47.0 p 7.1e-33 [11/152] -26.7 p 7.4e-13 [25/105]
+  all 100 seed-pair differences: min -66.0, median -41.5, max -5.7 pp; 0 > 0, 100 < 0
+Failure classes, seed-mean share of the episodes (A, B, B - A with CI):
+  success                A  62.1%  B  22.2%  B - A -40.0 [-48.2, -31.2] pp
+  crash                  A   1.8%  B  15.2%  B - A +13.4 [+4.1, +25.1] pp
+  runaway                A   0.0%  B   0.9%  B - A +0.9 [+0.1, +2.1] pp
+  no_progress            A   0.0%  B   0.2%  B - A +0.2 [+0.0, +0.7] pp
+  never_other            A   0.0%  B   1.1%  B - A +1.1 [+0.1, +3.0] pp
+  circling               A  13.5%  B  26.7%  B - A +13.2 [+3.4, +23.2] pp
+  left_or_overshot       A   1.8%  B   7.9%  B - A +6.1 [+2.8, +10.0] pp
+  parked_no_arm          A   0.1%  B   0.1%  B - A +0.0 [-0.3, +0.3] pp
+  extended_not_reached   A  18.0%  B  21.2%  B - A +3.2 [-6.2, +14.6] pp
+  approached_other       A   2.6%  B   4.4%  B - A +1.8 [-0.8, +4.5] pp
+  flag no_motion_near_ring (failure starting within 0.15 m of the ring, base did not move; never no_start): A 0.0%  B 0.0%
+  failures on short-reach episodes (38 of 300 episodes with the expert's hold posture at parking < 0.07 m from the target: parked_no_arm cannot fire): A 2.1%  B 5.6% of the episodes; seed x episode counts A {'crash': 6, 'circling': 20, 'extended_not_reached': 37}, B {'crash': 38, 'runaway': 3, 'never_other': 1, 'circling': 26, 'left_or_overshot': 29, 'extended_not_reached': 69, 'approached_other': 3}
+Merged classes, seed-mean share (A, B, B - A): arrive_stay 25.2 / 0.1 / -25.1; arrive_leave 36.9 / 22.1 / -14.8; base_ok_ee_not 20.7 / 25.7 / +5.0; base_not 15.3 / 36.9 / +21.5; crash 1.8 / 15.2 / +13.4
+Share of the net difference from extended_not_reached: reduction of their share -3.2 pp / net difference -40.0 pp = 8.0% [bootstrap -16.3, 36.1] (unstable when the net difference is near 0)
+d0 strata (Holm over the 4 strata with n >= 30, reject at p_adj <= 0.05; the strata with fewer episodes are descriptive, without Holm):
+  M0             n  12 (descriptive) A  40.8%  B  10.8%  B - A -30.0 [-46.7, -14.2] pp, p 0.0012, no Holm
+  M1             n  48               A  46.2%  B   8.1%  B - A -38.1 [-49.0, -27.9] pp, p 1.0e-04, Holm 4.0e-04 (significant)
+  M2 0.08-0.5    n  46               A  62.4%  B  24.3%  B - A -38.0 [-50.2, -25.6] pp, p 1.0e-04, Holm 4.0e-04 (significant)
+  M2 0.5-1.0     n  56               A  66.6%  B  30.7%  B - A -35.9 [-48.2, -22.9] pp, p 1.0e-04, Holm 4.0e-04 (significant)
+  M2 >= 1.0      n 138               A  67.6%  B  23.8%  B - A -43.8 [-53.8, -32.9] pp, p 1.0e-04, Holm 4.0e-04 (significant)
+  boundary 0.08-0.15 (descriptive, overlaps the strata): n 8, A 45.0%, B 13.8%, B - A -31.2 [-57.5, -8.7] pp
+Secondary metrics (seed-mean share; B - A paired: two-level bootstrap and Welch t; descriptive unless the floor rule is active; expert = the expert run's rate on the same episodes, the reference):
+  reach_2cm           A 80.6 [76.1, 84.7]%  B 42.4 [35.0, 50.7]%  B - A -38.2 [-46.2, -29.5] pp, p 1.0e-04; Welch -38.2 [-47.4, -29.0] pp, p 1.3e-06
+                      expert 99.3%; per seed A 83/77/82/83/78/70/82/88/84/80, B 39/30/36/69/49/48/42/32/29/52; worst stratum CI upper bound: n >= 30 M1 -32.1 pp, all M1 -32.1 pp
+  reach_5cm           A 91.9 [88.8, 94.5]%  B 70.9 [64.1, 77.4]%  B - A -21.0 [-27.9, -14.4] pp, p 1.0e-04; Welch -21.0 [-28.5, -13.5] pp, p 7.5e-05
+                      expert 99.3%; per seed A 92/92/93/95/90/84/93/95/94/91, B 80/61/73/85/73/78/60/52/70/77; worst stratum CI upper bound: n >= 30 M1 -24.4 pp, all M1 -24.4 pp
+  parked              A 82.0 [76.9, 86.6]%  B 19.9 [12.4, 27.4]%  B - A -62.1 [-70.8, -53.0] pp, p 1.0e-04; Welch -62.1 [-71.8, -52.4] pp, p 1.1e-09
+                      expert 99.0%; per seed A 69/81/82/79/92/71/89/85/87/84, B 40/6/22/26/31/31/6/18/4/15; worst stratum CI upper bound: n >= 30 M2 >= 1.0 -57.3 pp, all M2 >= 1.0 -57.3 pp
+  arm_extended        A 82.1 [78.2, 85.9]%  B 92.5 [89.1, 95.5]%  B - A +10.4 [+6.8, +14.3] pp, p 1.0e-04; Welch +10.4 [+7.3, +13.5] pp, p 1.3e-05
+                      expert 81.7%; per seed A 79/81/85/82/82/83/82/81/82/84, B 94/97/92/91/90/86/93/99/97/87; worst stratum CI upper bound: n >= 30 M2 >= 1.0 +13.7 pp, all M2 >= 1.0 +13.7 pp
+  arm_extended_toward A 81.2 [77.1, 85.1]%  B 83.0 [77.8, 87.5]%  B - A +1.8 [-3.7, +6.6] pp, p 0.49; Welch +1.8 [-3.2, +6.7] pp, p 0.44
+                      expert 81.7%; per seed A 78/80/84/81/82/82/82/80/81/82, B 88/67/85/87/85/82/85/77/91/83; worst stratum CI upper bound: n >= 30 M1 +3.3 pp, all M1 +3.3 pp
+  held_10s            A 25.2 [18.4, 31.8]%  B 0.1 [0.0, 0.4]%  B - A -25.1 [-31.7, -18.4] pp, p 1.0e-04; Welch -25.1 [-32.3, -17.9] pp, p 2.4e-05
+                      expert 98.7%; per seed A 40/14/24/28/29/23/34/32/23/5, B 0/0/1/0/0/0/0/0/0/0; worst stratum CI upper bound: n >= 30 M2 >= 1.0 -20.1 pp, all M2 >= 1.0 -20.1 pp
+  stable_5cm          A 90.6 [87.2, 93.5]%  B 60.1 [53.5, 66.5]%  B - A -30.5 [-37.3, -23.7] pp, p 1.0e-04; Welch -30.5 [-37.7, -23.4] pp, p 1.2e-06
+                      expert 99.3%; per seed A 90/91/91/92/90/82/93/95/94/89, B 68/50/62/74/64/68/53/48/47/66; worst stratum CI upper bound: n >= 30 M1 -32.5 pp, all M1 -32.5 pp
+  Holm over the available secondary metrics (bootstrap p | max(bootstrap p, Welch p)): reach_2cm 7.0e-04 | 7.0e-04, reach_5cm 7.0e-04 | 7.0e-04, parked 7.0e-04 | 7.0e-04, arm_extended 7.0e-04 | 7.0e-04, arm_extended_toward 0.49 | 0.49, held_10s 7.0e-04 | 7.0e-04, stable_5cm 7.0e-04 | 7.0e-04
+Adoption-rule inputs (B adopted only if (1) CI lower bound > 0, (2) share from predicted classes >= 50%, (3) every stratum CI upper bound >= -10 pp, (4) HARD same direction, (5) CONFIRM):
+  (1) CI lower bound of B - A: bootstrap -48.2 pp, Welch t (per-seed rates) -49.0 pp (upper: bootstrap -31.2, t -31.0 pp) -> bootstrap > 0 NO, t > 0 NO: condition (1) (both > 0) NOT MET
+  (2) share from predicted classes: 8.0% (extended_not_reached)
+  (3) worst stratum CI upper bound (strata with n >= 30, used): M2 >= 1.0 -32.9 pp (needs >= -10 pp); all strata (shown): M2 >= 1.0 -32.9 pp
+  reverse direction (A better than B): B - A CI upper bound: bootstrap -31.2 pp, t -31.0 pp (both need < 0: MET); highest stratum B - A CI lower bound (needs <= +10 pp): n >= 30 (used) M2 0.5-1.0 -48.2 pp, all M0 -46.7 pp

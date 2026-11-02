@@ -1,0 +1,84 @@
+{"time": "2026-11-02T01:51:37.494302+00:00", "stage": "compatibility", "status": "start"}
+{"time": "2026-11-02T01:52:15.310793+00:00", "stage": "compatibility", "status": "blocked", "error": "CalledProcessError(1, ['/home/w/comp0245/RoboEnv/.pixi/envs/default/bin/python', '-m', 'unittest', 'discover', '-s', 'tests', '-v'])"}
+{"time": "2026-11-02T03:45:40.379482+00:00", "stage": "compatibility", "status": "start"}
+{"time": "2026-11-02T03:49:07.186342+00:00", "stage": "compatibility", "status": "end"}
+{"time": "2026-11-02T03:49:07.198597+00:00", "stage": "F0", "status": "start"}
+{"time": "2026-11-02T03:49:41.770481+00:00", "stage": "F0", "status": "blocked", "error": "CalledProcessError(1, ['/home/w/comp0245/RoboEnv/.pixi/envs/default/bin/python', '/home/w/comp0245/LAB_SESSION_COMP_0245_2026_PUBLIC/.claude/worktrees/eval-protocol/final/robotnik_arm_task/results/step5/tolerance_curve.py'])"}
+{"time": "2026-11-02T04:03:20.089974+00:00", "stage": "F0", "status": "start"}
+{"time": "2026-11-02T04:05:03.941776+00:00", "stage": "F0", "status": "end"}
+{"time": "2026-11-02T04:05:03.947560+00:00", "stage": "pilot", "status": "start"}
+{"time": "2026-11-02T04:05:04.320599+00:00", "stage": "run", "status": "start", "folder": "results/step5/pilot/c3_s0_train", "n": 1}
+{"time": "2026-11-02T04:05:13.709085+00:00", "stage": "run", "status": "validated", "folder": "results/step5/pilot/c3_s0_train", "n": 1, "harness_error": 0, "policy_error": 0, "extended_hold_errors": 0}
+{"time": "2026-11-02T04:05:13.709165+00:00", "stage": "run", "status": "end", "folder": "results/step5/pilot/c3_s0_train", "n": 1}
+{"time": "2026-11-02T04:05:13.709272+00:00", "stage": "run", "status": "start", "folder": "results/step5/pilot/c3_s1_train", "n": 1}
+{"time": "2026-11-02T04:05:19.931858+00:00", "stage": "run", "status": "validated", "folder": "results/step5/pilot/c3_s1_train", "n": 1, "harness_error": 0, "policy_error": 0, "extended_hold_errors": 0}
+{"time": "2026-11-02T04:05:19.931954+00:00", "stage": "run", "status": "end", "folder": "results/step5/pilot/c3_s1_train", "n": 1}
+{"time": "2026-11-02T04:05:22.566922+00:00", "stage": "pilot", "status": "end"}
+{"time": "2026-11-02T04:05:22.572624+00:00", "stage": "F2", "status": "start"}
+{"time": "2026-11-02T04:05:22.662866+00:00", "stage": "run", "status": "start", "folder": "results/step5/rollouts/c3_s0_train", "n": 80}
+{"time": "2026-11-02T04:07:34.476916+00:00", "stage": "run", "status": "validated", "folder": "results/step5/rollouts/c3_s0_train", "n": 80, "harness_error": 0, "policy_error": 0, "extended_hold_errors": 0}
+{"time": "2026-11-02T04:07:34.477022+00:00", "stage": "run", "status": "end", "folder": "results/step5/rollouts/c3_s0_train", "n": 80}
+{"time": "2026-11-02T04:07:34.477134+00:00", "stage": "run", "status": "start", "folder": "results/step5/rollouts/c3_s1_train", "n": 80}
+{"time": "2026-11-02T04:10:15.507564+00:00", "stage": "run", "status": "validated", "folder": "results/step5/rollouts/c3_s1_train", "n": 80, "harness_error": 0, "policy_error": 0, "extended_hold_errors": 0}
+{"time": "2026-11-02T04:10:15.507680+00:00", "stage": "run", "status": "end", "folder": "results/step5/rollouts/c3_s1_train", "n": 80}
+{"time": "2026-11-02T04:10:15.507800+00:00", "stage": "run", "status": "start", "folder": "results/step5/rollouts/c3_s2_train", "n": 80}
+{"time": "2026-11-02T04:12:28.912770+00:00", "stage": "run", "status": "validated", "folder": "results/step5/rollouts/c3_s2_train", "n": 80, "harness_error": 0, "policy_error": 0, "extended_hold_errors": 0}
+{"time": "2026-11-02T04:12:28.912894+00:00", "stage": "run", "status": "end", "folder": "results/step5/rollouts/c3_s2_train", "n": 80}
+{"time": "2026-11-02T04:12:28.913013+00:00", "stage": "run", "status": "start", "folder": "results/step5/rollouts/c3_s3_train", "n": 80}
+{"time": "2026-11-02T04:15:28.087170+00:00", "stage": "F2", "status": "blocked", "observer": true, "detected_at": "2026-11-02T04:14:25+00:00", "error": "Execution sessions terminated with exit code 143; no live Python/pixi/sleep processes remained at 2026-11-02T04:14:25Z.", "interrupted_folder": "results/step5/rollouts/c3_s3_train", "partial_csv_rows": 34}
+{"time": "2026-11-02T04:17:08.926286+00:00", "stage": "F2", "status": "start"}
+{"time": "2026-11-02T04:17:09.023714+00:00", "stage": "run", "status": "validated", "folder": "results/step5/rollouts/c3_s0_train", "n": 80, "harness_error": 0, "policy_error": 0, "extended_hold_errors": 0}
+{"time": "2026-11-02T04:17:09.025617+00:00", "stage": "run", "status": "validated", "folder": "results/step5/rollouts/c3_s1_train", "n": 80, "harness_error": 0, "policy_error": 0, "extended_hold_errors": 0}
+{"time": "2026-11-02T04:17:09.027438+00:00", "stage": "run", "status": "validated", "folder": "results/step5/rollouts/c3_s2_train", "n": 80, "harness_error": 0, "policy_error": 0, "extended_hold_errors": 0}
+{"time": "2026-11-02T04:17:09.027538+00:00", "stage": "run", "status": "interrupted_directory_deleted", "folder": "results/step5/rollouts/c3_s3_train"}
+{"time": "2026-11-02T04:17:09.053912+00:00", "stage": "run", "status": "start", "folder": "results/step5/rollouts/c3_s3_train", "n": 80}
+{"time": "2026-11-02T04:19:48.115143+00:00", "stage": "run", "status": "validated", "folder": "results/step5/rollouts/c3_s3_train", "n": 80, "harness_error": 0, "policy_error": 0, "extended_hold_errors": 0}
+{"time": "2026-11-02T04:19:48.115262+00:00", "stage": "run", "status": "end", "folder": "results/step5/rollouts/c3_s3_train", "n": 80}
+{"time": "2026-11-02T04:19:48.115380+00:00", "stage": "run", "status": "start", "folder": "results/step5/rollouts/c3_s4_train", "n": 80}
+{"time": "2026-11-02T04:22:34.608721+00:00", "stage": "run", "status": "validated", "folder": "results/step5/rollouts/c3_s4_train", "n": 80, "harness_error": 0, "policy_error": 0, "extended_hold_errors": 0}
+{"time": "2026-11-02T04:22:34.608849+00:00", "stage": "run", "status": "end", "folder": "results/step5/rollouts/c3_s4_train", "n": 80}
+{"time": "2026-11-02T04:22:34.608993+00:00", "stage": "F2", "status": "end"}
+{"time": "2026-11-02T04:22:34.614736+00:00", "stage": "F3", "status": "start"}
+{"time": "2026-11-02T04:24:38.700511+00:00", "stage": "F3", "status": "end"}
+{"time": "2026-11-02T04:24:38.706486+00:00", "stage": "F4", "status": "start"}
+{"time": "2026-11-02T04:35:54.837245+00:00", "stage": "F4", "status": "end"}
+{"time": "2026-11-02T04:35:54.843532+00:00", "stage": "models", "status": "start"}
+{"time": "2026-11-02T04:35:54.854629+00:00", "stage": "models", "status": "end"}
+{"time": "2026-11-02T04:35:54.860673+00:00", "stage": "dev", "status": "start"}
+{"time": "2026-11-02T04:35:54.877039+00:00", "stage": "run", "status": "validated", "folder": "results/step3/nostall/ego-novw-trig_s0_dev", "n": 6, "harness_error": 0, "policy_error": 0, "extended_hold_errors": 0}
+{"time": "2026-11-02T04:35:54.882299+00:00", "stage": "run", "status": "validated", "folder": "results/step3/nostall/ego-novw-trig_s1_dev", "n": 24, "harness_error": 0, "policy_error": 0, "extended_hold_errors": 0}
+{"time": "2026-11-02T04:35:54.887885+00:00", "stage": "run", "status": "validated", "folder": "results/step3/nostall/ego-novw-trig_s2_dev", "n": 36, "harness_error": 0, "policy_error": 0, "extended_hold_errors": 0}
+{"time": "2026-11-02T04:35:54.893641+00:00", "stage": "run", "status": "validated", "folder": "results/step3/nostall/ego-novw-trig_s3_dev", "n": 8, "harness_error": 0, "policy_error": 0, "extended_hold_errors": 0}
+{"time": "2026-11-02T04:35:54.898840+00:00", "stage": "run", "status": "validated", "folder": "results/step3/nostall/ego-novw-trig_s4_dev", "n": 22, "harness_error": 0, "policy_error": 0, "extended_hold_errors": 0}
+{"time": "2026-11-02T04:35:54.924180+00:00", "stage": "run", "status": "start", "folder": "results/ego-novw-trig-dag1_s0_dev", "n": 300}
+{"time": "2026-11-02T04:47:24.453537+00:00", "stage": "run", "status": "validated", "folder": "results/ego-novw-trig-dag1_s0_dev", "n": 300, "harness_error": 0, "policy_error": 0, "extended_hold_errors": 0}
+{"time": "2026-11-02T04:47:24.453786+00:00", "stage": "run", "status": "end", "folder": "results/ego-novw-trig-dag1_s0_dev", "n": 300}
+{"time": "2026-11-02T04:47:24.453928+00:00", "stage": "run", "status": "start", "folder": "results/ego-novw-trig-dag1_s1_dev", "n": 300}
+{"time": "2026-11-02T04:58:22.439959+00:00", "stage": "run", "status": "validated", "folder": "results/ego-novw-trig-dag1_s1_dev", "n": 300, "harness_error": 0, "policy_error": 0, "extended_hold_errors": 0}
+{"time": "2026-11-02T04:58:22.440229+00:00", "stage": "run", "status": "end", "folder": "results/ego-novw-trig-dag1_s1_dev", "n": 300}
+{"time": "2026-11-02T04:58:22.440393+00:00", "stage": "run", "status": "start", "folder": "results/ego-novw-trig-dag1_s2_dev", "n": 300}
+{"time": "2026-11-02T05:09:09.346870+00:00", "stage": "run", "status": "validated", "folder": "results/ego-novw-trig-dag1_s2_dev", "n": 300, "harness_error": 0, "policy_error": 0, "extended_hold_errors": 0}
+{"time": "2026-11-02T05:09:09.347129+00:00", "stage": "run", "status": "end", "folder": "results/ego-novw-trig-dag1_s2_dev", "n": 300}
+{"time": "2026-11-02T05:09:09.347289+00:00", "stage": "run", "status": "start", "folder": "results/ego-novw-trig-dag1_s3_dev", "n": 300}
+{"time": "2026-11-02T05:19:14.372566+00:00", "stage": "run", "status": "validated", "folder": "results/ego-novw-trig-dag1_s3_dev", "n": 300, "harness_error": 0, "policy_error": 0, "extended_hold_errors": 0}
+{"time": "2026-11-02T05:19:14.372787+00:00", "stage": "run", "status": "end", "folder": "results/ego-novw-trig-dag1_s3_dev", "n": 300}
+{"time": "2026-11-02T05:19:14.372926+00:00", "stage": "run", "status": "start", "folder": "results/ego-novw-trig-dag1_s4_dev", "n": 300}
+{"time": "2026-11-02T05:29:58.811095+00:00", "stage": "run", "status": "validated", "folder": "results/ego-novw-trig-dag1_s4_dev", "n": 300, "harness_error": 0, "policy_error": 0, "extended_hold_errors": 0}
+{"time": "2026-11-02T05:29:58.811320+00:00", "stage": "run", "status": "end", "folder": "results/ego-novw-trig-dag1_s4_dev", "n": 300}
+{"time": "2026-11-02T05:29:58.811460+00:00", "stage": "run", "status": "start", "folder": "results/ego-novw-trig-dag1_s5_dev", "n": 300}
+{"time": "2026-11-02T05:40:50.283819+00:00", "stage": "run", "status": "validated", "folder": "results/ego-novw-trig-dag1_s5_dev", "n": 300, "harness_error": 0, "policy_error": 0, "extended_hold_errors": 0}
+{"time": "2026-11-02T05:40:50.284046+00:00", "stage": "run", "status": "end", "folder": "results/ego-novw-trig-dag1_s5_dev", "n": 300}
+{"time": "2026-11-02T05:40:50.284189+00:00", "stage": "run", "status": "start", "folder": "results/ego-novw-trig-dag1_s6_dev", "n": 300}
+{"time": "2026-11-02T05:51:04.151552+00:00", "stage": "run", "status": "validated", "folder": "results/ego-novw-trig-dag1_s6_dev", "n": 300, "harness_error": 0, "policy_error": 0, "extended_hold_errors": 0}
+{"time": "2026-11-02T05:51:04.151748+00:00", "stage": "run", "status": "end", "folder": "results/ego-novw-trig-dag1_s6_dev", "n": 300}
+{"time": "2026-11-02T05:51:04.151889+00:00", "stage": "run", "status": "start", "folder": "results/ego-novw-trig-dag1_s7_dev", "n": 300}
+{"time": "2026-11-02T06:01:01.396795+00:00", "stage": "run", "status": "validated", "folder": "results/ego-novw-trig-dag1_s7_dev", "n": 300, "harness_error": 0, "policy_error": 0, "extended_hold_errors": 0}
+{"time": "2026-11-02T06:01:01.397043+00:00", "stage": "run", "status": "end", "folder": "results/ego-novw-trig-dag1_s7_dev", "n": 300}
+{"time": "2026-11-02T06:01:01.397185+00:00", "stage": "run", "status": "start", "folder": "results/ego-novw-trig-dag1_s8_dev", "n": 300}
+{"time": "2026-11-02T06:10:04.185692+00:00", "stage": "run", "status": "validated", "folder": "results/ego-novw-trig-dag1_s8_dev", "n": 300, "harness_error": 0, "policy_error": 0, "extended_hold_errors": 0}
+{"time": "2026-11-02T06:10:04.185903+00:00", "stage": "run", "status": "end", "folder": "results/ego-novw-trig-dag1_s8_dev", "n": 300}
+{"time": "2026-11-02T06:10:04.186038+00:00", "stage": "run", "status": "start", "folder": "results/ego-novw-trig-dag1_s9_dev", "n": 300}
+{"time": "2026-11-02T06:20:27.105692+00:00", "stage": "run", "status": "validated", "folder": "results/ego-novw-trig-dag1_s9_dev", "n": 300, "harness_error": 0, "policy_error": 0, "extended_hold_errors": 0}
+{"time": "2026-11-02T06:20:27.105979+00:00", "stage": "run", "status": "end", "folder": "results/ego-novw-trig-dag1_s9_dev", "n": 300}
+{"time": "2026-11-02T06:20:29.328025+00:00", "stage": "dev", "status": "end"}
+{"time": "2026-11-02T06:20:29.328334+00:00", "stage": "chain", "status": "complete", "verdict": "KEEP C3"}

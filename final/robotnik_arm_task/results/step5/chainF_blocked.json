@@ -1,0 +1,50 @@
+{
+  "time": "2026-11-02T04:15:28.087170+00:00",
+  "stage": "F2",
+  "error": "Execution sessions terminated with exit code 143; no live Python/pixi/sleep processes remained at 2026-11-02T04:14:25Z.",
+  "detected_at": "2026-11-02T04:14:25+00:00",
+  "termination_time": "Unknown; chain was active at the 04:13:30 UTC scheduled poll, observed terminated at 04:14:25 UTC.",
+  "cause": "Unknown. Exit code 143 normally corresponds to SIGTERM. No new Python traceback, assertion failure, or pipeline-generated blocked event was written. Both the retained nohup+wait chain session (94100) and the next sleep-600 poll session (87055) returned 143. This record is written by the observer, not the terminated pipeline.",
+  "completed_stages": [
+    "compatibility (previously passed, integrity checked and skipped)",
+    "F0 amendment2",
+    "F2/F3 pilot"
+  ],
+  "completed_F2_rollouts": 240,
+  "completed_F2_seeds": [
+    0,
+    1,
+    2
+  ],
+  "interrupted_folder": "results/step5/rollouts/c3_s3_train",
+  "interrupted_has_summary": false,
+  "partial_csv_rows": 34,
+  "partial_csv_stop_reasons": {
+    "reached": 23,
+    "timeout": 10,
+    "tipped": 1
+  },
+  "not_started": [
+    "F2 seed 4",
+    "full F3 cache and description",
+    "F4 training",
+    "15 model checks",
+    "F5 DEV/HARD/CONFIRM and gates",
+    "F_mechanisms"
+  ],
+  "completed_run_errors": {
+    "harness_error": 0,
+    "policy_error": 0,
+    "extended_hold_errors": 0
+  },
+  "data_access": "No data/test or data/confirm evaluation data opened. F0 only read existing CONFIRM result files. No F5 HARD/CONFIRM evaluations or control reruns opened.",
+  "resume_preconditions": [
+    "Use an execution session that retains long-running process sessions; determine why sessions were terminated. Do not change frozen section3 or skip required tests/gates.",
+    "Recheck frozen hashes; keep all completed stage markers and original C3 models/results.",
+    "The pipeline will validate and skip complete c3_s0/s1/s2_train. It will delete c3_s3_train because summary.txt is absent, then rerun its full 80 episodes, followed by seed4."
+  ],
+  "resume": "nohup bash results/step5/run_expF.sh all >> results/step5/chainF.log 2>&1 < /dev/null &\nstep5_chain_pid=$!\nprintf '%s\\n' \"$step5_chain_pid\" > results/step5/chainF.pid\nwait \"$step5_chain_pid\"",
+  "background_chain_running": false,
+  "polling": "First sleep600 completed, chainF.log checked at 04:13:30 UTC. The second sleep600 was terminated with 143 before its check; subsequent reads were interruption diagnosis, not a periodic result poll.",
+  "deviation": "No experimental-rule deviation. Execution stopped as requested at this infrastructure interruption; no automated restart was attempted."
+}

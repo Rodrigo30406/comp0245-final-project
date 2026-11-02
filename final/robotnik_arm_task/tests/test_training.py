@@ -192,7 +192,7 @@ class TestCache(unittest.TestCase):
         sl = self.va.episode_slice(i)
         _, a = npz_rows(self.path_of(e), np.arange(1))
         sig = bcf.measured_signals(a["base_pos"], a["base_bearing"], a["q_mes"], a["qd_mes"], a["target"])
-        for fs in bcf.FEATURE_SETS:
+        for fs in (f for f in bcf.FEATURE_SETS if f not in bcf.FEATURES_NEED_EE):   # ee sets: test_ee_features
             np.testing.assert_array_equal(tp.cache_features(self.va.cols, fs, sl, chunk=1000),
                                           bcf.build_features(fs, sig), err_msg=fs)
         Y = tp.cache_labels(self.va.cols, sl)

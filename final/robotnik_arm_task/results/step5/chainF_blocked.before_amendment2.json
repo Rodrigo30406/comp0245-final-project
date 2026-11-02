@@ -1,0 +1,289 @@
+{
+  "time": "2026-11-02T03:49:41.770632+00:00",
+  "stage": "F0",
+  "error": "CalledProcessError(1, ['/home/w/comp0245/RoboEnv/.pixi/envs/default/bin/python', '/home/w/comp0245/LAB_SESSION_COMP_0245_2026_PUBLIC/.claude/worktrees/eval-protocol/final/robotnik_arm_task/results/step5/tolerance_curve.py'])",
+  "traceback": "Traceback (most recent call last):\n  File \"/home/w/comp0245/LAB_SESSION_COMP_0245_2026_PUBLIC/.claude/worktrees/eval-protocol/final/robotnik_arm_task/results/step5/step5_pipeline.py\", line 327, in main\n    stage(name, functions[name])\n    ~~~~~^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/w/comp0245/LAB_SESSION_COMP_0245_2026_PUBLIC/.claude/worktrees/eval-protocol/final/robotnik_arm_task/results/step5/step5_pipeline.py\", line 301, in stage\n    fn()\n    ~~^^\n  File \"/home/w/comp0245/LAB_SESSION_COMP_0245_2026_PUBLIC/.claude/worktrees/eval-protocol/final/robotnik_arm_task/results/step5/step5_pipeline.py\", line 313, in <lambda>\n    \"F0\": lambda: command([HERE / \"tolerance_curve.py\"], HERE / \"F0.log\"),\n                  ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/w/comp0245/LAB_SESSION_COMP_0245_2026_PUBLIC/.claude/worktrees/eval-protocol/final/robotnik_arm_task/results/step5/step5_pipeline.py\", line 43, in command\n    subprocess.run([sys.executable, *map(str, args)], cwd=TASK, env=env,\n    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n                   stdout=f, stderr=subprocess.STDOUT, check=True)\n                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/w/comp0245/RoboEnv/.pixi/envs/default/lib/python3.14/subprocess.py\", line 578, in run\n    raise CalledProcessError(retcode, process.args,\n                             output=stdout, stderr=stderr)\nsubprocess.CalledProcessError: Command '['/home/w/comp0245/RoboEnv/.pixi/envs/default/bin/python', '/home/w/comp0245/LAB_SESSION_COMP_0245_2026_PUBLIC/.claude/worktrees/eval-protocol/final/robotnik_arm_task/results/step5/tolerance_curve.py']' returned non-zero exit status 1.\n",
+  "resume": "nohup bash results/step5/run_expF.sh all >> results/step5/chainF.log 2>&1 < /dev/null & step5_chain_pid=$!; wait \"$step5_chain_pid\"",
+  "discovered_at": "2026-11-02T03:55:45+00:00",
+  "documented_at": "2026-11-02T03:57:28.175597+00:00",
+  "root_cause": "F0 compares the stalled-replaced DEV C3 rate (60.8%) with the original early-stop published rounded rate (60.5%); all three per-row metric checks pass. Read-only diagnosis also finds all five required HARD and all five required CONFIRM C3 stalled reruns missing.",
+  "test_summary": "Ran 175 tests in 43.227s; OK (skipped=2). Existing optional RUN_SLOW tests remain skipped.",
+  "compatibility_passed": true,
+  "c3_model_arrays_bit_identical": true,
+  "implementation_changes_this_resume": [],
+  "diagnosis": "results/step5/F0_published_baseline_diagnosis.json",
+  "missing_stalled_reruns": [
+    {
+      "set": "hard",
+      "run": "ego-novw-trig_s0_hard",
+      "n_stalled": 6,
+      "episodes": [
+        45,
+        93,
+        96,
+        111,
+        116,
+        173
+      ],
+      "complete_rerun": null,
+      "required_candidates": [
+        "results/step3/nostall/ego-novw-trig_s0_hard",
+        "results/step5/nostall/ego-novw-trig_s0_hard"
+      ]
+    },
+    {
+      "set": "hard",
+      "run": "ego-novw-trig_s1_hard",
+      "n_stalled": 16,
+      "episodes": [
+        8,
+        25,
+        56,
+        80,
+        128,
+        131,
+        136,
+        141,
+        150,
+        166,
+        168,
+        180,
+        181,
+        184,
+        195,
+        196
+      ],
+      "complete_rerun": null,
+      "required_candidates": [
+        "results/step3/nostall/ego-novw-trig_s1_hard",
+        "results/step5/nostall/ego-novw-trig_s1_hard"
+      ]
+    },
+    {
+      "set": "hard",
+      "run": "ego-novw-trig_s2_hard",
+      "n_stalled": 28,
+      "episodes": [
+        2,
+        15,
+        21,
+        32,
+        38,
+        56,
+        59,
+        71,
+        74,
+        77,
+        78,
+        80,
+        117,
+        133,
+        135,
+        138,
+        140,
+        154,
+        159,
+        165,
+        166,
+        168,
+        176,
+        180,
+        193,
+        195,
+        196,
+        197
+      ],
+      "complete_rerun": null,
+      "required_candidates": [
+        "results/step3/nostall/ego-novw-trig_s2_hard",
+        "results/step5/nostall/ego-novw-trig_s2_hard"
+      ]
+    },
+    {
+      "set": "hard",
+      "run": "ego-novw-trig_s3_hard",
+      "n_stalled": 3,
+      "episodes": [
+        71,
+        77,
+        167
+      ],
+      "complete_rerun": null,
+      "required_candidates": [
+        "results/step3/nostall/ego-novw-trig_s3_hard",
+        "results/step5/nostall/ego-novw-trig_s3_hard"
+      ]
+    },
+    {
+      "set": "hard",
+      "run": "ego-novw-trig_s4_hard",
+      "n_stalled": 8,
+      "episodes": [
+        50,
+        52,
+        77,
+        96,
+        109,
+        135,
+        186,
+        197
+      ],
+      "complete_rerun": null,
+      "required_candidates": [
+        "results/step3/nostall/ego-novw-trig_s4_hard",
+        "results/step5/nostall/ego-novw-trig_s4_hard"
+      ]
+    },
+    {
+      "set": "confirm",
+      "run": "ego-novw-trig_s100_confirm",
+      "n_stalled": 6,
+      "episodes": [
+        16,
+        32,
+        201,
+        209,
+        235,
+        249
+      ],
+      "complete_rerun": null,
+      "required_candidates": [
+        "results/step3/nostall/ego-novw-trig_s100_confirm",
+        "results/step5/nostall/ego-novw-trig_s100_confirm"
+      ]
+    },
+    {
+      "set": "confirm",
+      "run": "ego-novw-trig_s101_confirm",
+      "n_stalled": 12,
+      "episodes": [
+        16,
+        48,
+        57,
+        78,
+        107,
+        128,
+        142,
+        158,
+        169,
+        186,
+        274,
+        294
+      ],
+      "complete_rerun": null,
+      "required_candidates": [
+        "results/step3/nostall/ego-novw-trig_s101_confirm",
+        "results/step5/nostall/ego-novw-trig_s101_confirm"
+      ]
+    },
+    {
+      "set": "confirm",
+      "run": "ego-novw-trig_s102_confirm",
+      "n_stalled": 3,
+      "episodes": [
+        46,
+        177,
+        270
+      ],
+      "complete_rerun": null,
+      "required_candidates": [
+        "results/step3/nostall/ego-novw-trig_s102_confirm",
+        "results/step5/nostall/ego-novw-trig_s102_confirm"
+      ]
+    },
+    {
+      "set": "confirm",
+      "run": "ego-novw-trig_s103_confirm",
+      "n_stalled": 18,
+      "episodes": [
+        20,
+        24,
+        26,
+        58,
+        65,
+        78,
+        80,
+        89,
+        98,
+        127,
+        133,
+        142,
+        154,
+        159,
+        192,
+        196,
+        280,
+        290
+      ],
+      "complete_rerun": null,
+      "required_candidates": [
+        "results/step3/nostall/ego-novw-trig_s103_confirm",
+        "results/step5/nostall/ego-novw-trig_s103_confirm"
+      ]
+    },
+    {
+      "set": "confirm",
+      "run": "ego-novw-trig_s104_confirm",
+      "n_stalled": 32,
+      "episodes": [
+        7,
+        19,
+        28,
+        45,
+        64,
+        68,
+        71,
+        75,
+        78,
+        79,
+        85,
+        97,
+        100,
+        104,
+        111,
+        120,
+        129,
+        134,
+        142,
+        143,
+        148,
+        160,
+        166,
+        171,
+        194,
+        200,
+        214,
+        216,
+        229,
+        232,
+        240,
+        268
+      ],
+      "complete_rerun": null,
+      "required_candidates": [
+        "results/step3/nostall/ego-novw-trig_s104_confirm",
+        "results/step5/nostall/ego-novw-trig_s104_confirm"
+      ]
+    }
+  ],
+  "resume_preconditions": [
+    "Resolve and document the F0 comparison of original published versus stalled-replaced rates without changing section 1 or frozen section 3.",
+    "Supply the required existing C3 HARD/CONFIRM stalled rerun evidence, or obtain an explicit F0-only clarification consistent with the frozen gates. F0 is existing-results-only; do not create new pre-gate HARD/CONFIRM evaluations.",
+    "Verify frozen hashes again; do not remove the completed compatibility marker or overwrite the C3 original model."
+  ],
+  "resume_now": "Re-running now will reproduce the F0 mismatch. The all command will skip the completed, integrity-checked compatibility stage and retry F0 after the prerequisites are resolved.",
+  "not_completed": [
+    "F0 curves and consistency checks"
+  ],
+  "not_started": [
+    "F2/F3 pilot",
+    "400 F2 rollouts",
+    "F3 side cache and descriptions",
+    "F4 DAgger training",
+    "15 model checks",
+    "F5 DEV/HARD/CONFIRM and gates",
+    "F_mechanisms"
+  ],
+  "background_chain_running": false,
+  "data_access": "No data/test or data/confirm evaluation data opened. Only the existing CONFIRM result files were inspected for F0 diagnosis, as F0 permits."
+}

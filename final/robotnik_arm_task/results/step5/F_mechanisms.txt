@@ -1,0 +1,37 @@
+实验 F：冻结预注册的数字与判定；差值均为 dag1 减 C3。
+两层 bootstrap 10000 次、seed 0；Welch 按 seed；95% CI。
+
+DEV
+ego-novw-trig_s0_dev: replaced 6 stalled rows from results/step3/nostall/ego-novw-trig_s0_dev
+ego-novw-trig_s1_dev: replaced 24 stalled rows from results/step3/nostall/ego-novw-trig_s1_dev
+ego-novw-trig_s2_dev: replaced 36 stalled rows from results/step3/nostall/ego-novw-trig_s2_dev
+ego-novw-trig_s3_dev: replaced 8 stalled rows from results/step3/nostall/ego-novw-trig_s3_dev
+ego-novw-trig_s4_dev: replaced 22 stalled rows from results/step3/nostall/ego-novw-trig_s4_dev
+ego-novw-trig_s5_dev: original rows; no stalled replacement needed
+ego-novw-trig_s6_dev: original rows; no stalled replacement needed
+ego-novw-trig_s7_dev: original rows; no stalled replacement needed
+ego-novw-trig_s8_dev: original rows; no stalled replacement needed
+ego-novw-trig_s9_dev: original rows; no stalled replacement needed
+success: C3 62.133333%, dag1 22.166667%; Δ -39.966667 pp; bootstrap 95% [-48.167500, -31.200000], Welch 95% [-48.968533, -30.964801] pp
+reach_2cm: C3 80.633333%, dag1 42.433333%; Δ -38.200000 pp; bootstrap 95% [-46.200000, -29.500000], Welch 95% [-47.355274, -29.044726] pp
+reach_5cm: C3 91.866667%, dag1 70.900000%; Δ -20.966667 pp; bootstrap 95% [-27.933333, -14.366667], Welch 95% [-28.473413, -13.459920] pp
+held_10s: C3 25.233333%, dag1 0.100000%; Δ -25.133333 pp; bootstrap 95% [-31.700000, -18.399167], Welch 95% [-32.324647, -17.942020] pp
+arm_extended_toward: C3 81.200000%, dag1 82.966667%; Δ +1.766667 pp; bootstrap 95% [-3.700000, +6.566667], Welch 95% [-3.170548, +6.703881] pp
+M1_extended_not_reached: C3 17.966667%, dag1 21.166667%; Δ +3.200000 pp; bootstrap 95% [-6.234167, +14.634167], Welch 95% [-8.715356, +15.115356] pp
+M2_circling: C3 13.533333%, dag1 26.700000%; Δ +13.166667 pp; bootstrap 95% [+3.400000, +23.166667], Welch 95% [+2.118851, +24.214482] pp
+M4_risk: C3 3.633333%, dag1 23.166667%; Δ +19.533333 pp; bootstrap 95% [+8.932500, +32.166667], Welch 95% [+5.598938, +33.467729] pp
+target z < 0.45 m success（描述性）: C3 20.579710%, dag1 10.724638%; Δ -9.855072 pp; bootstrap 95% [-18.550725, -1.159420], Welch 95% [-17.637842, -2.072303] pp
+专家验证集损失（标准化 MSE；C2 检查）：{"per_seed_a": [0.06037504777466386, 0.061194351339634495, 0.061782704229798854, 0.05576641101182266, 0.054836661140461394, 0.05786683262180035, 0.05547819763337306, 0.05956246282574423, 0.06197791504598394, 0.058874180094371516], "per_seed_b": [0.6377455376808273, 0.6408855268066073, 0.5967575616437392, 0.5567862171062871, 0.6420071746761541, 0.5734078528998844, 0.6173726707032198, 0.5980539564784667, 0.681248990273714, 0.5736586032755598], "a": 0.05877147637176543, "b": 0.611792409154446, "diff": 0.5530209327826806, "welch_lo": 0.5251293797233257, "welch_hi": 0.5809124858420355, "p_welch": 5.687092945197592e-12, "lo": 0.5303336684006543, "hi": 0.5762284062436589, "p_boot": 0.0001, "bootstrap_unit": "seed; one aggregate expert-validation loss per model"}
+次要量 Holm（6 项，描述性）：{"names": ["reach_2cm", "reach_5cm", "held_10s", "arm_extended_toward", "low_z_success", "expert_validation_loss"], "combined_p": [0.0001, 0.0001, 0.0001, 0.49, 0.0278, 0.0001], "holm": [[0.0006000000000000001, 0.0006000000000000001, 0.0006000000000000001, 0.49, 0.0556, 0.0006000000000000001], [true, true, true, false, false, true]], "descriptive_only": true}
+condition_1: False
+condition_2: False
+M1_pass: False
+M2_pass_descriptive: False
+M3_pass_descriptive: False
+M4_pass: False
+mirror_worse: True
+镜像判定：DAgger 一轮使 success 变差。
+C3 原早停行敏感性（不参与判定）: C3 61.966667%, dag1 22.166667%; Δ -39.800000 pp; bootstrap 95% [-48.034167, -30.966667], Welch 95% [-48.843762, -30.756238] pp
+
+最终／当前判定：KEEP C3
+局限（预注册）：数据行数、Adam 步数和早停时机同时变化；本实验不能分离 C3（只是数据更多）。

@@ -21,3 +21,10 @@ __pycache__/
 /results/step3/C0/*.err
 /results/step3/C3_pilot/*/logs/
 /results/step3/C3_pilot/*.log
+/results/step3/cache_s*/
+/results/tmp_retrain/
+# step 5: 1 kHz trajectories, per-episode logs and chain/console logs of the DAgger runs (large / regenerable)
+/results/step5/**/traj/
+/results/step5/**/logs/
+/results/step5/**/*.log
+/results/step5/pilot_cache/

@@ -1,0 +1,642 @@
+# 第 5 步执行报告（Codex，修订 2，阻塞，已停止）
+
+本节为当前状态；后面的“修订 2 之前完整历史”逐字保留前次报告。历史中的状态只对应当时。时间均为 UTC。
+
+## 当前结论
+
+于 `2026-11-02T04:14:25+00:00` 确认链在 **F2** 已中断，`04:15:28 UTC` 写入阻塞记录；实际终止时刻未知。错误：`Execution sessions terminated with exit code 143; no live Python/pixi/sleep processes remained at 2026-11-02T04:14:25Z.`。F0 和 pilot 已通过；F2 完成 240/400 条。seed 3 仅写入 34 条且没有 summary.txt，续跑会删除该未完成目录并重跑其 80 条。F3 完整缓存、F4、F5 门槛与 F_mechanisms 尚未开始，没有实验 F 最终判定；HARD/CONFIRM 均未开启。按用户要求停止，未自动重启。
+
+## 修订 2 与冻结完整性
+
+方案 SHA256：`554caf7ffea7364ac870b08eb85bbca80d06503d241a68d63e3e330066c8b43b`。移除 F0 的修订 2 段后逐字节恢复原冻结方案 `e1ea8a1b4cc6da21e979e6d4640bfd5727b7e619e2296a6c26ea37b2c7b59c86`；唯一方案变动是用户批准的修订 2（包括描述性一致性的一般规则）。§1、§3 与其他正文均未改变。
+
+冻结报告节 SHA256：`753a14e699d9c82421bf2c11589393f1a39f43bfe0b1dc66750b61744db6c06e`；prereg_F_frozen.txt 和 prereg_F_hashes.json 原样保留。每阶段核对原冻结报告节、原冻结记录、当前方案与移除修订段后的旧方案及全部实现／输入哈希。
+
+结束核对：109 个实现／输入文件、380 个既有结果 config/rollouts/summary 文件全部匹配。证据：amendment2_baseline.json、implementation_change2.json、implementation_F_sha256_v5.json、resume_final_integrity_amendment2.json。
+
+没有 commit、push、改 git 配置、改协议常量、原模型或已有运行文件夹；未打开 data/test。CONFIRM 是否打开以本节门槛与 confirm_opened.json 为准；F0 只读已有 CONFIRM 结果。所有 Python 命令使用指定 pixi manifest 并设置 MPLCONFIGDIR=/tmp/mplcfg。
+
+## 本次新增／修改与旧路径证据
+
+- 修改 results/step5/tolerance_curve.py：主曲线使用三组原始行；DEV 另画 stalled 替换敏感性曲线。HARD/CONFIRM 的缺失重跑不再阻塞 F0。
+- 修改 results/step5/f_common.py：接受有逐字节证据的修订 2，保留原冻结文件并继续严格检查。
+- 修改 results/step5/step5_pipeline.py：F5 对照重跑及评估入口先检查各自门槛；通过后先 C3 stalled --no-early-stop 重跑再 dag1 评估。CONFIRM 开启记录只写一次，续跑跳过完成运行，分析显式 --allow-confirm。
+- 修改 tests/test_f_gates.py：验证失败门槛阻止读取对照／运行仿真，和通过后的重跑顺序。3 个门槛测试通过。完整测试 Ran 177 tests in 42.956s；OK (skipped=2)，日志 tests_all_amendment2.log；两个跳过项为原有可选慢测试。
+- 修改 README.md 与本报告；新增修订记录、实现清单 v5、测试日志与完整性证据。本次未修改共享训练／部署／分析／评估代码。
+- 原 completed/compatibility.json 保留并由链跳过。前次 175 项全套测试通过、C3 seed 0 重训模型数组逐位相同的 backward_compatibility.json 继续有效；本次再次核对共享代码及原模型哈希。
+
+首次新增文件和共享 train_policy.py 的全部变动、F1 原始失败与修订 1 验证详见保留历史。本次没有再次修改 F1 规则或冻结统计规则。
+
+## F1 验证（既有证据）
+
+| 类型 | episode | 步数 | 轮速最大误差 rad/s | 力矩最大误差 N·m |
+| --- | ---: | ---: | ---: | ---: |
+| float64 精确 | 0 | 20849 | 0 | 0 |
+| float64 精确 | 1 | 18370 | 0 | 0 |
+| float64 精确 | 2 | 18610 | 0 | 0 |
+| float64 精确 | 3 | 13013 | 0 | 0 |
+| float64 精确 | 4 | 20160 | 0 | 0 |
+| float32 录制 | 4 | 8001 | 3.5251108578271406e-06 | 2.1344419124602609e-05 |
+| float32 录制 | 6 | 10554 | 3.5716068635949227e-06 | 2.6534670531486171e-05 |
+| float32 录制 | 7 | 8001 | 2.6747256685055731e-06 | 1.5865232500189563e-05 |
+| float32 录制 | 9 | 8031 | 2.9194418553757373e-06 | 2.2833432044233604e-05 |
+| float32 录制 | 10 | 10798 | 3.3016054217238633e-06 | 7.928785891220258e-05 |
+| float32 录制 | 0 | 8100 | 5.2480062332493915e-06 | 2.5579188992708168e-05 |
+| float32 录制 | 1 | 12176 | 3.3390650493458907e-06 | 1.2173456063635513e-05 |
+| float32 录制 | 3 | 14074 | 4.4274473838257222e-06 | 3.310172569159775e-05 |
+| float32 录制 | 5 | 9572 | 2.851757688576706e-06 | 3.527962877536428e-05 |
+| float32 录制 | 11 | 8580 | 3.2299538783586712e-06 | 2.1566629708758001e-05 |
+
+float64 所有步误差为 0；float32 满足轮速 ≤1e-4、力矩 ≤1e-3，nav_done 每步一致。未重新生成或覆盖既有 F1 验证文件。
+
+## F0 一致性
+
+P(min_error < tau); min_error is frozen at the protocol v1 stop point (one second after first reach), not the subsequent extended hold. Unreached rows cover their whole run. Existing CONFIRM results only.
+
+Main curves: original rows for all sets. DEV only: additional stalled-replaced C3 sensitivity curve, as in D. No HARD/CONFIRM replacements or new simulations in F0.
+
+| 集合 | 模型／曲线 | 10 mm % | bootstrap 95% CI % | 检查 |
+| --- | --- | ---: | --- | --- |
+| dev | expert | 99.333333 | [98.333333, 100.000000] | {'success': True, 'reach_2cm': True, 'reach_5cm': True} |
+| dev | ego-novw | 0.333333 | [0.000000, 1.000000] | {'success': True, 'reach_2cm': True, 'reach_5cm': True, 'published_10mm_rounded': True} |
+| dev | ego-novw-trig | 60.466667 | [53.866667, 67.133333] | {'success': True, 'reach_2cm': True, 'reach_5cm': True, 'published_10mm_rounded': True} |
+| dev | ego-novw-trig (DEV stalled sensitivity) | 60.800000 | [54.398333, 67.333333] | {'success': True, 'reach_2cm': True, 'reach_5cm': True, 'report_sensitivity_10mm_rounded': True} |
+| hard | expert | 97.000000 | [94.500000, 99.000000] | {'success': True, 'reach_2cm': True, 'reach_5cm': True} |
+| hard | ego-novw | 0.400000 | [0.000000, 1.200000] | {'success': True, 'reach_2cm': True, 'reach_5cm': True, 'published_10mm_rounded': True} |
+| hard | ego-novw-trig | 56.300000 | [50.000000, 62.900000] | {'success': True, 'reach_2cm': True, 'reach_5cm': True, 'published_10mm_rounded': True} |
+| confirm | expert | 98.000000 | [96.333333, 99.333333] | {'success': True, 'reach_2cm': True, 'reach_5cm': True} |
+| confirm | ego-novw | 0.266667 | [0.000000, 0.933333] | {'success': True, 'reach_2cm': True, 'reach_5cm': True, 'published_10mm_rounded': True} |
+| confirm | ego-novw-trig | 64.266667 | [57.600000, 72.133333] | {'success': True, 'reach_2cm': True, 'reach_5cm': True, 'published_10mm_rounded': True} |
+
+原始 DEV/HARD/CONFIRM C3 的发表值与 DEV 60.8% 敏感性值分别核对；20/50 mm 逐行等于 reach_2cm/reach_5cm。原 F0 的 60.5%／60.8% 差别完全由 report.txt 已记录的敏感性值解释，按修订 2 记录后继续。完整表格与图见 tolerance_curve.txt/.json、fig_tolerance.png/.pdf。
+
+## 阶段时间、运行数与错误
+
+| 阶段 | 状态 | UTC 时间 | 详情 |
+| --- | --- | --- | --- |
+| F0 | start | 2026-11-02T04:03:20.089974+00:00 | {} |
+| F0 | end | 2026-11-02T04:05:03.941776+00:00 | {} |
+| pilot | start | 2026-11-02T04:05:03.947560+00:00 | {} |
+| run | start | 2026-11-02T04:05:04.320599+00:00 | {"folder": "results/step5/pilot/c3_s0_train", "n": 1} |
+| run | validated | 2026-11-02T04:05:13.709085+00:00 | {"folder": "results/step5/pilot/c3_s0_train", "n": 1, "harness_error": 0, "policy_error": 0, "extended_hold_errors": 0} |
+| run | end | 2026-11-02T04:05:13.709165+00:00 | {"folder": "results/step5/pilot/c3_s0_train", "n": 1} |
+| run | start | 2026-11-02T04:05:13.709272+00:00 | {"folder": "results/step5/pilot/c3_s1_train", "n": 1} |
+| run | validated | 2026-11-02T04:05:19.931858+00:00 | {"folder": "results/step5/pilot/c3_s1_train", "n": 1, "harness_error": 0, "policy_error": 0, "extended_hold_errors": 0} |
+| run | end | 2026-11-02T04:05:19.931954+00:00 | {"folder": "results/step5/pilot/c3_s1_train", "n": 1} |
+| pilot | end | 2026-11-02T04:05:22.566922+00:00 | {} |
+| F2 | start | 2026-11-02T04:05:22.572624+00:00 | {} |
+| run | start | 2026-11-02T04:05:22.662866+00:00 | {"folder": "results/step5/rollouts/c3_s0_train", "n": 80} |
+| run | validated | 2026-11-02T04:07:34.476916+00:00 | {"folder": "results/step5/rollouts/c3_s0_train", "n": 80, "harness_error": 0, "policy_error": 0, "extended_hold_errors": 0} |
+| run | end | 2026-11-02T04:07:34.477022+00:00 | {"folder": "results/step5/rollouts/c3_s0_train", "n": 80} |
+| run | start | 2026-11-02T04:07:34.477134+00:00 | {"folder": "results/step5/rollouts/c3_s1_train", "n": 80} |
+| run | validated | 2026-11-02T04:10:15.507564+00:00 | {"folder": "results/step5/rollouts/c3_s1_train", "n": 80, "harness_error": 0, "policy_error": 0, "extended_hold_errors": 0} |
+| run | end | 2026-11-02T04:10:15.507680+00:00 | {"folder": "results/step5/rollouts/c3_s1_train", "n": 80} |
+| run | start | 2026-11-02T04:10:15.507800+00:00 | {"folder": "results/step5/rollouts/c3_s2_train", "n": 80} |
+| run | validated | 2026-11-02T04:12:28.912770+00:00 | {"folder": "results/step5/rollouts/c3_s2_train", "n": 80, "harness_error": 0, "policy_error": 0, "extended_hold_errors": 0} |
+| run | end | 2026-11-02T04:12:28.912894+00:00 | {"folder": "results/step5/rollouts/c3_s2_train", "n": 80} |
+| run | start | 2026-11-02T04:12:28.913013+00:00 | {"folder": "results/step5/rollouts/c3_s3_train", "n": 80} |
+| F2 | blocked | 2026-11-02T04:15:28.087170+00:00 | {"observer": true, "detected_at": "2026-11-02T04:14:25+00:00", "error": "Execution sessions terminated with exit code 143; no live Python/pixi/sleep processes remained at 2026-11-02T04:14:25Z.", "interrupted_folder": "results/step5/rollouts/c3_s3_train", "partial_csv_rows": 34} |
+
+本次链验证的独立运行文件夹 5，episode 合计 242；harness_error=0，policy_error=0，extended_hold_errors=0。没有 summary.txt 的中断目录由执行器记录删除后重跑；具体见上表。
+
+## F2/F3 pilot 与描述检查
+
+### F_pilot.txt
+
+F2→F3 pilot 验证通过：文件大小、耗时、影子标签范围如下。
+{
+  "n_trajectories": 2,
+  "n_rows": 4207,
+  "trajectories": [
+    {
+      "episode": 1,
+      "seed": 0,
+      "offset": 4,
+      "trajectory": "results/step5/pilot/c3_s0_train/traj/ep_0001.npz",
+      "trajectory_sha256": "79c264303dff2d388be74d1b2d0f178203ae360651d43005375d2d1af4615d5b",
+      "n_steps": 23570,
+      "n_rows": 2619,
+      "trajectory_bytes": 9100667,
+      "label_s": 0.8670980930328369,
+      "shadow_tau_min": -30.0,
+      "shadow_tau_max": 30.0,
+      "row_start": 0,
+      "row_end": 2619
+    },
+    {
+      "episode": 4,
+      "seed": 1,
+      "offset": 7,
+      "trajectory": "results/step5/pilot/c3_s1_train/traj/ep_0004.npz",
+      "trajectory_sha256": "864d4caa2f115e45601df516aa3cfee66e7d2cd6d30145633b53f678ea1fd77e",
+      "n_steps": 14292,
+      "n_rows": 1588,
+      "trajectory_bytes": 5188048,
+      "label_s": 1.4511091709136963,
+      "shadow_tau_min": -30.0,
+      "shadow_tau_max": 30.0,
+      "row_start": 2619,
+      "row_end": 4207
+    }
+  ],
+  "validated": true
+}
+
+
+### F_data.txt
+
+未完成。
+
+## F4 模型检查
+
+未完成；不能声称 15 个模型已通过检查。
+
+## §3 每条数字与判定（直接摘录 F_mechanisms.txt）
+
+未获得 F_mechanisms.txt，不能作实验 F 的最终判定。
+
+CONFIRM 开启记录：未开启；没有 confirm_opened.json。
+
+## 实施修正、偏离与影响
+
+本次方案唯一变化为用户批准的修订 2；冻结 §3 没有变更，无另一套判定。F0 原始主曲线与 DEV stalled 敏感性曲线均报告，原阻塞及其数字保留于历史和诊断文件。F5 统计仍使用冻结计划规定的 stalled 替换对照。实现变更在任何 F 模型 DEV 结果之前记录；既有实现修正 1 也保留。
+
+## 未完成部分与准确恢复命令
+
+阻塞详情（未绕过规则继续）：
+
+```json
+{
+  "time": "2026-11-02T04:15:28.087170+00:00",
+  "stage": "F2",
+  "error": "Execution sessions terminated with exit code 143; no live Python/pixi/sleep processes remained at 2026-11-02T04:14:25Z.",
+  "detected_at": "2026-11-02T04:14:25+00:00",
+  "termination_time": "Unknown; chain was active at the 04:13:30 UTC scheduled poll, observed terminated at 04:14:25 UTC.",
+  "cause": "Unknown. Exit code 143 normally corresponds to SIGTERM. No new Python traceback, assertion failure, or pipeline-generated blocked event was written. Both the retained nohup+wait chain session (94100) and the next sleep-600 poll session (87055) returned 143. This record is written by the observer, not the terminated pipeline.",
+  "completed_stages": [
+    "compatibility (previously passed, integrity checked and skipped)",
+    "F0 amendment2",
+    "F2/F3 pilot"
+  ],
+  "completed_F2_rollouts": 240,
+  "completed_F2_seeds": [
+    0,
+    1,
+    2
+  ],
+  "interrupted_folder": "results/step5/rollouts/c3_s3_train",
+  "interrupted_has_summary": false,
+  "partial_csv_rows": 34,
+  "partial_csv_stop_reasons": {
+    "reached": 23,
+    "timeout": 10,
+    "tipped": 1
+  },
+  "not_started": [
+    "F2 seed 4",
+    "full F3 cache and description",
+    "F4 training",
+    "15 model checks",
+    "F5 DEV/HARD/CONFIRM and gates",
+    "F_mechanisms"
+  ],
+  "completed_run_errors": {
+    "harness_error": 0,
+    "policy_error": 0,
+    "extended_hold_errors": 0
+  },
+  "data_access": "No data/test or data/confirm evaluation data opened. F0 only read existing CONFIRM result files. No F5 HARD/CONFIRM evaluations or control reruns opened.",
+  "resume_preconditions": [
+    "Use an execution session that retains long-running process sessions; determine why sessions were terminated. Do not change frozen section3 or skip required tests/gates.",
+    "Recheck frozen hashes; keep all completed stage markers and original C3 models/results.",
+    "The pipeline will validate and skip complete c3_s0/s1/s2_train. It will delete c3_s3_train because summary.txt is absent, then rerun its full 80 episodes, followed by seed4."
+  ],
+  "resume": "nohup bash results/step5/run_expF.sh all >> results/step5/chainF.log 2>&1 < /dev/null &\nstep5_chain_pid=$!\nprintf '%s\\n' \"$step5_chain_pid\" > results/step5/chainF.pid\nwait \"$step5_chain_pid\"",
+  "background_chain_running": false,
+  "polling": "First sleep600 completed, chainF.log checked at 04:13:30 UTC. The second sleep600 was terminated with 143 before its check; subsequent reads were interruption diagnosis, not a periodic result poll.",
+  "deviation": "No experimental-rule deviation. Execution stopped as requested at this infrastructure interruption; no automated restart was attempted."
+}
+```
+
+必须先解决上述阻塞；不要删除完成阶段标记，不要覆盖既有模型或完整运行。解决后从失败阶段自动恢复：
+
+```bash
+cd /home/w/comp0245/LAB_SESSION_COMP_0245_2026_PUBLIC/.claude/worktrees/eval-protocol/final/robotnik_arm_task
+MPLCONFIGDIR=/tmp/mplcfg pixi run --manifest-path /home/w/comp0245/RoboEnv/pixi.toml python -c "import sys; sys.path.insert(0, 'results/step5'); from f_common import check_freeze; check_freeze()"
+nohup bash results/step5/run_expF.sh all >> results/step5/chainF.log 2>&1 < /dev/null &
+step5_chain_pid=$!
+printf '%s\n' "$step5_chain_pid" > results/step5/chainF.pid
+wait "$step5_chain_pid"
+
+sleep 600
+tail -60 results/step5/chainF.log
+```
+
+## 修订 2 之前完整历史（保留原文）
+
+# 第 5 步执行报告（Codex，AF_UNIX 放行后续跑：F0 阻塞，已停止）
+
+本节为当前状态；后面的“先前会话完整历史”逐字保留恢复前的报告，其中的“当前”“未开始”等表述只对应当时。时间均为 UTC。
+
+## 当前结论
+
+本次按原命令从兼容性测试重新启动。AF_UNIX/forkserver 阻塞已解除：完整测试成功，C3 seed 0 重训数组逐位相同。链在 F0 一致性检查停止，退出码 1；本次没有后台链继续运行。F2 pilot、400 条 rollout、F3、DAgger 训练、模型检查、DEV/HARD/CONFIRM 门槛和 F_mechanisms 均未开始。实验 F 没有采纳或 KEEP C3 的判定。
+
+## 冻结哈希与规则
+
+恢复前核对时间：`2026-11-02T03:45:34.325779+00:00`；停止后再次核对：`2026-11-02T03:57:28.175597+00:00`。107 个冻结实现/输入文件全部匹配，实施清单与 `implementation_F_sha256_v4.json` 逐字节相同。方案 SHA256 仍为 `e1ea8a1b4cc6da21e979e6d4640bfd5727b7e619e2296a6c26ea37b2c7b59c86`，冻结 report 节 SHA256 仍为 `753a14e699d9c82421bf2c11589393f1a39f43bfe0b1dc66750b61744db6c06e`。§1 和冻结 §3 均未改变，修订 1 未改变。
+
+| 文件 | 恢复前与停止后相同的 SHA256 |
+| --- | --- |
+| prereg_F_frozen.txt | `492ad376f2e1995d3ec94f86652cef64b9588076ca050ef7749c2c6dfe07fb40` |
+| prereg_F_hashes.json | `34a16818717cf5f32329219270b7b4ce465987a53e8fa11dca16ddb0d709e6e0` |
+| implementation_F_sha256.json | `2f0e9c2d00ac40515dfea792a3044f1cb18d218ae13ea1aa48ec32ddbef70508` |
+
+完整记录：`resume_integrity_20261102.json`、`resume_final_integrity_20261102.json`。没有 commit、push 或改 git 配置；原模型、已有结果运行文件夹、协议常量和冻结文件未修改。没有打开 data/test 或 data/confirm 评估数据；F0 诊断只读了其明确允许读取的已有 CONFIRM 结果文件，没有为 F 新开 CONFIRM。
+
+## 本次执行与旧路径不变的证据
+
+原恢复命令：
+```bash
+nohup bash results/step5/run_expF.sh all >> results/step5/chainF.log 2>&1 < /dev/null & step5_chain_pid=$!; wait "$step5_chain_pid"
+```
+
+完整测试：`Ran 175 tests in 43.227s`、`OK (skipped=2)`。两个跳过项为原有 RUN_SLOW 可选闭环测试，没有新增跳过或删除测试。`tests_all.log` 采用追加方式，前面的 146 项/5 错误属于旧会话，末尾的 175 项成功属于本次。
+
+C3 seed 0 按原配方重训到 `results/step5/C3_retrain_s0.npz`，11 epochs、best epoch 6、train 160.8 s，未覆盖原模型。全部 15 个非 meta 数组逐位一致，包括 W0–W2、b0–b2 和标准化数组。NPZ 文件哈希不同来自不同的元数据，数组一致性检查直接用 np.array_equal 完成；不需要启用训练矩阵替代证明。完整证据如下：
+```json
+{
+  "new_model_sha256": "c2b7c81a226f11db4a9c8f701d86c6425a96b6978385f75e9805b26bdb4cdec1",
+  "original_model_sha256": "63c61a9399fbeaa459fb788610ecc72da56eddaf2c6d27be9d691a8687b789a4",
+  "arrays_bit_identical": {
+    "W0": true,
+    "W1": true,
+    "W2": true,
+    "b0": true,
+    "b1": true,
+    "b2": true,
+    "feature_names": true,
+    "feature_set": true,
+    "format_version": true,
+    "n_layers": true,
+    "output_names": true,
+    "x_mean": true,
+    "x_scale": true,
+    "y_mean": true,
+    "y_scale": true
+  },
+  "passed": true
+}
+```
+
+## 本次阶段时间、运行与错误
+
+| 阶段 | 状态 | UTC 时间 |
+| --- | --- | --- |
+| compatibility | start | 2026-11-02T03:45:40.379482+00:00 |
+| compatibility | end | 2026-11-02T03:49:07.186342+00:00 |
+| F0 | start | 2026-11-02T03:49:07.198597+00:00 |
+| F0 | blocked | 2026-11-02T03:49:41.770481+00:00 |
+
+首次按要求执行 `sleep 600` 后于 `2026-11-02T03:55:45Z` 查看 chainF.log，发现 F0 已错误退出；随后只做原因诊断与文档收尾。没有进入第二轮轮询。
+
+本次闭环运行文件夹 0、闭环 episode 0；C3 兼容性重训 1 个模型；没有被中断、删除或重跑的评估目录。F 新运行的 harness_error/policy_error 均无可计数结果，因为没有启动闭环运行，不能据此声称 F 评估已通过。旧 F1 专家 pilot 与数值重放细表保留在历史节，原 JSON/log 哈希仍匹配。
+
+## F0 的精确阻塞及只读诊断
+
+实际异常（`F0.log`）：
+```text
+RuntimeError: F0 consistency mismatch: dev ego-novw-trig: {'success': True, 'reach_2cm': True, 'reach_5cm': True, 'published_10mm_rounded': False}
+```
+
+10/20/50 mm 阈值分别与 success/reach_2cm/reach_5cm 逐行一致；失败是汇总率所对应的早停口径不同。C3 DEV seed 0–4 原早停成功 907/1500，即 60.4666667%，四舍五入为方案的 60.5%；按方案要求替换 stalled 行后成功 912/1500，即 60.8%。增加的 5 个成功分别是 seed 1 episode 39、199；seed 2 episode 217；seed 4 episode 31、155。没有修改任何原结果行。
+
+F0 执行器把替换后的比例与原早停的已发表比例直接比较，这是当前失败位置。仅修改这一比较仍不能完成 F0：只读清点还发现下列已有重跑缺失。
+
+| 集合 | 原早停成功率（seed 0–4 或 100–104） | 缺失完整 stalled 重跑 | stalled episode 数 |
+| --- | --- | ---: | ---: |
+| HARD | 56.3000000% | 5 | 61 |
+| CONFIRM | 64.2666667% | 5 | 71 |
+
+缺失的是 HARD `ego-novw-trig_s0_hard` 至 `s4_hard`，以及 CONFIRM `ego-novw-trig_s100_confirm` 至 `s104_confirm`；`results/step3/nostall/` 和 `results/step5/nostall/` 均无对应的完整 summary。逐目录路径、episode 列表及替换诊断已保存到 `F0_published_baseline_diagnosis.json`。
+
+F0 规定只用已有运行；F 的 HARD/CONFIRM 新评估又受冻结门槛限制，因此本次没有在门槛前生成缺失重跑、跳过一致性断言或自行改动方案。按用户“遇到阻塞即停止”的要求在此结束。F0 曲线/表格未完成，不能称 F0 通过。
+
+## F3、模型检查和冻结 §3 的判定数字
+
+F2→F3 pilot、400 条 rollout、F3 侧缓存和 F_data 均未产生；15 个 dag1 模型尚未训练或检查。F_mechanisms.txt/.json 未产生，因此 DEV Δsuccess 的两个 CI、M1–M4、HARD Δsuccess、CONFIRM Δsuccess 和 bootstrap 下界、次要量 Holm 及专家验证集损失均不可报告。没有使用 F0 基线数字代替实验 F 门槛，不能作 ADOPT dag1 或 KEEP C3 判定。
+
+## 新建、修改与实施修正记录
+
+- 本次没有新增或修改实现代码，没有实施修正，故没有新的 implementation_changeN.json；此前 implementation_change1.json 原样保留。修正前后代码哈希全部相同。
+- 新增证据：resume_integrity_20261102.json、resume_final_integrity_20261102.json、F0_published_baseline_diagnosis.json、backward_compatibility.json、C3_retrain_s0.npz/.log、completed/compatibility.json、chainF_blocked_F0_pipeline.json。
+- 追加日志：chainF.log、tests_all.log、stage_events.jsonl；新建 F0.log。chainF_blocked.json 保留本次原始异常并补上诊断、前置条件和恢复命令。
+- 文档：本报告添加当前结论并保留旧文全文；README.md 更新执行状态、阻塞和恢复说明。恢复前副本为 CODEX_REPORT_F_before_socket_resume.md、README_before_socket_resume.md。
+- 上次已写代码及共享训练路径各处添加、F1 修订 1 验证表格和首次失败记录，均见下方完整历史。
+
+## 未完成部分与准确恢复命令
+
+恢复前必须先解决两个 F0 前置条件：记录清楚原早停已发表值与替换后值的核对口径；提供 F0 所需的已有 HARD/CONFIRM stalled 重跑证据，或明确一个与冻结门槛一致的 F0 处理办法。当前命令原样运行会再次停在 F0；不能把下列命令理解为前置条件已满足。任何获准的实现修复须另记文件、旧/新 SHA256、原因和当时看过的结果。不得改变 §1 或冻结 §3。
+
+先核对未变的冻结记录及所有原实现/输入：
+```bash
+cd /home/w/comp0245/LAB_SESSION_COMP_0245_2026_PUBLIC/.claude/worktrees/eval-protocol/final/robotnik_arm_task
+MPLCONFIGDIR=/tmp/mplcfg pixi run --manifest-path /home/w/comp0245/RoboEnv/pixi.toml python - <<'PY'
+import json, hashlib, sys
+from pathlib import Path
+sys.path.insert(0, 'results/step5')
+from f_common import check_freeze
+check_freeze()
+base = Path('results/step5')
+record = json.loads((base / 'resume_integrity_20261102.json').read_text())
+for name, digest in record['files'].items():
+    assert hashlib.sha256((base / name).read_bytes()).hexdigest() == digest, name
+PY
+```
+
+前置条件解决并记录修复后，完整链原命令为：
+```bash
+cd /home/w/comp0245/LAB_SESSION_COMP_0245_2026_PUBLIC/.claude/worktrees/eval-protocol/final/robotnik_arm_task
+nohup bash results/step5/run_expF.sh all >> results/step5/chainF.log 2>&1 < /dev/null &
+step5_chain_pid=$!
+wait "$step5_chain_pid"
+```
+
+已完成的 compatibility 阶段会在完整性核对后跳过，接着重做 F0；不要删除完成标记或覆盖原模型。若未来有已记录的实现修复，核对初始哈希时应按其变更记录验证允许变动的文件，不能静默重写基线。
+
+在另一个执行会话轮询：
+```bash
+sleep 600
+tail -n 80 results/step5/chainF.log
+```
+
+当前没有运行中的链需要继续轮询。只有整链正常完成后才能汇总最终 F_mechanisms 及门槛结果；届时仍须保留本节和全部先前会话历史。
+
+## 先前会话完整历史（以下逐字保留）
+
+# 第 5 步执行报告（Codex，修订 1，阻塞，停止执行）
+
+时间均为 UTC（本次日期与 Europe/London 相同）。首次 F1 会话全文保留在报告末尾。
+
+## 当前状态与计划完整性
+
+- 方案新 SHA256：`e1ea8a1b4cc6da21e979e6d4640bfd5727b7e619e2296a6c26ea37b2c7b59c86`。
+- 首次方案 SHA256：`5b2a10886548e433a760ab5c1145d68f26399daa6db44b45c0e090a04976d02a`。移除新增 F1 修订 1 段后，逐字节恢复该哈希；除此之外方案没有改动。
+- 冻结时间：`2026-11-02T01:44:27.616057+00:00`。§3 原文和修订 1 写入 report.txt，并保存为 prereg_F_frozen.txt；冻结节 SHA256：`753a14e699d9c82421bf2c11589393f1a39f43bfe0b1dc66750b61744db6c06e`。
+- 每个阶段开始时检查冻结方案、冻结 report 节、代码、原模型与输入哈希。没有打开 data/test 或 CONFIRM 数据。F0 的已实现路径只会读取已有 CONFIRM 结果，本次尚未运行 F0。
+- 没有 commit、push 或更改 git 配置；没有改协议常量、原模型或旧运行文件夹。
+
+## 新建与修改的文件
+
+新建代码：dagger_relabel.py（上次会话已建）；results/step5/f_common.py、tolerance_curve.py、build_dagger_cache.py、F_mechanisms.py、step5_pipeline.py、run_expF.sh、run_F1_amend1.sh、finalize_report.py；tests/test_extra_rows.py、test_f_gates.py。
+修改：train_policy.py、tests/test_dagger_relabel.py（修订 1）；report.txt（冻结节；本次阻塞，没有写结果草稿）、README.md（第 5 步运行与输出说明）。方案由用户在本次会话之前加入修订 1，本次没有修改。
+train_policy.py 的新增内容：MODELS/TRIGGER_MODELS 注册 dag1；load_extra_rows 校验 manifest、split、特征维度、float64、有限值及数组 SHA256；run_train 的 extra_rows 默认 None，只在显式启用时于触发帧拷贝之后追加、沿用原 stride-9 标准化；meta 记录 manifest SHA256 与行数；train/train-many CLI 增加默认关闭的 --extra-rows 并传给子进程。其余共享代码没有改动。
+
+## F1：修订 1 验证
+
+首次 F1_verification.json/.log 与 initial_sha256.txt 保留原样。修订后首次测试新增的时序断言错误地要求 nav_done 不晚于 arm_move_time；该测试失败记录 F1_amend1_exact.json 和 F1_amend1_verification.log 也保留。evaluate_policy.py 的 ARM_MOVE_ANGLE 注释已说明：专家的保持姿态下沉会超过 0.05 rad，所以该量对专家不是伸臂触发诊断。修正测试从 float64 观测精确复算 arm_move_time，并验证首次 nav_done 之前影子的参考角保持初始值；没有修改容差或方案规则。
+
+最终证据：F1_amend1_exact_v2.json、F1_amend1_recorded_v2.json、F1_amend1_verification_v2.log；2 个 unittest 均通过，13.033 秒。
+
+| 验证 | episode | 步数 | 轮速最大误差 rad/s | 力矩最大误差 N·m | nav_done 检查 |
+| --- | ---: | ---: | ---: | ---: | --- |
+| (a) float64 | 0 | 20849 | 0 | 0 | 首步 7.169000s，arm_move 0.585000s；复算一致、触发前参考保持 |
+| (a) float64 | 1 | 18370 | 0 | 0 | 首步 5.690000s，arm_move 0.603000s；复算一致、触发前参考保持 |
+| (a) float64 | 2 | 18610 | 0 | 0 | 首步 6.197000s，arm_move 0.584000s；复算一致、触发前参考保持 |
+| (a) float64 | 3 | 13013 | 0 | 0 | 首步 0.824000s，arm_move 0.581000s；复算一致、触发前参考保持 |
+| (a) float64 | 4 | 20160 | 0 | 0 | 首步 7.346000s，arm_move 0.585000s；复算一致、触发前参考保持 |
+| (b) float32 | 4 | 8001 | 3.5251108578271406e-06 | 2.1344419124602609e-05 | 逐步不同数 0 |
+| (b) float32 | 6 | 10554 | 3.5716068635949227e-06 | 2.6534670531486171e-05 | 逐步不同数 0 |
+| (b) float32 | 7 | 8001 | 2.6747256685055731e-06 | 1.5865232500189563e-05 | 逐步不同数 0 |
+| (b) float32 | 9 | 8031 | 2.9194418553757373e-06 | 2.2833432044233604e-05 | 逐步不同数 0 |
+| (b) float32 | 10 | 10798 | 3.3016054217238633e-06 | 7.928785891220258e-05 | 逐步不同数 0 |
+| (b) float32 | 0 | 8100 | 5.2480062332493915e-06 | 2.5579188992708168e-05 | 逐步不同数 0 |
+| (b) float32 | 1 | 12176 | 3.3390650493458907e-06 | 1.2173456063635513e-05 | 逐步不同数 0 |
+| (b) float32 | 3 | 14074 | 4.4274473838257222e-06 | 3.310172569159775e-05 | 逐步不同数 0 |
+| (b) float32 | 5 | 9572 | 2.851757688576706e-06 | 3.527962877536428e-05 | 逐步不同数 0 |
+| (b) float32 | 11 | 8580 | 3.2299538783586712e-06 | 2.1566629708758001e-05 | 逐步不同数 0 |
+
+(a) 所有保存观测与标签均为 float64，每步轮速与力矩误差为 0，满足 ≤1e-9。轨迹未保存 nav_done；arm_move 提前与保持下沉一致，逐条从轨迹重算完全等于 rollouts.csv，首次 nav_done 前参考角误差为 0，没有时序矛盾。
+(b) 与首次相同的 5 条干净、5 条噪声 train episode；轮速 ≤1e-4、力矩 ≤1e-3，且 nav_done 每步相同，全部通过。
+
+## 旧路径不变的证据
+
+尚未完成；不能声称旧路径验证已通过。详见当前阻塞和 tests_all.log。
+本次实际结果：运行 146 项测试，用时 37.141 秒；FAILED (errors=5, skipped=2)。5 项错误均出现在测试类 setUpClass 启动原有 forkserver 缓存构建器时。
+五个错误均发生在 setUpClass：test_ee_features.TestEeCacheAndTraining、test_extra_rows.TestExtraRows、test_training.TestCache、test_training.TestForwardEqualsPredict、test_training.TestTriggerCopies。
+调用链：tests/test_training.py:138 → train_policy.py:517 的原有 build_cache → multiprocessing/forkserver.py:167 listener.bind(address)；在本次受限执行环境中，multiprocessing forkserver 的 listener.bind(address) 抛出 PermissionError: [Errno 1] Operation not permitted
+
+## 阶段时间、运行与错误
+
+| 阶段 | 状态 | UTC 时间 | 详情 |
+| --- | --- | --- | --- |
+| F1(a) 精确重放 | 通过 | 2026-11-02T01:43:35.541413+00:00 — 2026-11-02T01:43:42.381224+00:00 | 5 条轨迹 |
+| F1(b) 录制重放 | 通过 | 2026-11-02T01:43:42.381576+00:00 — 2026-11-02T01:43:48.573412+00:00 | 10 条轨迹 |
+| 冻结 | 完成 | 2026-11-02T01:44:27.616057+00:00 | §3 原文与修订 1 |
+| compatibility | start | 2026-11-02T01:51:37.494302+00:00 | {} |
+| compatibility | blocked | 2026-11-02T01:52:15.310793+00:00 | {"error": "CalledProcessError(1, ['/home/w/comp0245/RoboEnv/.pixi/envs/default/bin/python', '-m', 'unittest', 'discover', '-s', 'tests', '-v'])"} |
+
+链中已验证的独立运行文件夹数：0；episode 合计：0。
+F1 专家 pilot 另有 1 个运行文件夹、5 个 episode，全部 reached，harness_error=0、policy_error=0。
+初始 nohup 启动未保留执行会话，01:42:07 的无 summary pilot 目录被删除后于 01:42:14 重跑成功；没有覆盖已完成的运行。之后使用 nohup 加 wait 保持执行会话。链中后续被中断与删除的目录详见上表。
+
+## F0 一致性
+
+未完成。
+
+## F2→F3 pilot
+
+未完成。
+
+## F3 描述性检查
+
+未完成。
+
+## 模型检查
+
+未完成；15 个 dag1 模型未全部通过检查。
+
+## §3 的逐条数字与判定
+
+未获得 F_mechanisms.txt，不能给出采纳或 KEEP C3 判定。
+
+## 实施修正、偏离与影响
+
+- F1 浮点容差变动仅为用户批准的修订 1，冻结前完成。首次规则下的结果仍在历史节，没有用新容差改写旧结论。
+- F1 新增时序测试的错误解释已修正，并保留失败记录；数值重放误差和 §3 判定规则没有变化。
+- 为先证明共享训练路径不变，执行器把完整测试和 C3 seed 0 重训安排在 F0/pilot 前；实际测试失败，C3 重训尚未开始。F2 pilot→F2→F3→F4→模型检查→DEV→门槛的计划顺序不变，没有 F 模型评估结果提前泄露。
+- 执行器别名校验修正及阶段边界重启：{"time": "2026-11-02T01:53:02.574558+00:00", "file": "results/step5/step5_pipeline.py", "old_sha256": "e82a6c1aa42e81fa44cfc81b8e2baa58fbef76e1cf1948ca055e2238750eaf0b", "new_sha256": "1d158f713925cf6b3a63d10f6d0b3e56f7703c36763719547389975cb3e92325", "reason": "代码静态复核发现方案指定的 c3_s<k>_train 文件夹与真实 C3 模型名必然触发共享分析器的命名警告；只验证该显式别名映射，仍严格检查模型参数、集合、seed 和覆盖。修改在任何 F2 pilot 运行之前完成，§3 与方案规则均未改变。", "observed_results": "修改时只看过 F1；尚未轮询链。之后日志证实链早已于 01:52:15 在测试阶段因 forkserver bind 权限失败停止；未产生 F2 或 F 模型结果。", "restart": "预想的阶段边界重启没有发生；链在兼容性测试已提前停止。已保存 v1/v2 完整哈希记录，恢复时加载已修正的执行器，仍先重做全部测试。"}
+- §3 的规则未作任何修改；实施修正没有产生另一套统计判定规则。
+
+## 未完成部分与准确续跑命令
+
+当前阻塞：
+```json
+{
+  "time": "2026-11-02T01:52:15.310922+00:00",
+  "stage": "compatibility",
+  "error": "CalledProcessError(1, ['/home/w/comp0245/RoboEnv/.pixi/envs/default/bin/python', '-m', 'unittest', 'discover', '-s', 'tests', '-v'])",
+  "traceback": "Traceback (most recent call last):\n  File \"/home/w/comp0245/LAB_SESSION_COMP_0245_2026_PUBLIC/.claude/worktrees/eval-protocol/final/robotnik_arm_task/results/step5/step5_pipeline.py\", line 321, in main\n    stage(name, functions[name])\n    ~~~~~^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/w/comp0245/LAB_SESSION_COMP_0245_2026_PUBLIC/.claude/worktrees/eval-protocol/final/robotnik_arm_task/results/step5/step5_pipeline.py\", line 295, in stage\n    fn()\n    ~~^^\n  File \"/home/w/comp0245/LAB_SESSION_COMP_0245_2026_PUBLIC/.claude/worktrees/eval-protocol/final/robotnik_arm_task/results/step5/step5_pipeline.py\", line 181, in compatibility\n    command([\"-m\", \"unittest\", \"discover\", \"-s\", \"tests\", \"-v\"], HERE / \"tests_all.log\")\n    ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/w/comp0245/LAB_SESSION_COMP_0245_2026_PUBLIC/.claude/worktrees/eval-protocol/final/robotnik_arm_task/results/step5/step5_pipeline.py\", line 43, in command\n    subprocess.run([sys.executable, *map(str, args)], cwd=TASK, env=env,\n    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n                   stdout=f, stderr=subprocess.STDOUT, check=True)\n                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/w/comp0245/RoboEnv/.pixi/envs/default/lib/python3.14/subprocess.py\", line 578, in run\n    raise CalledProcessError(retcode, process.args,\n                             output=stdout, stderr=stderr)\nsubprocess.CalledProcessError: Command '['/home/w/comp0245/RoboEnv/.pixi/envs/default/bin/python', '-m', 'unittest', 'discover', '-s', 'tests', '-v']' returned non-zero exit status 1.\n",
+  "resume": "nohup bash results/step5/run_expF.sh all >> results/step5/chainF.log 2>&1 < /dev/null & step5_chain_pid=$!; wait \"$step5_chain_pid\"",
+  "root_cause": "在本次受限执行环境中，multiprocessing forkserver 的 listener.bind(address) 抛出 PermissionError: [Errno 1] Operation not permitted",
+  "test_summary": "运行 146 项测试，用时 37.141 秒；FAILED (errors=5, skipped=2)。5 项错误均出现在测试类 setUpClass 启动原有 forkserver 缓存构建器时。",
+  "affected_classes": [
+    "test_ee_features.TestEeCacheAndTraining",
+    "test_extra_rows.TestExtraRows",
+    "test_training.TestCache",
+    "test_training.TestForwardEqualsPredict",
+    "test_training.TestTriggerCopies"
+  ],
+  "discovered_at": "2026-11-02T02:02:06+00:00",
+  "required_environment": "允许 Python multiprocessing forkserver 创建并绑定本地 AF_UNIX 监听 socket 的执行环境；当前会话不能申请提权。",
+  "not_started": [
+    "C3 seed 0 重训与逐位比较",
+    "F0",
+    "F2 pilot",
+    "F2 400 条 rollout",
+    "F3",
+    "F4",
+    "模型检查",
+    "F5 DEV/HARD/CONFIRM",
+    "F_mechanisms"
+  ]
+}
+```
+恢复前须先解决上述错误并核对冻结计划/报告节。不要覆盖首次 F1 文件、完整运行或原模型。未完成且没有 summary.txt 的运行目录由执行器删除重跑。
+
+需要在允许 forkserver 绑定本地 AF_UNIX socket 的执行环境恢复；当前会话的权限策略不允许提权，未尝试绕过沙箱、改用假测试或把失败类跳过。以下命令只有在该环境条件满足后才能推进。先做环境检查与冻结核对：
+
+```bash
+cd /home/w/comp0245/LAB_SESSION_COMP_0245_2026_PUBLIC/.claude/worktrees/eval-protocol/final/robotnik_arm_task
+MPLCONFIGDIR=/tmp/mplcfg pixi run --manifest-path /home/w/comp0245/RoboEnv/pixi.toml python - <<'PY'
+import socket, tempfile
+from pathlib import Path
+import sys
+with tempfile.TemporaryDirectory(prefix='step5_socket_', dir='/tmp') as directory:
+    with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as sock:
+        sock.bind(str(Path(directory) / 'forkserver.sock'))
+        sock.listen(1)
+sys.path.insert(0, 'results/step5')
+from f_common import check_freeze
+check_freeze()
+PY
+```
+
+```bash
+cd /home/w/comp0245/LAB_SESSION_COMP_0245_2026_PUBLIC/.claude/worktrees/eval-protocol/final/robotnik_arm_task
+nohup bash results/step5/run_expF.sh all >> results/step5/chainF.log 2>&1 < /dev/null &
+step5_chain_pid=$!
+wait "$step5_chain_pid"
+```
+轮询时先 sleep 600，再查看 chainF.log。全部 Python 命令均须带 MPLCONFIGDIR=/tmp/mplcfg 并使用指定 RoboEnv pixi manifest。
+恢复后不需要重新冻结或改 F1 容差；执行器先重新运行全部 unittest，通过后才重训 C3、运行 F0→pilot→400 rollout→F3→F4→模型检查→门槛评估。当前没有后台进程需要继续轮询，最后一次 600 秒定时检查为 02:02:06 UTC。
+全部链结束后再执行（本次阻塞状态已汇总，不应把它误记为已完成）：
+
+```bash
+MPLCONFIGDIR=/tmp/mplcfg pixi run --manifest-path /home/w/comp0245/RoboEnv/pixi.toml python results/step5/finalize_report.py
+```
+
+## 首次 F1 会话历史（保留原文）
+
+# 第 5 步执行报告（Codex，F1 验证阻塞）
+
+日期：2026-11-02。时间均为 UTC，当日与 Europe/London 相同。
+
+## 停止位置与规则
+
+执行到方案 §4.1 的 F1 验证后停止，未完成第 5 步。方案 §2/F1 规定：
+
+> 影子标签与录制的 wheel_cmds、torque_arm 每一步相同（最大绝对误差 ≤ 1e-9）
+
+> 这一步不通过，不做后面的任何事。
+
+用户另明确要求验证测试失败即停止、记录阻塞和准确续跑命令。因此没有放宽容差、修改原方案、冻结预注册或启动后续阶段。
+
+## 已执行的工作与文件
+
+按照 §4.1 读取了 `run_expD.sh`、`D_mechanisms.py`、训练缓存和 train-many 路径、评估器与统计及分类代码，并核对了录制时的控制器、数据类型和噪声保存方式。
+
+本次新建：
+
+- `dagger_relabel.py`：`replay_expert(traj, episode)`。用指定初始条件取得仿真 info，立即断开 pybullet；重置专家，顺序调用 `ExpertPolicy.act`，保留其 FSM 和机械臂参考状态；返回轮速、力矩、nav_done 和 q_des_arm。观测字段与 harness 相同，使用轨迹原时间戳并将观测提升为 float64。
+- `tests/test_dagger_relabel.py`：从 split 的 train_episodes 中选前 5 个干净和前 5 个带噪声 episode，逐步重放，以绝对误差 `1e-9`、相对容差 0 检验两种标签。测试还记录精度、初始关节角、nav_done、q_des_arm 和实际执行指令的诊断；诊断文件以独占创建方式写入，避免覆盖。
+- `results/step5/initial_sha256.txt`：实施前的方案、共享代码、report.txt 和 README.md 的 SHA256。
+- `results/step5/F1_verification.log`：本次 unittest 完整输出。
+- `results/step5/F1_verification.json`：逐 episode 的误差、最大误差位置、轨迹及代码 SHA256、诊断和起止时间。
+- `results/step5/integrity_check.txt`：实施前后 SHA256 核对结果。
+- `results/step5/CODEX_REPORT_F.md`：本报告。
+
+没有修改任何共享文件。`train_policy.py`、`bc_features.py`、`policies/bc_policy.py`、`evaluate_policy.py`、`analyze_rollouts.py`、`report.txt`、`README.md` 和方案文件与本次开始时的 SHA256 全部一致（8/8）。工作区开始时已有未提交改动；本次没有还原或覆盖它们。
+
+没有修改已有结果、冻结记录、缓存或训练模型，没有改协议常量、git 配置，没有 commit 或 push。没有打开 `data/test`，没有打开 CONFIRM。由于 F1 失败，未运行完整旧测试集或 C3 seed 0 重训，也未产生默认训练矩阵对照；不能声称这些检查已经通过。共享训练与部署路径本次没有变更。
+
+## F1 验证结果
+
+测试开始：`2026-11-02T01:28:56.450204+00:00`。
+
+诊断生成结束：`2026-11-02T01:29:02.691022+00:00`。unittest 报告 `Ran 1 test in 6.244s`、`FAILED (failures=10)`，进程退出码 1。该测试包含 10 个 episode 子测试，全部未通过；两种标签的误差均在断言之前计算并写入 JSON。
+
+共重放 97,887 步。全部 episode 属于 split 的 train_episodes，与 val_episodes 无交集；编号与 `load_eval_set(data/train)` 的记录路径一致，target 逐位相同，录制 `log_every=1`。
+
+| episode | 数据类型 | 步数 | 轮速最大绝对误差（rad/s） | 力矩最大绝对误差（N·m） | nav_done 不同的步数 | 原阈值判定 |
+| --- | --- | ---: | ---: | ---: | ---: | --- |
+| 4 | 干净 | 8001 | 3.5251108578271406e-6 | 2.134441912460261e-5 | 0 | 不通过 |
+| 6 | 干净 | 10554 | 3.5716068635949227e-6 | 2.653467053148617e-5 | 0 | 不通过 |
+| 7 | 干净 | 8001 | 2.674725668505573e-6 | 1.5865232500189563e-5 | 0 | 不通过 |
+| 9 | 干净 | 8031 | 2.9194418553757373e-6 | 2.2833432044233604e-5 | 0 | 不通过 |
+| 10 | 干净 | 10798 | 3.3016054217238633e-6 | 7.928785891220258e-5 | 0 | 不通过 |
+| 0 | DART 噪声 | 8100 | 5.2480062332493915e-6 | 2.557918899270817e-5 | 0 | 不通过 |
+| 1 | DART 噪声 | 12176 | 3.3390650493458907e-6 | 1.2173456063635513e-5 | 0 | 不通过 |
+| 3 | DART 噪声 | 14074 | 4.427447383825722e-6 | 3.310172569159775e-5 | 0 | 不通过 |
+| 5 | DART 噪声 | 9572 | 2.851757688576706e-6 | 3.527962877536428e-5 | 0 | 不通过 |
+| 11 | DART 噪声 | 8580 | 3.229953878358671e-6 | 2.1566629708758e-5 | 0 | 不通过 |
+
+### 阻塞的数值证据
+
+`collect_data.py` 的 `LOG_FIELDS` 把时间、底盘位置及姿态、关节位置及速度、专家标签和 q_des_arm 保存为 float32。控制器先用仿真的原始测量计算标签，再在保存时统一转换类型；离线重放只能取得已经量化的观测。提升为 float64 不会恢复原始有效位。
+
+10 条轨迹均确认上述观测和标签是 float32；`setup_simulation` 的精确 init_q_mes 与录制第 0 步最大差为 `5.245208734017126e-8 rad`。10 条轨迹第 0 步的力矩误差已是 `5.149361932410557e-6 N·m`，超过原阈值。控制器 kp 为 100，其量级与初始关节角量化误差相符。nav_done 全部逐步相同，q_des_arm 最大误差约 `5.80e-8` 至 `1.22e-7 rad`。
+
+诊断同时记录了“重放输出转为 float32 再转回”的舍入差：轮速最大约 `1.19e-7 rad/s`，力矩最大约 `9.54e-7 N·m`，本身也大于 `1e-9`。这些是精度损失的直接证据；本次没有用替换输入、重建原始观测、复制录制标签或修改容差来绕过检验，也没有将所有误差归因于单一来源。
+
+噪声保存方式已核对：噪声加在实际执行的 `wheel_cmds_exec`、`torque_arm_exec` 上；本测试比较的是干净专家标签 `wheel_cmds`、`torque_arm`。干净 episode 的执行指令与标签完全相同；5 个噪声 episode 的执行力矩与标签最大差分别为 `6.067247152328491`、`5.023075103759766`、`5.695031993091106`、`5.700839996337891`、`5.081031978130341 N·m`。因此测试没有把带噪声执行指令误当专家标签。
+
+## 阶段状态与未完成项
+
+| 阶段 | 开始与结束 | 运行数及状态 |
+| --- | --- | --- |
+| §4.1 阅读与实现 | 阅读开始时间未单独记录；在 F1 测试前完成实现 | 新增 2 个代码文件 |
+| F1 验证 | 01:28:56.450204—01:29:02.691022 UTC | 10 条轨迹；10 个子测试失败；正常退出，未中断 |
+| §4.2 冻结 | 未开始 | 未修改 report.txt，未创建 prereg_F_frozen.txt |
+| F0 容差曲线 | 未开始 | 一致性检查与图表未产生 |
+| F2 pilot／400 条 rollout | 未开始 | 0 次闭环运行 |
+| F3 侧缓存与描述检查 | 未开始 | 无缓存、无 F_data.txt |
+| F4 训练、旧路径验证、模型检查 | 未开始 | 0 个新训练模型 |
+| F5 DEV、门槛、HARD、门槛、CONFIRM、F_mechanisms | 未开始 | 全部无结果 |
+| §4.5 README 更新 | 未开始 | README.md 未修改 |
+
+没有执行仿真步进；F1 仅建立并断开仿真以取得 info。没有 harness_error／policy_error 运行（闭环运行总数为 0）。没有被中断、删除或重跑的运行文件夹。没有启动后台链，故没有需要继续轮询的进程；`run_expF.sh` 和 `chainF.log` 尚未创建。
+
+§3 的 DEV Δsuccess 两个 CI、M1—M4、HARD Δsuccess、CONFIRM Δsuccess 及 bootstrap 下界、次要量和专家验证集损失均未获得。没有 F_mechanisms.txt 可摘录，不能作采纳或 KEEP C3 判定。当前唯一按原规则给出的判定是：**F1 不通过，停止后续执行**。
+
+没有采用方案偏离。数值精度问题未通过修改阈值解决，§3 尚未冻结。
+
+## 准确恢复位置与命令
+
+恢复位置为 **§4.1 的 F1 验证**。下面的命令保持原阈值，并使用新的输出名保留本次证据；同一数据与实现下预期仍失败。原规则下必须先解决该验证阻塞，不能直接跳到冻结、F0 或 F2。若需要改变验证规则，须先由用户明确授权修订方案；本次没有作此修订。
+
+```bash
+cd /home/w/comp0245/LAB_SESSION_COMP_0245_2026_PUBLIC/.claude/worktrees/eval-protocol/final/robotnik_arm_task
+sha256sum -c results/step5/initial_sha256.txt
+step5_f1_stamp=$(date -u +%Y%m%dT%H%M%S%N)
+MPLCONFIGDIR=/tmp/mplcfg \
+DAGGER_F1_DIAGNOSTICS="results/step5/F1_resume_${step5_f1_stamp}.json" \
+pixi run --manifest-path /home/w/comp0245/RoboEnv/pixi.toml \
+python -m unittest discover -s tests -p test_dagger_relabel.py -v \
+> "results/step5/F1_resume_${step5_f1_stamp}.log" 2>&1
+```
+
+只有 F1 按有效方案通过后，才从 §4.2 开始冻结，再执行 F0、F2 pilot→全部→F3→F4→模型检查→F5 与门槛→最终分析，并最后更新 README。后续脚本尚未实现，故没有可直接启动的完整 nohup 链命令；不能声称第 5 步已实现或已在后台继续。
+
+
+

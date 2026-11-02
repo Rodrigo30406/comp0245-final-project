@@ -9,9 +9,13 @@ Subcommands:
   build-trigger-cache
                extract the trigger frame k0 (first nav_done step, 1 kHz recording) of every training episode into
                results/step3/cache/trigger/ (experiment C3)
+  build-ee-cache
+               side cache of the recorded end-effector position for every row of the training / validation cache
+               and of the trigger cache -> results/step3/cache/ee/ (experiment D; the other caches are not touched)
   train        train one model: ego, ego-novw, raw (MLP 2x128, early stopping on the validation set),
-               ego-ols, raw-ols (least squares) or ego-novw-trig (ego-novw plus K jittered copies of each training
-               episode's trigger frame, --trigger-copies K; experiment C3)
+               ego-ols, raw-ols (least squares), ego-novw-trig (ego-novw plus K jittered copies of each training
+               episode's trigger frame, --trigger-copies K; experiment C3) or ego-novw-trig-ee (the same with the
+               near-field end-effector error features ego_novw_ee; experiment D; needs the ee side cache)
   train-many   train one MLP model for several seeds, one single-threaded process per seed
   offline      offline metrics of a saved model on the validation rows -> trained/<name>.offline.json
 
@@ -84,8 +88,10 @@ MODELS = {  # model name -> (kind, feature set)
     "ego-ols": ("ols", "ego"),
     "raw-ols": ("ols", "raw"),
     "ego-novw-trig": ("mlp", "ego_novw"),   # experiment C3: ego-novw + K copies of the trigger frame
+    "ego-novw-trig-ee": ("mlp", "ego_novw_ee"),   # experiment D: C3 + the near-field end-effector error features
+    "ego-novw-trig-dag1": ("mlp", "ego_novw"),   # experiment F: C3 + one round of shadow-expert rows
 }
-TRIGGER_MODELS = ("ego-novw-trig",)      # the models that take --trigger-copies (and need it)
+TRIGGER_MODELS = ("ego-novw-trig", "ego-novw-trig-ee", "ego-novw-trig-dag1")
 TRIGGER_JITTER_SEED = 0  # numpy default_rng seed of the arm-qd jitter of the trigger copies (shared by all seeds)
 MLP_PARAMS = {"hidden_layer_sizes": (128, 128), "activation": "relu", "solver": "adam", "learning_rate_init": 1e-3,
               "alpha": 1e-4, "batch_size": 200, "shuffle": True}
@@ -118,6 +124,7 @@ CACHE_COLUMNS = {
 CACHE_FORMAT = "bc_cache_v1"
 SPLIT_FORMAT = "bc_split_v1"
 TRIGGER_FORMAT = "bc_trigger_v1"
+EE_FORMAT = "bc_ee_v1"       # side cache <cache_dir>/ee/{train,val,trigger}/ee_pos.npy (experiment D)
 
 
 # ==============================================================================
@@ -610,7 +617,9 @@ def signals_from_cache(cols, sl):
     qd = np.zeros((n, 17))
     qd[:, bcf.ARM] = cols["qd_arm"][sl]
     qd[:, bcf.WHEELS] = cols["qd_wheels"][sl]
-    return bcf.measured_signals(base_pos, np.asarray(cols["base_bearing"][sl]), q, qd, np.asarray(cols["target"][sl]))
+    ee_pos = np.asarray(cols["ee_pos"][sl]) if "ee_pos" in cols else None   # only for FEATURES_NEED_EE (side cache)
+    return bcf.measured_signals(base_pos, np.asarray(cols["base_bearing"][sl]), q, qd, np.asarray(cols["target"][sl]),
+                                ee_pos=ee_pos)
 
 
 def cache_features(cols, feature_set, sl=None, chunk=CHUNK):
@@ -629,6 +638,122 @@ def cache_labels(cols, sl=None):
     sl = sl or slice(0, cols["episode"].shape[0])
     return np.column_stack([cols["label_v"][sl], cols["label_w"][sl],
                             np.asarray(cols["label_tau"][sl], dtype=np.float64)])
+
+
+def _extract_ee(job):
+    """Worker: the recorded ee_pos (float32) of one episode at the given steps."""
+    with np.load(job["path"]) as d:
+        n = len(d["t"])
+        if n != job["n_steps"]:
+            raise ValueError(f"{job['path']}: {n} steps, split says {job['n_steps']}")
+        return job["part"], job["episode"], d["ee_pos"][np.asarray(job["steps"])]
+
+
+def ee_dir_of(cache_dir):
+    return os.path.join(cache_dir, "ee")
+
+
+def build_ee_cache(cache_dir=CACHE_DIR, trigger_dir=TRIGGER_DIR, split_path=SPLIT_PATH, workers=12, allow_subset=False,
+                   verbose=True):
+    """Side cache of the recorded end-effector position (float32, as recorded) for every row of the training and
+    validation parts of the cache in cache_dir and of the trigger cache in trigger_dir, row-aligned with them, in
+    <cache_dir>/ee/{train,val,trigger}/ee_pos.npy. The existing caches are only read. The manifest records the
+    sha256 of the manifests it belongs to (load_ee refuses another cache). Returns the manifest."""
+    split = load_split(split_path)
+    train_dir = os.path.join(TASK_DIR, split["train_dir"])
+    ee_dir = ee_dir_of(cache_dir)
+    os.makedirs(ee_dir, exist_ok=True)
+    manifest_path = os.path.join(ee_dir, "manifest.json")
+    if os.path.exists(manifest_path):
+        os.remove(manifest_path)
+    t_start = time.time()
+    trig_manifest_path = os.path.join(trigger_dir, "manifest.json")
+    with open(trig_manifest_path) as f:
+        trig_m = json.load(f)
+    parts, jobs, subset = {}, [], False
+    for part in ("train", "val"):
+        cache = Cache(part, cache_dir, split_path, allow_subset=allow_subset)
+        subset = subset or bool(cache.manifest["subset"])
+        steps = np.asarray(cache.cols["step"])
+        parts[part] = {"episodes": cache.episodes, "n_rows": cache.n_rows}
+        for i, e in enumerate(cache.episodes):
+            sl = cache.episode_slice(i)
+            jobs.append({"part": part, "episode": int(e), "row": sl.start, "steps": steps[sl].tolist(),
+                         "path": os.path.join(train_dir, split["episodes"][str(e)]["file"]),
+                         "n_steps": int(split["episodes"][str(e)]["n_steps"])})
+        cache.release()
+    if trig_m["split_sha256"] != sha256_file(split_path) or (trig_m["subset"] and not allow_subset):
+        raise RuntimeError(f"trigger cache {trigger_dir} does not belong to {split_path}")
+    parts["trigger"] = {"episodes": list(trig_m["episodes"]), "n_rows": int(trig_m["n_rows"])}
+    for i, (e, k0) in enumerate(zip(trig_m["episodes"], trig_m["k0_steps"])):
+        jobs.append({"part": "trigger", "episode": int(e), "row": i, "steps": [int(k0)],
+                     "path": os.path.join(train_dir, split["episodes"][str(e)]["file"]),
+                     "n_steps": int(split["episodes"][str(e)]["n_steps"])})
+    arrays = {}
+    for part, lay in parts.items():
+        os.makedirs(os.path.join(ee_dir, part), exist_ok=True)
+        arrays[part] = np.lib.format.open_memmap(os.path.join(ee_dir, part, "ee_pos.npy"), mode="w+",
+                                                 dtype=np.float32, shape=(lay["n_rows"], 3))
+    row_of = {(j["part"], j["episode"]): j["row"] for j in jobs}
+    with mp.get_context("forkserver").Pool(max(1, min(int(workers), 12))) as pool:
+        for part, e, ee in pool.imap(_extract_ee, jobs, chunksize=4):
+            r = row_of[(part, e)]
+            arrays[part][r:r + len(ee)] = ee
+    for arr in arrays.values():
+        arr.flush()
+    arrays.clear()
+    manifest = {
+        "format": EE_FORMAT, "created": now_iso(), "split_sha256": sha256_file(split_path),
+        "cache_manifest_sha256": sha256_file(os.path.join(cache_dir, "manifest.json")),
+        "trigger_manifest_sha256": sha256_file(trig_manifest_path),
+        "parts": {part: {"n_rows": lay["n_rows"], "episodes": lay["episodes"]} for part, lay in parts.items()},
+        "subset": subset,
+        "rule": "ee_pos (float32, the recorded value: the expert's pinocchio forward kinematics of the full base pose "
+                "and q_mes at the same step) for every row of the cache parts train / val (their step column) and of "
+                "the trigger cache (its k0 step), in the same row order",
+        "build_seconds": time.time() - t_start,
+    }
+    write_json_atomic(manifest_path, manifest)
+    if verbose:
+        print(f"ee cache {ee_dir}: " + ", ".join(f"{p} {lay['n_rows']} rows" for p, lay in parts.items())
+              + f", {manifest['build_seconds']:.1f} s")
+    return manifest
+
+
+def load_ee(part, cache_dir=CACHE_DIR, split_path=SPLIT_PATH, trigger_dir=None, allow_subset=False):
+    """The ee_pos side cache of one part ('train', 'val' or 'trigger'), memory-mapped, checked against the cache (and
+    trigger cache) it was built for. Returns (array, ee manifest sha256)."""
+    ee_dir = ee_dir_of(cache_dir)
+    manifest_path = os.path.join(ee_dir, "manifest.json")
+    if not os.path.exists(manifest_path):
+        raise RuntimeError(f"no ee side cache in {ee_dir}: run 'train_policy.py build-ee-cache'")
+    with open(manifest_path) as f:
+        m = json.load(f)
+    if m.get("format") != EE_FORMAT:
+        raise RuntimeError(f"{manifest_path}: not a {EE_FORMAT} cache")
+    if m["split_sha256"] != sha256_file(split_path):
+        raise RuntimeError(f"ee cache {ee_dir} was built for another split file")
+    if m["cache_manifest_sha256"] != sha256_file(os.path.join(cache_dir, "manifest.json")):
+        raise RuntimeError(f"ee cache {ee_dir} was built for another version of the cache in {cache_dir}")
+    if m["subset"] and not allow_subset:
+        raise RuntimeError(f"ee cache {ee_dir} belongs to a subset cache (test cache)")
+    if part == "trigger":
+        trigger_dir = trigger_dir or TRIGGER_DIR
+        if m["trigger_manifest_sha256"] != sha256_file(os.path.join(trigger_dir, "manifest.json")):
+            raise RuntimeError(f"ee cache {ee_dir} was built for another trigger cache than {trigger_dir}")
+    arr = np.load(os.path.join(ee_dir, part, "ee_pos.npy"), mmap_mode="r")
+    if arr.shape != (m["parts"][part]["n_rows"], 3):
+        raise RuntimeError(f"ee cache {ee_dir}/{part}: shape {arr.shape}, manifest {m['parts'][part]['n_rows']} rows")
+    return arr, sha256_file(manifest_path)
+
+
+def ee_trigger_rows(episodes, cache_dir=CACHE_DIR, split_path=SPLIT_PATH, trigger_dir=None, allow_subset=False):
+    """ee_pos of the trigger rows of the given training episodes (the order of load_trigger_rows)."""
+    arr, sha = load_ee("trigger", cache_dir, split_path, trigger_dir, allow_subset)
+    with open(os.path.join(ee_dir_of(cache_dir), "manifest.json")) as f:
+        eps = json.load(f)["parts"]["trigger"]["episodes"]
+    row_of = {int(e): i for i, e in enumerate(eps)}
+    return np.asarray(arr[[row_of[int(e)] for e in episodes]]), sha
 
 
 # ==============================================================================
@@ -760,6 +885,9 @@ def load_training_data(feature_set, cache_dir=CACHE_DIR, split_path=SPLIT_PATH, 
     """Raw float64 (X, Y) of the training rows and of the validation rows, plus the two Cache objects."""
     tr = Cache("train", cache_dir, split_path, allow_subset=allow_subset)
     va = Cache("val", cache_dir, split_path, allow_subset=allow_subset)
+    if feature_set in bcf.FEATURES_NEED_EE:   # the recorded end-effector position from the side cache
+        tr.cols["ee_pos"], tr.ee_manifest_sha256 = load_ee("train", cache_dir, split_path, allow_subset=allow_subset)
+        va.cols["ee_pos"], _ = load_ee("val", cache_dir, split_path, allow_subset=allow_subset)
     s_tr, s_va = tr.rows_of_first(max_train_episodes), va.rows_of_first(max_val_episodes)
     X = cache_features(tr.cols, feature_set, s_tr)
     Y = cache_labels(tr.cols, s_tr)
@@ -821,10 +949,41 @@ def save_trained(path, feature_set, xm, xs, ym, ys, weights, biases, meta):
     os.replace(tmp, path)
 
 
+def load_extra_rows(directory, feature_set, split_path=SPLIT_PATH):
+    """Validate a side cache and return raw float64 features, labels and metadata.
+
+    Extra rows never affect the standardisers or validation set. A manifest is
+    written last by the cache builder, so an interrupted cache is refused.
+    """
+    manifest_path = os.path.join(directory, "manifest.json")
+    with open(manifest_path) as f:
+        m = json.load(f)
+    if (m.get("format") != "bc_dagger_v1" or m.get("feature_set") != feature_set
+            or m.get("split_sha256") != sha256_file(split_path)):
+        raise ValueError("extra-row manifest format, features or split mismatch")
+    n = int(m["n_rows"])
+    arrays = []
+    for name, width in (("X", len(bcf.FEATURE_SETS[feature_set])), ("Y", len(bcf.OUTPUT_NAMES))):
+        path = os.path.join(directory, name + ".npy")
+        if sha256_file(path) != m["arrays"][name]["sha256"]:
+            raise ValueError(f"extra-row array hash mismatch: {name}")
+        a = np.load(path, mmap_mode="r")
+        if a.shape != (n, width) or a.dtype != np.dtype("float64") or not np.isfinite(a).all():
+            raise ValueError(f"invalid extra-row array: {name}")
+        arrays.append(np.array(a))
+    meta = {"directory": os.path.relpath(os.path.abspath(directory), TASK_DIR),
+            "manifest_sha256": sha256_file(manifest_path), "n_rows": n,
+            "rule": "unweighted rows appended after trigger copies; original stride-9 standardisers; "
+                    "expert validation unchanged"}
+    return *arrays, meta
+
+
 def run_train(model_name, seed=None, out=None, cache_dir=CACHE_DIR, split_path=SPLIT_PATH, max_epochs=MAX_EPOCHS,
               max_train_episodes=None, max_val_episodes=None, force=False, hide_losses=False, log=print,
-              trigger_copies_k=None, trigger_qd_jitter="auto", trigger_dir=None):
+              trigger_copies_k=None, trigger_qd_jitter="auto", trigger_dir=None, extra_rows=None):
     kind, feature_set = MODELS[model_name]
+    if model_name == "ego-novw-trig-dag1" and extra_rows is None:
+        raise SystemExit("ego-novw-trig-dag1 needs --extra-rows")
     custom = max_epochs != MAX_EPOCHS or max_train_episodes is not None or max_val_episodes is not None
     if custom and out is None:
         raise SystemExit("non-default training settings (--max-epochs / --max-*-episodes) need an explicit --out, "
@@ -871,6 +1030,8 @@ def run_train(model_name, seed=None, out=None, cache_dir=CACHE_DIR, split_path=S
         sigma = sigma_hold if jitter_fixed is None else jitter_fixed
         train_eps = list(tr.episodes[:n_tr_eps])
         trig_cols, trig_sha = load_trigger_rows(train_eps, trigger_dir, split_path, allow_subset=custom)
+        if feature_set in bcf.FEATURES_NEED_EE:   # the recorded k0 end-effector position (the jitter leaves q alone)
+            trig_cols["ee_pos"], _ = ee_trigger_rows(train_eps, cache_dir, split_path, trigger_dir, allow_subset=custom)
         n_added = trigger_copies_k * len(train_eps)
         if trigger_copies_k > 0:
             Xt, Yt, _ = trigger_copies(trig_cols, feature_set, trigger_copies_k, sigma)
@@ -897,6 +1058,14 @@ def run_train(model_name, seed=None, out=None, cache_dir=CACHE_DIR, split_path=S
         log(f"trigger copies: K {trigger_copies_k} x {len(train_eps)} episodes = {n_added} rows added to "
             f"{n_base_rows}; qd sigma " + ", ".join(f"{s:.4f}" for s in sigma)
             + ("" if jitter_fixed is None else " (fixed)") + f", jitter seed {TRIGGER_JITTER_SEED}")
+    extra_meta = None
+    if extra_rows is not None:
+        Xe, Ye, extra_meta = load_extra_rows(extra_rows, feature_set, split_path)
+        standardise_inplace(Xe, xm, xs)
+        standardise_inplace(Ye, ym, ys)
+        X, Y = np.concatenate([X, Xe]), np.concatenate([Y, Ye])
+        del Xe, Ye
+        log(f"extra rows: {extra_meta['n_rows']} appended from {extra_rows}")
     log(f"{model_name} ({kind}, features {feature_set}, seed {seed}): train {X.shape[0]} rows "
         f"({n_tr_eps} episodes), val {Xv.shape[0]} rows ({n_va_eps} episodes), loaded in {t_load:.1f} s")
     commit, dirty = git_state()
@@ -908,6 +1077,11 @@ def run_train(model_name, seed=None, out=None, cache_dir=CACHE_DIR, split_path=S
         "stride": int(tr.split["stride"]), "n_train_rows": int(X.shape[0]), "n_val_rows": int(Xv.shape[0]),
         "n_train_episodes": n_tr_eps, "n_val_episodes": n_va_eps,
         **({"trigger": trigger_meta} if trigger_meta is not None else {}),
+        **({"extra_rows": extra_meta} if extra_meta is not None else {}),
+        **({"ee_cache_manifest_sha256": tr.ee_manifest_sha256, "ee_clip_m": bcf.EE_CLIP,
+            "ee_features": "near-field end-effector error e * min(1, ee_clip / |e|), e = target - recorded ee_pos, "
+                           "horizontal part in the base frame"}
+           if feature_set in bcf.FEATURES_NEED_EE else {}),
         "subset": bool(custom) and (max_train_episodes is not None or max_val_episodes is not None),
         "standardisation": "X and Y with the training rows' mean and std (std < 1e-12 -> 1)" if trigger_meta is None
                            else "X and Y with the mean and std (std < 1e-12 -> 1) of the original stride-9 training "
@@ -1118,6 +1292,8 @@ def offline_metrics(model_path, cache_dir=CACHE_DIR, split_path=SPLIT_PATH, allo
         raise RuntimeError(f"{model_path} was trained on another split file")
     fs = model["feature_set"]
     names = bcf.OUTPUT_NAMES
+    if fs in bcf.FEATURES_NEED_EE:
+        va.cols["ee_pos"], _ = load_ee("val", cache_dir, split_path, allow_subset=allow_subset)
     with single_thread():
         X = cache_features(va.cols, fs)
         Y = cache_labels(va.cols)
@@ -1297,6 +1473,12 @@ def main(argv=None):
     p.add_argument("--cache", default=CACHE_DIR)
     p.add_argument("--workers", type=int, default=12, help="pool size (at most 12)")
 
+    p = sub.add_parser("build-ee-cache", help="side cache of the recorded end-effector position (experiment D)")
+    p.add_argument("--split", default=SPLIT_PATH)
+    p.add_argument("--cache", default=CACHE_DIR)
+    p.add_argument("--trigger-cache", default=TRIGGER_DIR)
+    p.add_argument("--workers", type=int, default=12, help="pool size (at most 12)")
+
     p = sub.add_parser("build-trigger-cache", help="extract the trigger frame k0 of every training episode (C3)")
     p.add_argument("--split", default=SPLIT_PATH)
     p.add_argument("--trigger-cache", default=TRIGGER_DIR)
@@ -1325,6 +1507,7 @@ def main(argv=None):
                        help="arm-qd jitter sigma of the copies: 'auto' (per-joint std of arm qd over the training rows "
                             "with nav_done False), one value or 7 comma-separated values (rad/s; 0 = none)")
         p.add_argument("--trigger-cache", default=TRIGGER_DIR)
+        p.add_argument("--extra-rows", default=None, help="append validated, unweighted side-cache rows (experiment F)")
 
     p = sub.add_parser("offline", help="offline metrics of a saved model on the validation rows")
     p.add_argument("--model", required=True, help="trained/<name>.npz")
@@ -1340,17 +1523,22 @@ def main(argv=None):
               ", ".join(f"{k} {v['n_train']}/{v['n_val']}" for k, v in split["strata"].items()))
     elif args.cmd == "build-cache":
         build_cache(args.split, args.cache, workers=args.workers)
+    elif args.cmd == "build-ee-cache":
+        build_ee_cache(args.cache, args.trigger_cache, args.split, workers=args.workers)
     elif args.cmd == "build-trigger-cache":
         build_trigger_cache(args.split, args.trigger_cache, workers=args.workers)
     elif args.cmd == "train":
         run_train(args.model, args.seed, args.out, args.cache, args.split, args.max_epochs, args.max_train_episodes,
                   args.max_val_episodes, force=args.force, hide_losses=args.hide_losses,
                   log=lambda s: print(s, flush=True), trigger_copies_k=args.trigger_copies,
-                  trigger_qd_jitter=args.trigger_qd_jitter, trigger_dir=args.trigger_cache)
+                  trigger_qd_jitter=args.trigger_qd_jitter, trigger_dir=args.trigger_cache,
+                  extra_rows=args.extra_rows)
     elif args.cmd == "train-many":
         if (args.model in TRIGGER_MODELS) != (args.trigger_copies is not None):
             raise SystemExit(f"--trigger-copies is required for, and only for, the models {TRIGGER_MODELS}")
         extra = ["--hide-losses"] if args.hide_losses else []
+        if args.extra_rows is not None:
+            extra += ["--extra-rows", args.extra_rows]
         if args.trigger_copies is not None:
             extra += ["--trigger-copies", str(args.trigger_copies), "--trigger-qd-jitter", str(args.trigger_qd_jitter),
                       "--trigger-cache", args.trigger_cache]

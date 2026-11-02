@@ -1,0 +1,35 @@
+{
+  "n_rows": 1277895,
+  "n_trajectories": 400,
+  "shadow_nav_done_fraction": 0.5434257118151334,
+  "dagger_tau": {
+    "n_rows": 1277895,
+    "clip_fraction": 0.08787811205145962,
+    "abs_tau_p50": 4.4073390300443815,
+    "abs_tau_p99": 30.0,
+    "min": -30.0,
+    "max": 30.0
+  },
+  "expert_tau": {
+    "n_rows": 1764684,
+    "clip_fraction": 0.0013878648285714933,
+    "abs_tau_p50": 1.158294439315796,
+    "abs_tau_p99": 21.115907993316664,
+    "min": -30.0,
+    "max": 30.0
+  },
+  "cache_manifest_sha256": "bb90b2da0c0b02eaf30eeef918e7e3e7866a7b9486404ae15c300065490fe557",
+  "rollout_background": {
+    "n": 400,
+    "success": 0.6225,
+    "classes": {
+      "success": 249,
+      "extended_not_reached": 79,
+      "crash": 13,
+      "circling": 43,
+      "approached_other": 10,
+      "left_or_overshot": 5,
+      "never_other": 1
+    }
+  }
+}

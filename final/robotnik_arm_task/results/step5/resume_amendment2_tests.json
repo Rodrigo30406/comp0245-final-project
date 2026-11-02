@@ -1,0 +1,9 @@
+{
+  "time": "2026-11-02T04:03:19.434634+00:00",
+  "tests": "Ran 177 tests in 42.956s; OK (skipped=2)",
+  "tests_log": "tests_all_amendment2.log",
+  "gate_tests": "3 passed; direct stalled/evaluation calls refuse failed gates before reading controls/data",
+  "shared_code_changes_this_resume": [],
+  "compatibility_marker_preserved": true,
+  "next": "nohup run_expF.sh all; completed compatibility is skipped; F0 amendment2 then F2-F5 gated chain"
+}
