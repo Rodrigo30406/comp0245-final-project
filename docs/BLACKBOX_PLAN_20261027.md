@@ -1211,6 +1211,53 @@ next arm.
 New probe for every arm: the instant and the distance to the base goal at which the wheel command becomes exactly zero
 and whether it stays zero (closed early / on time / never).
 
+## 6t. E8d, dead band 0.45 rad/s at the evaluator output (2 Nov 07:40–, partial: MLP 28 and GRU 28 done)
+
+Setting: the trained E4 models unchanged; the evaluator zeroes the four wheel commands whenever
+max|wheel| < 0.45 rad/s (`experiment_specs/evaluation/validation_deadband045.json`, §6r; `wheel_dead_band_rad_s` recorded
+in every episode record; the expert is never filtered). Same 205 nominal goals and 205 random-start goals as every
+other arm. Transformer 28 and MLP 32 are still running (this section is completed when they finish).
+
+Stable arrivals 1/2/5 cm, seeds 0/1/2, with the dead band vs without (E4, §6g/§6i):
+
+| model | validation | without band | with band 0.45 |
+|---|---|---|---|
+| MLP 28 control | nominal | 0/0/23, 0/0/30, 0/1/27 | 0/1/24, 0/0/33, 1/1/27 |
+| MLP 28 control | random | 0/0/11, 0/0/15, 0/0/17 | 0/0/13, 0/0/16, 0/1/14 |
+| GRU 28, memory 20 ms | nominal | 6/6/32, 19/50/102, 4/8/27 | 0/3/28, 25/50/94, 5/9/29 |
+| GRU 28, memory 20 ms | random | 6/9/29, 29/57/99, 5/8/26 | 3/6/23, 35/55/92, 4/10/28 |
+
+No gain anywhere; the seed-to-seed noise of ±5 covers every difference. The probes say why, and the two families fail
+for opposite reasons (`scripts/analysis/deadband_raw_drift.py`, `creep_profile.py`, `restart_trigger.py`, nominal
+validation, medians over episodes):
+
+- **MLP 28: the dead band freezes the base at the edge of the policy's zero, not inside it.** The policy ramps its
+  wheel command down smoothly where the expert steps from ≥ 0.45 to 0; the band cuts the ramp at the first sample
+  under 0.45, so the base stops where the raw command is just under the threshold. While filtered to exactly zero the
+  raw max|wheel| is 0.31–0.38 (median; p90 0.42–0.44), the longest exact-zero spell lasts 8–9 s nominal, 4–5 s on
+  random starts, and ends when the raw command crosses the band (0.47–0.48 on the first sample over it); only 1–2 % of
+  the spells last to 40 s. The base is exactly still during the spell (0.2 cm/s), the arm joints move 0.001–0.002 rad,
+  the target does not move: the only input that changes is the clock, and it is enough to push a command sitting at
+  0.40–0.44 over 0.45. The park lasts longer than without the band (10–13 s to restart vs 2–3 s, §6g) but it still ends
+  in a restart in 93 % of the episodes, and once the base moves again the stateless policy is back in §6g. Arrivals are
+  unchanged also because this family's arm is poor (arm extended 12–18 of 205 for seeds 0 and 2), so even a permanent
+  base stop would not reach 5 cm.
+- **GRU 28 seed 1: the dead band gives a permanent, exact stop, and the arrivals do not move.** While filtered to zero
+  its raw max|wheel| is 0.07 (p90 0.11), far under the band and falling (0.12 → 0.07 over the spell); the longest
+  exact-zero spell lasts 25 s and reaches the end of the episode in 90 % of the episodes; the base spends 59 % of the
+  40 s at an exact zero. This is the latch of §6g/§6q holding with a clean zero under it. The arrivals stay at 94–102
+  because the stop is in the wrong place: `stop_profile` counts 99 episodes stopped outside the tolerance with a
+  median closest EE distance of 10 cm, and the base is within 10 cm of its goal in only 17 episodes. The dead band
+  therefore isolates the GRU's remaining defect to the approach, exactly as §6q concluded.
+- GRU seeds 0 and 2 behave as MLPs here (raw 0.38 under the band for seed 2, 88 % of the zero samples above 0.3; seed 0
+  rarely stops at all, 10 % of the time at zero and most of it while the base is actually moving on a transient dip).
+
+Conclusion for the E8 programme: an output-side threshold cannot rescue a policy whose zero sits at the threshold, and
+the clock makes any fixed threshold a timer. The gate (E8a, a learned stop state that multiplies the wheel command) and
+the soft threshold learned in training (E8e) remain the two ways to obtain an exact zero from the MLP; for the GRU the
+dead band is already a clean stop and the work is the approach (E8c). The transformer result decides whether the gate
+is built on a GRU or on the transformer (§6s).
+
 ## 7. Status
 
 - Done: decomposition (§1), variant `raw21_target_clock_v1`; E1 collected,
@@ -1306,6 +1353,9 @@ and whether it stays zero (closed early / on time / never).
   12 models × 2 validations, 8 workers per evaluation, two evaluations at a time.
 - 2 Nov 06:50: zero separability measured (§6r): the expert never emits a non-zero wheel command below 0.45 rad/s; the
   policies' zero predictions sit below 0.35 (p99) and their drive commands above 0.7 (p1). A dead band at 0.45 is free offline.
+- 2 Nov 10:20: E8d partial (§6t): dead band 0.45 on MLP 28 and GRU 28, no gain. The MLP freezes at the edge of its
+  zero (raw 0.31–0.38 under the band) and the clock pushes it over in 8–9 s; GRU seed 1 holds an exact zero for 25 s
+  to the end of the episode and still arrives 94, because the stop is 10 cm off. Transformer 28 and MLP 32 running.
 - Next, on request: E6 (§6c, nominal data without the clock) — the cheapest test of the reach-trigger mechanism.
 - E2 needs a collector mode; nothing in `src/` is edited while a collector,
   trainer or evaluator is running (provenance guards).
