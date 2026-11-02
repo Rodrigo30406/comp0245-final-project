@@ -1001,6 +1001,129 @@ E2 is closed for the MLP family: on either head, data from the region where the 
 because the expert's behaviour there is the orient rotation and not the stop. The GRU on the same mixture is the one
 remaining arm (relaunched below with the memory fix).
 
+## 6q. E2 on the GRU (2 Nov 03:20–04:36): the memory holds the stop open loop, and the near-target data moves the approach away from it
+
+Three GRU 28 pure (hidden 128, head 128, memory stride 20 ms, TBPTT 1000 decisions = 20 s) on the 6144 mixture
+(`gru_e2_mixture6144_polar_stride20_seed*`), run alone after the memory fix (§7), 9–13 min each on the GPU, peak 43 GB RSS.
+Offline NRMSE 0.132 / 0.123 / 0.127: the best of every pure-28 model of the programme (GRU on 4096: 0.136–0.153,
+transformer 0.130–0.142, MLP 28 0.145–0.151). Evaluations `e2_gru_polar_on_{clean,e1_random}_validation_20261101`.
+Stable arrivals at 5 cm of 205:
+
+| GRU 28 pure, memory 20 ms | data | offline NRMSE | Nominal: arrivals | parked | arm | moving at 40 s | within 10 cm of the base goal | median closest approach | Random: arrivals | parked | moving at 40 s |
+|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| E4 (§6h) | 4096 | 0.136–0.153 | 32 / **102** / 27 | 13–44 | 149 / 101 / 16 | 103–196 | 64 / 111 / 106 | 0.10–0.18 m | 29 / **99** / 26 | 7–12 | 100–190 |
+| **E2 GRU** | 6144 | **0.123–0.132** | **41 / 43 / 37** | 11 / 10 / 4 | 117 / 203 / 85 | 147 / 132 / 181 | 48 / 47 / 50 | 0.23 / 0.44 / 0.18 m | 39 / 53 / 28 | 8–18 | 134 / 94 / 168 |
+| ref. MLP 28 control (§6i) | 4096 | 0.145–0.149 | 23 / 30 / 27 | 119–126 | 3 / 103 / 15 | 199–203 | 190 / 198 / 195 | 0.02–0.04 m | 11 / 15 / 17 | 33–68 | |
+| ref. transformer (§6j) | 4096 | 0.130–0.142 | 81 / 76 / 47 | | | | 147 / 160 / 120 | | 60 / 32 / 29 | | |
+
+The seed spread collapses (41 / 43 / 37 against 32 / 102 / 27) and the mean does not move. The probes
+(`openloop_phase_error`, `stop_basin`, `clock_extrapolation --freeze-at stop` on the runs; `arrival_profile`,
+`arrival_heading`, `creep_profile`, `restart_trigger` on the traces; logs `e2gru_*.log`) separate what the memory
+does from what the data did:
+
+- **Open loop, the GRU has the latch — in its state, not in the pose.** Teacher-forced on 40 validation
+  demonstrations the residual wheel command after the expert's stop is 1% (0% of the post-stop time above 10%; drive-phase
+  error 0.05–0.06, as on 4096). New measurement: `stop_basin` feeds the demonstration history up to the stop and then
+  displaces the *current* base pose. For the GRU the wheel command stays at **1–4% of the drive level for every
+  displacement, up to 40 cm towards or away from the target and ±0.1 rad of yaw, in all three seeds**. The stateless
+  MLP 28 on the same data rises to 13–23% at 40 cm towards the target (§6i: the off-shell extrapolation that fires
+  the restart). Once the history says "stopped", the recurrent state keeps the wheels at zero whatever the pose
+  reads: this is the latch the regression on the current frame cannot represent, and the trained network has it.
+  With the observation frozen at the stop and the clock run to 40 s: 3–14%, no clock restart.
+- **Closed loop, the GRU does not pass through the state that sets the latch.** It comes within 10 cm of the base goal
+  in 47–50 episodes of 205 (E4 GRU 64–111, MLP 28 control 190–198, transformer 120–160); its median closest approach is
+  18–44 cm against the expert's 8 cm box (E4 GRU 10–18 cm, control 2–4 cm). It is still moving at 40 s in 132–181
+  episodes. The latch was learned from the demonstrations' own approach histories; a drive-phase error of 0.05–0.06
+  integrated over 10–20 s of closed loop puts the policy's trajectory 20–40 cm from where those histories end, and
+  the history it then has is not one the training set followed with a stop.
+- **The near-target data moved the arrival from "stop" to "rotate", as for the MLP (§6o).** Around the closest approach
+  the wheel command is 0.70 / 0.69 / 1.06 with a rotation component of 0.51 / 0.65 / 0.94 and a drive component of
+  0.05–0.07, at a heading error to the target of 1.5–2.0° median (inside the 2.9° tolerance). E4 GRU: rotation
+  0.99 / 0.10 / 0.30. Within 10 cm of the base goal the count halves from the E4 GRU (64–111 → 47–50): the E2
+  episodes (short, starting inside the standoff radius, 56% of their in-box rows full-speed `orient` rotations) teach the
+  memory that a short history ending near the target continues as a rotation, not as a stop.
+- **When it does pause, it pauses like the §6i GRU.** 87–125 park→restart events per seed, at 0.72–0.74 m from the
+  target (the standoff shell), with 12–19% of the drive command still on, a creep of 1.7–5.8 cm towards the target
+  (71–100% of the events) and a restart after 1.4–2.5 s; the arm did not move before the restart (0.004–0.012 rad).
+
+What this settles. The hold problem has two halves and the two architectures now hold one each: the stateless MLP 28
+reaches the box (190–198 within 10 cm) and cannot latch (its "zero" is a 6–10% creep that extrapolates to "drive" a
+few centimetres inside the shell); the GRU latches (basin flat to 40 cm) and does not reach the box (47–111 within
+10 cm). Neither half is fixed by the data we can collect from the black-box expert: random starts (E1/E3) gave the
+mixture its long clock support, near-target starts (E2) demonstrate the expert's `orient` rotation rather than its
+stop and make both the MLP and the GRU rotate at the arrival. And for the seventh time the offline metric points the
+wrong way: the E2 GRU is the best fit of the programme (0.123) and arrives 41 / 43 / 37 times.
+
+The E7 + E2 programme is complete; §8 gathers the whole picture.
+
+## 8. Closing synthesis (2 Nov 04:50): what the black-box programme established
+
+Every arm below was trained three times (seeds 0, 1, 2) and evaluated closed loop on the same 205 held-out geometries
+from the nominal start pose ("nominal") and from random start poses ("random", the E1 bank). Numbers are stable
+arrivals at 5 cm of 205, seed by seed; the expert makes 205 / 201. Full per-run table: `python3 -I scripts/analysis/final_table.py`.
+
+| Arm | inputs | data | offline NRMSE | nominal | random | measured mechanism |
+|---|---|---|---:|---|---|---|
+| MLP 22 (lecturer's 21 + clock) | 22 | nominal 1024 | 0.17 | 5–10 (5 seeds) | — | no goal geometry in the inputs: the base never finds the standoff (§1) |
+| MLP 25 (+3 target in base frame) | 25 | nominal 1024 | 0.135 | 25–32 (5 seeds) | — | base arrives, arm never leaves the hold posture (§6c) |
+| MLP 28 pure (+3 polar) | 28 | nominal 1024 | 0.13 | 33–129 (5 seeds) | — | unlocks base and arm; clock extrapolation restarts the base after 15 s (§6e, §6h) |
+| MLP 32 (+10 goal-based features, "cheat") | 32 | nominal 1024 | 0.115 | 115–162 (5 seeds) | 24–46 | goal-centred features keep the command at 2–3% inside the shell (§1, §6i) |
+| MLP 32 | 32 | mixture 4096 | 0.094–0.102 | 51 / 93 / 78 | 51 / 113 / 71 | start-pose invariance bought with nominal arrivals (§6f) |
+| **MLP 28 pure (control)** | 28 | mixture 4096 | 0.145–0.149 | 23 / 30 / 27 | 11 / 15 / 17 | reaches the box (2–4 cm), creeps 6–9 cm inside the shell, extrapolates to drive (§6i) |
+| MLP 31 (28 + FD base velocity) | 31 | mixture 4096 | 0.106–0.108 | 40 / 38 / 37 | 39 / 36 / 33 | copycat of its own last motion (§6g) |
+| GRU 28, memory 20 ms | 28 | mixture 4096 | 0.136–0.153 | 32 / 102 / 27 | 29 / 99 / 26 | has the stop open loop, approach 10–18 cm off (§6h) |
+| Transformer 28, attention 20 s | 28 | mixture 4096 | 0.130–0.142 | 81 / 76 / 47 | 60 / 32 / 29 | best fit, same creep (11–17% while parked) (§6j) |
+| E7a: stop rows weighted ×8 | 28 | mixture 4096 | 0.148–0.150 | 19 / 44 / 30 | 14 / 38 / 16 | open-loop residual 0–1%, closed-loop creep unchanged (§6l) |
+| E7b: L1 wheel loss | 28 | mixture 4096 | 0.149–0.150 | 20 / 18 / 9 | 8 / 7 / 7 | same (§6l) |
+| E7c: categorical wheels, 41 bins | 28 | mixture 4096 | 0.161–0.170 | 39 / 24 / 32 | 31 / 25 / 31 | exact zero exists; replaced by ±3-bin chatter and a 25 s clock-gated stop (§6m) |
+| E7d: + previous wheel command | 30 | mixture 4096 | 0.104–0.108 | 11 / 19 / 16 | 12 / 7 / 7 | copycat (R² 0.999) or, augmented, ignored (3% sensitivity) (§6n) |
+| E2: MLP 28 pure | 28 | mixture 6144 (+near-target) | 0.148–0.151 | 14 / 17 / 13 | 12 / 10 / 9 | in-box rows become `orient` rotations; arrival residual doubles (§6o) |
+| E2: categorical 41 bins | 28 | mixture 6144 | 0.157–0.161 | 20 / 14 / 23 | 20 / 15 / 30 | same rotation reaches the argmax (§6p) |
+| E2: GRU 28, memory 20 ms | 28 | mixture 6144 | 0.123–0.132 | 41 / 43 / 37 | 39 / 53 / 28 | latch in the state (basin flat to 40 cm), approach 18–44 cm off, rotates at arrival (§6q) |
+
+What is established, with the measurement that establishes it:
+
+1. **The lecturer's 21 inputs plus a clock cannot encode the task** (5–10 arrivals, §1): the goal is a function of the
+   target and the standoff that the regressor must reconstruct from absolute coordinates. Three rigid-frame transforms of
+   the lecturer's own inputs (target in the base frame) give the base; three more (range, bearing, standoff-relative range)
+   give the arm as well (§6c, §6e). These six features use nothing from the expert.
+2. **The hold is a latch, and a regression on the current frame cannot represent a latch.** The expert's stop is a
+   phase bit set once, with zero wheels afterwards whatever the pose does. Every stateless model's "zero" is a residual
+   of 6–10% of the drive command (§6i), which integrates into a creep towards the target that leaves the thin shell of
+   demonstrated stop states in 8–12 s and extrapolates to "drive". Weighting the stop rows (E7a), an L1 loss (E7b) and an
+   exact-zero categorical bin (E7c) all give an open-loop residual of 0–1% and leave the closed-loop failure in place,
+   because the failure happens in states no demonstration covers. Feeding the policy its own previous command (E7d)
+   gives it the latch only as a copycat that cannot be stabilised.
+3. **Memory represents the latch but not the approach.** The GRU keeps its wheels at 1–4% for any displacement up to
+   40 cm once its history says "stopped" (§6q), and brings the arm back on random-start data (§6h); but its closed-loop
+   approach passes 10–44 cm from an 8 cm box, so the latch is rarely set. The transformer fits best and creeps like the MLP.
+4. **The data we can collect from the black-box expert do not fill the gap.** Random starts (E1, E3) give long clock
+   support and start-pose invariance at the cost of nominal arrivals; the mixture is the right base. Near-target starts
+   (E2), designed to demonstrate the stop from many approach states, demonstrate the expert's `orient` rotation instead
+   (56% of the in-box rows are full-speed rotations, §6o), and every model trained on them rotates at the arrival.
+   Scale alone (1024 → 4096) does not change the ranking (§6f).
+5. **The offline validation metric is not a selection criterion for this task.** In seven comparisons the best offline
+   fit was the worst or an unchanged closed-loop policy (E7d 0.104 → 11–19 arrivals; E2 GRU 0.123 → 41–43; MLP 32
+   mixture 0.094 → 51–93 against 115–162 for 0.115 on nominal data). Model selection must be closed loop.
+6. **The best black-box policy of the programme remains the GRU seed 1 on the 4096 mixture (102 / 99)** and the best
+   pure-28 family on average is the transformer (81 / 76 / 47); the best policy overall is the MLP 32 on nominal data
+   (115–162), whose 10 extra features encode the expert's goal construction and were therefore set aside as
+   privileged (§0, §1).
+
+Open decisions (Rodrigo's):
+
+- **E0, the white-box contrast**: a single latched `arrived` bit from the expert's phase as an extra input would show
+  how many arrivals the latch alone is worth. It is privileged information and was excluded on the black-box rule;
+  it is cheap (one collector field, one input variant) and would make the report's argument quantitative.
+- **DAgger / expert relabelling** of the policy's own closed-loop states is the textbook fix for both halves of the
+  problem (the crept states inside the shell and the GRU's off-track approaches would get the expert's `done` or
+  `drive` labels). It was excluded by Rodrigo's decision at the start of the programme; the measurements above are the
+  argument for or against reopening it.
+- **Reserved test banks** (`datasets/test_reserved/*`) have never been used for training or selection; evaluating the
+  chosen policies on them is the last step before the report and is Rodrigo's call.
+- **E6** (nominal data without the clock, §6c) is the cheapest remaining test of the reach-trigger mechanism and does
+  not depend on the hold.
+
 ## 7. Status
 
 - Done: decomposition (§1), variant `raw21_target_clock_v1`; E1 collected,
@@ -1087,6 +1210,10 @@ remaining arm (relaunched below with the memory fix).
   three E2 GRU seeds relaunched alone (`chain_gru_e2.sh`), evaluations after the third seed. Verified: the load of the
   4914-episode group peaks at 43 GB RSS (was killed past 77 GB), 24 GB during training, 29 GB on the GPU; the first
   epoch starts 90 s after launch.
+- E2 GRU done and reported in §6q (2 Nov 04:36): 41 / 43 / 37 nominal, 39 / 53 / 28 random with the best offline NRMSE of
+  the programme (0.123–0.132); open loop the recurrent state latches the stop (1–4% of the drive command for any
+  displacement up to 40 cm), closed loop the approach passes 18–44 cm from the box and rotates at the arrival as in §6o.
+  E7 + E2 complete. §8 gathers the whole programme (table of every arm, six established points, open decisions).
 - 28-input pure-transform variant done and reported in §6e (branch `rodrigo-pure28` merged).
 - Next, on request: E6 (§6c, nominal data without the clock) — the cheapest test of the reach-trigger mechanism.
 - E2 needs a collector mode; nothing in `src/` is edited while a collector,
