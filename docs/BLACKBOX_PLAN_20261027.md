@@ -1581,6 +1581,38 @@ so stable 1 cm arrivals will trail 5 cm arrivals by their held-10 s gap. It is t
 have (no new data, no memory, ~30 min per seed), and it combines with E8d/E8e (dead band / soft threshold) which remove the
 creep but left the arm asleep precisely for lack of this row.
 
+## 6y. E9, trigger copies in our trainer (2 Nov 13:50, pre-registered before any result)
+
+**Implementation** (`egocentric_options`: `trigger_copies` K, `trigger_qd_jitter` "auto" | rad/s; commit `d5df73c`, 109 tests).
+Per training episode the trigger row is **the first row of the terminal run of exactly-zero wheel labels**; K copies of it
+are appended with their recorded features and labels and N(0, σ_j) on the seven arm-velocity features only, σ_j = std of
+arm qd over the rows whose wheels are not both zero, one fixed rng (seed 0) shared by every training seed. Input and
+output scalers are fitted on the recorded rows before the copies are appended. Nothing else changes (MLP 128×128, batch
+1024, patience 8, 28 pure inputs, 4096 mixture, same split). Label-derived only: no expert phase or done flag is read.
+Check on 80 training episodes: the label-only row equals the first `base_navigation_done` row in 78; the other 2 are 25 s
+navigation timeouts where the zero run starts 1 ms after the flag. At that row the arm torque jumps 26.6 N·m median
+(p10 19.0) and max |arm qd| is 0.099 rad/s median (p90 0.18): the ignition state of §6t.1.
+
+**Why a K sweep and not their K = 16.** The weight that matters is copies against look-alike hold rows in the same input
+region. They train on one row every 9 ms (~1 300 rows per episode, ~74 look-alikes); we train on every 1 ms row (11 952
+rows per episode median, 3 126 orient-phase rows median). Their K = 16 is 1.5% of the rows and ~0.2 of the look-alikes;
+for us K = 16 is 0.13% and 0.005. So: seed 0 at **K ∈ {16, 144, 512}** (144 ≈ 16 × 9 keeps their row fraction, 1.2%;
+512 is 4.3%, between their K 64 and K 256 in relative weight), evaluated on both validations (205 nominal, 205 random
+starts, 1/2/5 cm stable arrivals, parked, arm extended, drift). Their K 64 / 256 fired as often as K 16 but reached less
+precisely, so the sweep is expected to trade ignition rate against precision.
+
+**Rule for K, fixed now:** the smallest K whose seed-0 model extends the arm (EE > 10 cm from its start in the base frame,
+`arm_base_decomposition.py`) in more than 50% of the nominal episodes; among several, the one with more stable 1 cm
+arrivals (nominal + random). Seeds 1 and 2 are then trained at that K and the three are reported like every other arm
+(§7 table rows). If no K passes, report and stop. Mechanistic check before adopting: `arm_switch_probe.py` on the
+resting-arm parked row (control −0.02 on the hold→reach axis) and the arm-start time relative to the first exact stop.
+
+**Predictions.** Offline NRMSE worse than the control (their validation loss doubled); arm extended in most nominal
+episodes (control 3 / 103 / 15 of 205); parked rate up because the base reads the moving arm as its phase flag (§6h);
+creep unchanged, so held-10 s and 1 cm arrivals trail the 5 cm arrivals; some early reaches from a misplaced base (their
+`extended_not_reached` 19%, tip-overs 3%). Runs: `runs/training/mlp_e9_mixture4096_polar_trig{K}_seed{s}`,
+evaluations `runs/evaluation/e9_ksweep_mlp28_on_{clean,e1_random}_validation_20261102`, then the chosen K's three seeds.
+
 ## 7. Status
 
 - Done: decomposition (§1), variant `raw21_target_clock_v1`; E1 collected,
@@ -1697,6 +1729,8 @@ creep but left the arm asleep precisely for lack of this row.
   §6x explains it with §6t.1: it re-weights the one resting-arm reach row per episode, the arm ignites and the base reads it as
   the phase flag (§6h); creep remains (half the successes do not hold 10 s). Label-derived re-weighting, not privileged input.
   E9 (same option in our trainer, MLP 28, 4096 mixture) proposed, not launched.
+- 2 Nov 13:50: E9 launched (§6y): trigger copies in our trainer, K sweep 16 / 144 / 512 at seed 0 first (our 1 kHz rows make
+  their K = 16 nine times lighter), both validations, K rule pre-registered; then 3 seeds at the chosen K. E8c / E8e wait.
 - Next, on request: E6 (§6c, nominal data without the clock) — the cheapest test of the reach-trigger mechanism.
 - E2 needs a collector mode; nothing in `src/` is edited while a collector,
   trainer or evaluator is running (provenance guards).
