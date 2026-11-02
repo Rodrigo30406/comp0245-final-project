@@ -1138,6 +1138,38 @@ Open decisions (Rodrigo's):
 - **E6** (nominal data without the clock, §6c) is the cheapest remaining test of the reach-trigger mechanism and does
   not depend on the hold.
 
+## 6r. Is the policy's "zero" separable from its real commands? (2 Nov 06:50)
+
+Rodrigo's question: when the expert sends zero, what is the largest command the policy sends, and does it overlap with
+the smallest command the policy sends when the base has to move? Measured by `scripts/analysis/zero_separability.py`
+(40 validation demonstrations teacher-forced per run; closed-loop traces of the clean validation), |wheel| = max of the
+two wheels in rad/s. The expert's own commands have a floor: **no non-zero wheel command below 0.450 rad/s** in 4.0 M
+nominal rows (`min_lin_vel / wheel_radius = 0.05 / 0.11` and `kp_ori · ang_tol · half_width / wheel_radius` both give 0.45),
+so a dead band below that value clips nothing the expert ever does.
+
+| model (4096 mixture) | offline: predicted on expert-zero rows, median / p90 / p99 | offline: predicted on moving rows, p1 / p5 | closed loop, base still: median / p90 / p99 | closed loop, driving: p1 |
+|---|---|---|---|---|
+| MLP 28 control, seeds 0–2 | 0.03–0.06 / 0.07–0.10 / 0.24–0.40 | 0.71 / 1.08–1.14 | 0.11–0.14 / 0.28–0.33 / 0.59–0.63 | 0.96–1.07 |
+| GRU 28, seeds 0–1 | 0.04 / 0.08–0.11 / 0.25–0.34 | 0.70–0.80 / 1.10–1.13 | 0.05–0.06 / 0.11–0.44 / 0.49–0.70 | 0.02 (seed 0, the pausing GRU) / 1.11 |
+| transformer 28, seeds 0–1 | 0.04–0.05 / 0.09–0.10 / 0.25–0.28 | 0.73–0.74 / 1.13–1.14 | 0.10–0.11 / 0.29–0.30 / 0.56–0.57 | 1.03–1.04 |
+
+Consequences of a dead band at 0.45 rad/s (the expert's floor), per model:
+
+| model | zero rows left non-zero (offline) | moving rows clipped (offline) | still samples left non-zero (closed loop) | driving samples clipped (closed loop) |
+|---|---:|---:|---:|---:|
+| MLP 28 control | 0.2–0.5% | 0.2–0.3% | 2.5–3.8% | 0.0–0.2% |
+| GRU 28 seed 1 | 0.5% | 0.1% | 1.2% | 0.0% |
+| transformer 28 | 0.4% | 0.1–0.2% | 2.5–2.7% | 0.0–0.3% |
+
+So the two populations are separable: the policies' "zero" lives below 0.35 rad/s in 99% of the rows and their real
+commands above 0.7 in 99%; the expert's floor of 0.45 sits in the gap. A dead band at 0.45 would turn 96–99% of the
+closed-loop residual while parked into an exact zero at no cost on the drive. What it does not tell us yet is whether a
+base that is held exactly still stays in the policy's zero region (the input then changes only through the clock and the
+arm's reach), i.e. whether the 2.5–3.8% of still samples above the threshold are the restart itself or noise before it.
+That is the closed-loop test (E8d below): the dead band as a declared output filter on the existing models, no retraining.
+Its learned counterpart is a soft-threshold output (`wheel = sign(u) · max(|u| − τ, 0)`), which makes every |u| < τ an
+exact zero during training as well, so the zero rows stop pulling the regression towards a point.
+
 ## 7. Status
 
 - Done: decomposition (§1), variant `raw21_target_clock_v1`; E1 collected,
@@ -1229,6 +1261,8 @@ Open decisions (Rodrigo's):
   displacement up to 40 cm), closed loop the approach passes 18–44 cm from the box and rotates at the arrival as in §6o.
   E7 + E2 complete. §8 gathers the whole programme (table of every arm, six established points, open decisions).
 - 28-input pure-transform variant done and reported in §6e (branch `rodrigo-pure28` merged).
+- 2 Nov 06:50: zero separability measured (§6r): the expert never emits a non-zero wheel command below 0.45 rad/s; the
+  policies' zero predictions sit below 0.35 (p99) and their drive commands above 0.7 (p1). A dead band at 0.45 is free offline.
 - Next, on request: E6 (§6c, nominal data without the clock) — the cheapest test of the reach-trigger mechanism.
 - E2 needs a collector mode; nothing in `src/` is edited while a collector,
   trainer or evaluator is running (provenance guards).
