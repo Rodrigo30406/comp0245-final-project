@@ -1336,6 +1336,99 @@ GRU seed 1's 11 "both" per 205), the open question being whether its stateless h
 GRU (§6q: approach is the GRU's defect); (iii) E8b behaves like the base GRU (one seed latching, two not) unless the
 encoder makes the latch easier to find, which would show as all three seeds latching.
 
+## 6v. E8a results (2 Nov 11:54–12:50): the gate confirms a stop it never causes
+
+Runs `gru_e8a_gated_mixture4096_polar_seed{0,1,2}` (96 / 148 / 96 epochs of 582 updates, patience 8, 6–9 min each on the
+GPU), evaluations `runs/evaluation/e8a_gated_on_{clean,e1_random}_validation_20261102` (205 goals each, no dead band).
+Probes: `scripts/analysis/gate_closure_probe.py` (new: box entry, stop-condition instants, where the wheels go to zero
+for good, arm after the zero), `stop_profile.py`, `arm_base_decomposition.py`, open-loop gate ablations and gate
+profiles on the validation demonstrations, and a re-simulation of the 205 nominal episodes of seed 1 logging the gate
+and the stop score every 100 ms (scratch scripts, numbers below).
+
+| E8a gated | offline NRMSE | nominal 1 / 2 / 5 cm | parked / arm ext. / both | held ≥ 10 s | in tol. / stopped outside (median dist) / moving at 40 s | random 1 / 2 / 5 cm | parked / arm ext. / both | stopped outside / moving |
+|---|---:|---|---|---:|---|---|---|---|
+| seed 0 | 0.219 | 5 / 11 / 23 | 19 / 39 / 3 | 8 | 0 / 35 (0.54 m) / 170 | 2 / 5 / 17 | 9 / 59 / 4 | 49 (0.60 m) / 156 |
+| seed 1 | 0.233 | 8 / 18 / 49 | 28 / 126 / 14 | 17 | 1 / 106 (0.48 m) / 98 | 3 / 8 / 34 | 19 / 148 / 19 | 129 (0.40 m) / 74 |
+| seed 2 | 0.230 | 0 / 1 / 5 | 26 / 15 / 1 | 2 | 0 / 14 (0.60 m) / 191 | 0 / 0 / 8 | 7 / 12 / 0 | 10 (0.34 m) / 195 |
+| E4 MLP 28 control (same data) | 0.145–0.149 | 0 / 0–1 / 23–30 | 0 / 12–18 / 0 | 0–5 | 0 / 0 / 205 | — | — | — |
+| E4 GRU 28 seed 1 | 0.153 | 19 / 50 / 102 | 29 / 38 / 11 | 38 | — | — | — | — |
+
+Worse than every earlier arm on arrivals (best seed 49 at 5 cm, 8 at 1 cm), but with a new failure signature: the first
+pure-28 model whose base is *parked* in 19–28 nominal episodes and whose arm *extends* in 126 (seed 1) — and whose stops
+are all in the wrong place. The predictions of §6u, tested:
+
+**(i) Where the gate closes on the demonstrations — partly as predicted, and the measure hid the mechanism.** On the 64
+validation demonstrations the gate falls below 0.5 in 63 / 63 / 62 episodes, never later than the label zero, within 0.5 s
+of it in 33 / 44 / 49 and more than 0.5 s early in 30 / 19 / 13 (up to 19 s early on stalled demonstrations). That looked
+like a predictor. The gate's *profile* against the time of the label zero (median over 40 demonstrations) says otherwise:
+
+| time relative to the label zero | −10 s | −5 s | −2 s | −1 s | −0.5 s | 0 | +0.5 s | +2 s |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| gate, seed 0 | 0.84 | 0.83 | 0.82 | 0.66 | 0.50 | 0.44 | 0.002 | 0.002 |
+| gate, seed 1 | 0.91 | 0.92 | 0.92 | 0.77 | 0.62 | 0.39 | 0.002 | 0.002 |
+| gate, seed 2 | 0.94 | 0.76 | 0.74 | 0.66 | 0.60 | 0.53 | 0.001 | 0.001 |
+
+The stop score peaks at 0.23–0.34 (median; p90 0.46–0.50) somewhere during the drive, so the cummax gate *leaks*: it sits
+at 0.75–0.92 for the whole approach (below 0.9 on 22% of the drive rows of seed 1), slides to ≈ 0.5 as the expert
+rotates in its last half second, and reaches its closed value (0.002) only *after* the labels are already zero, when the
+stop score saturates at 0.998. The gate does not anticipate the stop from the approach; it recognises the stopped state
+once it is there. Ablations on 24 demonstrations (seed 1, closure = gate < 0.5): clock frozen at zero, arm velocities
+zeroed or arm angles frozen — still 24 / 24 closures at the label zero (the clock and the arm are not the cue); the
+observation frozen from the start of the expert's `orient` phase (base still at the box, heading not yet aligned, no
+rotation) — 8 / 23; base still but rotating forever at 0.5 rad/s — 6 / 23; sequence cut before `orient` — 3 / 23. The cue
+is the base standing still at the goal with the heading aligned, i.e. the state the expert's controller produces, read
+off the history (velocity is not in the 21 inputs, but two frames 20 ms apart give it to the GRU). It is the same shortcut
+as the GRU's open-loop stop in §6h: the labels are zero exactly when the base is still, so "still ⇒ zero" is the cheapest
+fit, and nothing in the loss asks the gate to close *before* the stillness it is supposed to cause.
+
+**(ii) Closed loop — refuted for the stop, confirmed for the arm.** `gate_closure_probe.py` on the 205 nominal goals:
+
+| nominal, 205 goals | entered the box (< 8 cm) | heading < 0.05 rad while inside | wheels zero to the end | … inside the box | … outside (median dist) | arm moved > 10 cm after the zero |
+|---|---:|---:|---:|---:|---|---:|
+| E8a seed 0 | 49 | 25 | 4 | 0 | 4 (0.64 m) | 3 |
+| E8a seed 1 | 88 | 47 | 54 | 0 | 54 (0.45 m) | 43 |
+| E8a seed 2 | 67 | 34 | 7 | 0 | 7 (0.57 m) | 2 |
+| E4 MLP 28 control, seeds 0–2 | 186 / 195 / 185 | 132 / 148 / 136 | 0 | 0 | 0 | — |
+| E4 GRU 28, seeds 0–2 | 57 / 89 / 93 | 30 / 39 / 63 | 1 / 2 / 3 | 0 | 1 / 2 / 3 | 0 / 0 / 1 |
+
+Random starts: E8a entered 33 / 56 / 63, met the stop condition in 16 / 24 / 24, wheels zero to the end in 0 / 71 / 3
+(one inside the box), arm after the zero in 0 / 59 / 2; the MLP 28 control entered 106–134 and never zeroed.
+
+- The head drives the base into the box in 49–88 episodes and even through the expert's exact stop condition (inside
+  8 cm with |heading error| < 0.05 rad at some sampled instant) in 25–47 — and the gate closes inside the box in **none**
+  of them. Inside the box the base keeps a median speed of 0.04–0.10 m/s and 0.01–0.06 rad/s, stays 1.2–2.7 s (p90 2.2–6.1)
+  and leaves; the expert's `orient` phase before `done` lasts 0.5 s (0.3–1.4) at 0.36 rad/s with 0.015 m/s of translation
+  and ends with the base still. The stillness the gate waits for is the stillness only the gate can produce: a
+  confirmer in a loop with its own effect never gets its cue. The 54 / 71 zeros of seed 1 happen outside, at 0.40–0.48 m
+  from the goal, where the head's base stalls on its own (what the stop score does there is measured in §6v.1).
+- Once the gate has closed, the arm starts: it moves more than 10 cm after the zero in 43 of 54 nominal and 59 of 71
+  random closures (80%), against 0 of 205 for every stateless model under an exact stop in §6t.1. The gate as an input
+  to the arm head is the "base stopped" signal the arm lacked. The stops being 0.4–0.6 m off, "both" is 14 / 19 (seed 1)
+  against 11 for the GRU seed 1 — the prediction's threshold is met by seed 1 only, and for the wrong reason.
+- The gate's drift after closing is 0.01–0.05 m (median), against 9–20 cm for the MLP 31 of §6g and the 6–10 cm creep of
+  §6i: the exact zero holds, as designed (E8d's GRU seed 1 held 25 s; E8a holds to the end in every closure).
+
+**The head itself fits worse than the MLP 28 on the same rows.** Open loop on 24 validation demonstrations
+(episode-median RMSE): wheels on drive rows 0.43 rad/s for E8a seed 1 against 0.23 for the E4 MLP 28 control and 0.23 for
+the E4 GRU; on the rows where the gate is still above 0.9, 0.41 — the head, not the leak; arm before the stop 0.14 N·m
+against 0.04 (MLP 28) and 0.13 (GRU); arm after the stop 0.73 against 0.41 and 0.61. Offline NRMSE 0.22–0.23 against
+0.145–0.149 for the control and 0.14–0.15 for the GRU family. The head sees the same 28 features as the control plus the
+gate, and is trained by the recurrent recipe (8 whole episodes per update, 1000-decision chunks) instead of the control's
+1024 shuffled rows from ~1000 episodes per update; the GRU family pays the same price on the arm (0.13 vs 0.04) and enters
+the box in 57–93 episodes against 185–195 for the control. The approach defect of the recurrent models (§6q) and of E8a's
+stateless head is at least partly a training-recipe effect, not an architecture effect — a testable claim (train a plain
+MLP 28 with the recurrent recipe, or the recurrent models with more, shorter, shuffled episode chunks).
+
+**What E8a establishes.** A latch that cannot reopen holds an exact zero and starts the arm — the two things no earlier
+arm did. Its learned trigger is the wrong one: trained end to end from zero labels that coincide perfectly with a still
+base, the stop score becomes a stillness detector and never fires in a loop where the stillness is its own output. The
+closed-loop system has no stop until the base stalls by accident. The next gate must be unable to see stillness: a
+*stateless* stop score on the current geometry (the 21 inputs carry no base velocity, so a single frame cannot tell
+still from moving), latched by the same cummax, and trained with a target derived from the labels alone (1 from the first
+zero-wheel row of the demonstration onwards, 0 before — a function of the labels, not of the expert's phases, so inside
+the black-box rule). With teacher forcing (the label's own gate during training) the head and the gate become row-wise
+models trainable by the MLP recipe, which also removes the recipe handicap above. Proposed as E8g; not launched.
+
 ## 7. Status
 
 - Done: decomposition (§1), variant `raw21_target_clock_v1`; E1 collected,
@@ -1438,6 +1531,12 @@ encoder makes the latch easier to find, which would show as all three seeds latc
   already moving (reach is triggered by the arm velocities; the resting-arm reach rows are ~1 per 12 000); the creeping base used
   to jostle it, the band removes the jostle. Same for the transformer and the MLP 32.
 - 2 Nov 11:40: E8a (gated stop, gate seen by the arm head) and E8b (MLP→GRU) implemented, tested (105), launched (§6u).
+- 2 Nov 12:50: E8a done and reported in §6v: 23 / 49 / 5 nominal, 17 / 34 / 8 random. The gate holds an exact zero and
+  starts the arm (80% of closures) but it learned to *confirm* a still base, not to predict the stop: it reaches its closed
+  value only after the labels are zero, and in closed loop it never closes inside the box (0 of the 25–47 episodes where
+  the head met the expert's stop condition), only where the base stalls by itself at 0.4–0.6 m. The gated head also fits
+  the demonstrations worse than the MLP 28 control (drive wheels 0.43 vs 0.23 rad/s) under the recurrent training recipe.
+  Proposal E8g (stateless geometry-only gate, label-derived target, teacher forcing) written, not launched. E8b evaluating.
 - Next, on request: E6 (§6c, nominal data without the clock) — the cheapest test of the reach-trigger mechanism.
 - E2 needs a collector mode; nothing in `src/` is edited while a collector,
   trainer or evaluator is running (provenance guards).
