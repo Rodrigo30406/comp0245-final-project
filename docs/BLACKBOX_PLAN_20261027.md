@@ -877,6 +877,50 @@ only where the data forces it, and in this data that place is the clock, not the
 off-shell states (E2, phase B, which also runs the categorical head on the 6144 mixture so the two effects can be
 separated) or an input that carries the latch (E7d).
 
+## 6n. E7d (1 Nov, 20:13–00:14): the previous wheel command as input gives either a copycat or nothing
+
+Three MLP-30 = the 28 pure transforms + the policy's own previous wheel command (right, left), trained with the
+anti-copycat augmentation (previous command swapped across rows with p = 0.25, Gaussian noise 0.1 in normalised units;
+`mlp_e7d_mixture4096_prevwheel_seed*`), same 4096 mixture, same validations. Offline NRMSE 0.108 / 0.104 / 0.105, the
+best of every arm so far (control 0.145–0.149). Stable arrivals at 5 cm of 205:
+
+| Model on the 4096 mixture | offline NRMSE | Nominal: arrivals | parked | arm | moving at 40 s | Random: arrivals | parked | arm | moving at 40 s |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| MLP 28 pure (control, §6i) | 0.145–0.149 | 23 / 30 / 27 | 119–126 | 3 / 103 / 15 | 199–203 | 11 / 15 / 17 | 33–68 | 3 / 105 / 11 | 199–204 |
+| **E7d** + previous wheel command | **0.104–0.108** | **11 / 19 / 16** | 38–66 | 1 / 5 / 67 | 203–205 | 12 / 7 / 7 | 24–39 | 0 / 28 / 79 | 204–205 |
+
+The worst closed-loop result of the programme with the best offline number. Measurements (`scripts/analysis/
+prevwheel_copycat.py`, `prevwheel_loop_gain.py`, `wheel_sensitivity.py`; logs `e7d_*.log` in the scratchpad):
+
+- **The input is a perfect predictor that the model learned to ignore.** On teacher-forced validation rows a linear
+  map recovers the expert's wheel command from the previous command alone with R² = 0.999 (from the other 28 features:
+  0.46 / 0.51): at 1 ms the command almost never changes, so without augmentation the regressor would become a pure
+  copycat (§6g, the velocity). The augmentation did its job: with the previous command zeroed on driving rows the
+  policy keeps 97–98% of its command; with the median driving command injected into parked rows it still outputs
+  0.02–0.03; the previous command carries 3% of the total wheel sensitivity while driving and 0% while parked; and
+  the sensitivity profile is otherwise the control's (target geometry 70–80% of the parked-row sensitivity, arm
+  posture 13–22%). In closed loop, re-running the policy at the arrival states with its own previous command and with
+  the previous command zeroed differ by 0.1 (1.10 against 1.00), and d(output)/d(previous command) is 0.13–0.17
+  (p90 0.29–0.36): no latch formed, and no unstable action loop either.
+- **So the closed loop is the control's off-shell extrapolation, only shallower.** The base reaches the goal
+  (185–199 of 205 within 10 cm, median closest 0.03–0.04 m, as the control) and slows to 0.05–0.06 m/s, but the
+  command around the arrival instant is 0.81–1.13 (control 0.45–0.58) and the lowest 1 s mean |wheel| in an episode
+  is 0.38–0.63 (control 0.06–0.14; below 0.1 in 12–20 episodes against 76–119). It re-accelerates within 1–2 s and
+  leaves: 38–66 parks (control 120–142), 203–205 moving at 40 s, the arm fires in 1 / 5 / 67 episodes because the
+  posture cue never appears. The residual that the regression leaves off the shell is two to three times the
+  control's; the training rows it was fitted on are the same, so the extra input (with its augmentation noise)
+  simply gave the stop rows a slightly different, equally off-shell, function.
+- **Open loop everything is fine**, as for every arm: teacher-forced residual after the expert's stop 1%, sequential
+  on the policy's own outputs over the demonstration's observations 1%, 33–38 of 40 sequential runs reach a stop.
+  Offline NRMSE 0.104 is the fourth time (§6c velocity, §6g, §6j transformer, here) that the offline metric moves
+  opposite to the closed-loop result.
+
+Conclusion for E7d: with a single regressor and the demonstrations as the only data, an action input has two
+regimes and no useful middle. Unaugmented it reproduces the previous command (R² 0.999) and the stop becomes an
+accident of the first zero; augmented until the copycat disappears, the model stops using it and nothing is latched.
+A latch has to be a function of the state history (the GRU's hidden state, phase B) or of data that covers the states
+where the decision is actually taken (E2). E7d is closed.
+
 ## 7. Status
 
 - Done: decomposition (§1), variant `raw21_target_clock_v1`; E1 collected,
@@ -940,6 +984,11 @@ separated) or an input that carries the latch (E7d).
   demonstrations (every training row after 25 s has zero wheels). E7d trained (offline NRMSE 0.104–0.108, the
   copycat signature) and evaluating; phase B (6144 mixture with E2) training, one trainer at a time, RAM logged every
   30 s (`rss_monitor.log` in the scratchpad).
+- E7d done and reported in §6n (2 Nov 00:14): 11 / 19 / 16 arrivals with the best offline NRMSE (0.104–0.108); the
+  augmentation removed the copycat and with it any effect of the input (3% of the wheel sensitivity, loop gain
+  0.13–0.17); the off-shell residual at arrival is twice the control's and the base never parks. E7d closed.
+  Phase B: MLP 28 on the 6144 mixture trained (offline 0.148 / 0.151 / 0.150, peak RSS 46 GB) and evaluating;
+  categorical 41 bins on the 6144 mixture training; GRU next.
 - 28-input pure-transform variant done and reported in §6e (branch `rodrigo-pure28` merged).
 - Next, on request: E6 (§6c, nominal data without the clock) — the cheapest test of the reach-trigger mechanism.
 - E2 needs a collector mode; nothing in `src/` is edited while a collector,
