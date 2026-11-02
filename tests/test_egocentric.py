@@ -481,6 +481,75 @@ class ExpertFailureTrainingTests(unittest.TestCase):
             self.assertEqual((info2['episode_filter'], info2['training_rows']), ({'keep_expert_failures': True}, 4 * 80))
 
 
+class ChunkLabelTests(unittest.TestCase):
+    def test_chunk_labels_take_future_rows_and_clip_at_the_episode_end(self):
+        from robot_learning.learning.egocentric import chunk_labels
+        y = np.arange(12, dtype=float)[:, None] * np.ones((1, 9)); y[:, 1] += 100   # row index in col 0
+        out = chunk_labels(y, [(0, 7), (7, 12)], steps=3, stride=2)
+        self.assertEqual(out.shape, (12, 27))
+        np.testing.assert_array_equal(out[0, [0, 9, 18]], [0, 2, 4]); np.testing.assert_array_equal(out[5, [0, 9, 18]], [5, 6, 6])
+        np.testing.assert_array_equal(out[7, [0, 9, 18]], [7, 9, 11]); np.testing.assert_array_equal(out[11, [0, 9, 18]], [11, 11, 11])
+        np.testing.assert_array_equal(out[:, :9], y); np.testing.assert_array_equal(chunk_labels(y, [(0, 12)], 1, 20), y)
+
+    def test_chunk_policy_executes_the_first_step_and_roundtrips(self):
+        spec = {**SPEC, 'variant': 'raw21_targetpolar_clock_v1'}
+        from robot_learning.learning.egocentric import VARIANTS
+        F = len(VARIANTS[spec['variant']]); rng = np.random.default_rng(2)
+        w = [rng.normal(size=(F, 8)), rng.normal(size=(8, 27))]; b = [np.zeros(8), rng.normal(size=27)]
+        pol = EgocentricPolicy(spec, np.zeros(F), np.ones(F), np.tile(np.arange(9.), 3), np.ones(27), w, b, action_chunk=3)
+        self.assertEqual(pol.output_width, 27)
+        x = rng.normal(size=(4, 21)); out = pol.predict(x); full = pol.predict_chunk(encode(x, np.arange(4) * 1e-3, spec))
+        self.assertEqual(out.shape, (4, 9)); np.testing.assert_allclose(out, full[:, :9])
+        pol.reset(1e-3); self.assertEqual(pol.predict_action(x[0]).shape, (11,))
+        with tempfile.TemporaryDirectory() as tmp:
+            pol.save(Path(tmp) / 'm.npz'); loaded = EgocentricPolicy.load(Path(tmp) / 'm.npz')
+            self.assertEqual(loaded.action_chunk, 3); np.testing.assert_array_equal(loaded.predict(x), out)
+        with self.assertRaises(ValueError):
+            EgocentricPolicy(spec, np.zeros(F), np.ones(F), np.zeros(9), np.ones(9), w, b, action_chunk=3)
+
+    def test_option_validation_for_weight_and_chunk(self):
+        from robot_learning.learning.egocentric import resolve_options
+        self.assertEqual(resolve_options({}, 'raw21_targetpolar_clock_v1', {'trigger_weight': 144})['trigger_weight'], 144.0)
+        self.assertEqual(resolve_options({}, 'raw21_targetpolar_clock_v1', {'action_chunk': 10})['action_chunk_stride'], 20)
+        for bad in ({'trigger_weight': 0.5}, {'action_chunk': 0}, {'action_chunk': 2.0}, {'action_chunk_stride': 0},
+                    {'action_chunk': 2, 'wheel_loss': 'l1'}, {'action_chunk': 2, 'stop_weight': 8}):
+            with self.assertRaises(ValueError):
+                resolve_options({}, 'raw21_targetpolar_clock_v1', bad)
+
+
+@unittest.skipUnless(TORCH_AVAILABLE, 'Optional PyTorch environment is not installed')
+class WeightAndChunkTrainingTests(unittest.TestCase):
+    def run_training(self, options, tmp):
+        from robot_learning.learning.egocentric import train
+        from robot_learning.learning.dataset import inventory
+        from robot_learning.learning.train import DEFAULT_CONFIG
+        from robot_learning.data.storage import read_json
+        root = Path(tmp); data = root / 'data'; data.mkdir(); make_dense_dataset(data, stop_tail=20)
+        records = inventory(data)
+        write_json(root / 'split.json', {'dataset': str(data), 'training': records[:4], 'validation': records[4:]})
+        cfg = read_json(DEFAULT_CONFIG.parent / 'mlp_pytorch.json')
+        cfg['mlp'].update(hidden_layer_sizes=[16, 16], batch_size=16, max_epochs=2, patience=100); cfg['torch']['device'] = 'cpu'
+        cfg['egocentric_options'] = options; write_json(root / 'cfg.json', cfg)
+        policy, metrics = train(data, root / 'split.json', root / 'cfg.json', root / 'run', 40.0, 'cpu', 'raw21_targetpolar_clock_v1')
+        return policy, read_json(root / 'run/model_info.json')
+
+    def test_trigger_weight_is_recorded_and_trains(self):
+        with tempfile.TemporaryDirectory() as tmp, threadpool_limits(limits=1):
+            policy, info = self.run_training({'trigger_weight': 50}, tmp)
+            self.assertEqual(info['trigger_weight'], {'weight': 50.0, 'rows_weighted': 4}); self.assertIsNone(info['action_chunk'])
+            self.assertEqual(info['training_rows'], 4 * 80)
+
+    def test_action_chunk_trains_and_exports_a_first_step_policy(self):
+        with tempfile.TemporaryDirectory() as tmp, threadpool_limits(limits=1):
+            policy, info = self.run_training({'action_chunk': 4, 'action_chunk_stride': 5, 'trigger_copies': 3}, tmp)
+            self.assertEqual(info['action_chunk'], {'steps': 4, 'stride_rows': 5, 'horizon_s': 0.02, 'executed': 'first step', 'outputs': 36})
+            self.assertEqual(policy.output_width, 36); self.assertEqual(policy.action_chunk, 4)
+            x = np.random.default_rng(9).normal(size=(3, 21)); self.assertEqual(policy.predict(x).shape, (3, 9))
+            loaded = EgocentricPolicy.load(Path(tmp) / 'run/model.npz'); np.testing.assert_array_equal(loaded.predict(x), policy.predict(x))
+            self.assertTrue(np.isfinite(info['best_validation_episode_macro_balanced_nrmse']))
+            self.assertEqual(info['trigger_copies']['rows_added'], 12); self.assertEqual(info['training_rows'], 4 * 80 + 12)
+
+
 @unittest.skipUnless(TORCH_AVAILABLE, 'Optional PyTorch environment is not installed')
 class TriggerCopyTrainingTests(unittest.TestCase):
     def test_training_appends_the_copies_after_fitting_the_scaler(self):

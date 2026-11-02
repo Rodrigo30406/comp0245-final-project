@@ -77,7 +77,10 @@ DEFAULT_OPTIONS = {"wheel_loss": "l2",            # l2 | l1 on the two wheel out
                    "prev_wheel_shuffle_p": 0.0,   # action-input variants: fraction of rows whose previous command is swapped within the batch
                    "prev_wheel_noise_std": 0.0,   # action-input variants: N(0, std) noise on the normalized previous command
                    "trigger_copies": 0,           # E9: copies per training episode of its first terminal zero-wheel row (the stop/reach onset)
-                   "trigger_qd_jitter": "auto"}   # rad/s N(0, s) on the arm velocities of those copies; "auto" = std of arm qd over the moving rows
+                   "trigger_qd_jitter": "auto",   # rad/s N(0, s) on the arm velocities of those copies; "auto" = std of arm qd over the moving rows
+                   "trigger_weight": 1.0,         # loss weight of the trigger row itself (the no-duplication twin of trigger_copies)
+                   "action_chunk": 1,             # predict the commands of this many future steps (chunk), execute the first
+                   "action_chunk_stride": 20}     # physics rows between chunk steps (20 = 20 ms)
 TRIGGER_JITTER_SEED = 0  # one fixed rng for the trigger-copy jitter, so every training seed sees the same added rows
 
 
@@ -106,7 +109,30 @@ def resolve_options(config, variant, overrides=None):
         raise ValueError('trigger_qd_jitter must be "auto" or a finite number >= 0 (rad/s)')
     if jitter != "auto":
         opts["trigger_qd_jitter"] = float(jitter)
+    tw = opts["trigger_weight"]
+    if not isinstance(tw, (int, float)) or isinstance(tw, bool) or not math.isfinite(tw) or tw < 1:
+        raise ValueError("trigger_weight must be a finite number >= 1")
+    opts["trigger_weight"] = float(tw)
+    for key in ("action_chunk", "action_chunk_stride"):
+        if type(opts[key]) is not int or opts[key] < 1:
+            raise ValueError(f"{key} must be an integer >= 1")
+    if opts["action_chunk"] > 1 and (opts["wheel_output"] != "regression" or opts["wheel_loss"] != "l2" or opts["stop_weight"] != 1.0):
+        raise ValueError("action_chunk > 1 needs plain L2 regression (wheel_output regression, wheel_loss l2, stop_weight 1)")
     return opts
+
+
+def chunk_labels(y, ranges, steps, stride):
+    """(N, 9 * steps) labels: for row i of an episode (a, b), the commands at rows i, i + stride, ..., i + (steps - 1) * stride,
+    clipped to the episode's last row (the expert keeps its final command). steps = 1 returns y itself."""
+    y = np.asarray(y, dtype=np.float64)
+    if steps == 1:
+        return y
+    out = np.empty((len(y), y.shape[1] * steps))
+    for a, b in ranges:
+        idx = np.arange(a, b)
+        for k in range(steps):
+            out[a:b, k * y.shape[1]:(k + 1) * y.shape[1]] = y[np.minimum(idx + k * stride, b - 1)]
+    return out
 
 
 def trigger_rows(y, ranges):
@@ -257,9 +283,12 @@ def encode(observations, times, spec, previous=None, previous_wheels=None):
 class EgocentricPolicy:
     """ReLU MLP over egocentric features with an internal episode clock; NumPy inference."""
 
-    def __init__(self, spec, x_mean, x_scale, y_mean, y_scale, weights, biases, wheel_bin_centres=None):
+    def __init__(self, spec, x_mean, x_scale, y_mean, y_scale, weights, biases, wheel_bin_centres=None, action_chunk=1):
         validate_spec(spec)
         self.spec = spec
+        if type(action_chunk) is not int or action_chunk < 1 or (action_chunk > 1 and wheel_bin_centres is not None):
+            raise ValueError("action_chunk must be an integer >= 1 (regression outputs only)")
+        self.action_chunk = action_chunk
         self.x_mean = np.asarray(x_mean); self.x_scale = np.asarray(x_scale)
         self.y_mean = np.asarray(y_mean); self.y_scale = np.asarray(y_scale)
         self.weights = [np.asarray(w) for w in weights]; self.biases = [np.asarray(b) for b in biases]
@@ -270,7 +299,7 @@ class EgocentricPolicy:
             if c.ndim != 1 or len(c) < 3 or not np.isfinite(c).all() or np.any(np.diff(c) <= 0):
                 raise ValueError("wheel_bin_centres must be an increasing finite vector")
         n = len(self.names)
-        if any(v.shape != (k,) for v, k in [(self.x_mean, n), (self.x_scale, n), (self.y_mean, 9), (self.y_scale, 9)]):
+        if any(v.shape != (k,) for v, k in [(self.x_mean, n), (self.x_scale, n), (self.y_mean, 9 * action_chunk), (self.y_scale, 9 * action_chunk)]):
             raise ValueError("Invalid normalization shapes")
         if len(self.weights) < 2 or len(self.biases) != len(self.weights):
             raise ValueError("At least one hidden layer with matched biases is required")
@@ -289,7 +318,7 @@ class EgocentricPolicy:
 
     @property
     def output_width(self):
-        return 9 if self.wheel_bin_centres is None else 2 * len(self.wheel_bin_centres) + 7
+        return 9 * self.action_chunk if self.wheel_bin_centres is None else 2 * len(self.wheel_bin_centres) + 7
 
     @property
     def input_features(self):
@@ -304,6 +333,8 @@ class EgocentricPolicy:
         result.update({f"bias_{i}": b for i, b in enumerate(self.biases)})
         if self.wheel_bin_centres is not None:
             result["wheel_bin_centres"] = self.wheel_bin_centres
+        if self.action_chunk > 1:
+            result["action_chunk"] = np.array(self.action_chunk)
         return result
 
     def predict_features(self, features, block=65536):
@@ -311,6 +342,16 @@ class EgocentricPolicy:
         features = np.asarray(features, dtype=np.float64)
         if len(features) > block:
             return np.concatenate([self.predict_features(features[s:s + block], block) for s in range(0, len(features), block)])
+        hidden = ((features - self.x_mean) / self.x_scale).astype(self.weights[0].dtype)
+        for i, (w, b) in enumerate(zip(self.weights, self.biases)):
+            hidden = hidden @ w + b
+            if i < len(self.weights) - 1:
+                np.maximum(hidden, 0, out=hidden)
+        return decode_outputs(hidden, self.y_mean, self.y_scale, self.wheel_bin_centres)[:, :9]   # chunk: execute the first step
+
+    def predict_chunk(self, features):
+        """(N, 9 * action_chunk) commands of the whole predicted chunk, physical units."""
+        features = np.asarray(features, dtype=np.float64)
         hidden = ((features - self.x_mean) / self.x_scale).astype(self.weights[0].dtype)
         for i, (w, b) in enumerate(zip(self.weights, self.biases)):
             hidden = hidden @ w + b
@@ -361,7 +402,8 @@ class EgocentricPolicy:
                     "horizon_s": float(data["clock"][0]), "dt_s": float(data["clock"][1])}
             return cls(spec, data["x_mean"], data["x_scale"], data["y_mean"], data["y_scale"],
                        [data[f"weight_{i}"] for i in range(count)], [data[f"bias_{i}"] for i in range(count)],
-                       data["wheel_bin_centres"] if "wheel_bin_centres" in data.files else None)
+                       data["wheel_bin_centres"] if "wheel_bin_centres" in data.files else None,
+                       action_chunk=int(data["action_chunk"]) if "action_chunk" in data.files else 1)
 
 
 def load_episode_features(directory, record, spec):
@@ -452,10 +494,17 @@ def train(dataset, split_path, config_path, output, horizon_s=40.0, device_name=
         x_mean, x_scale = x.mean(axis=0), x.std(axis=0)   # scaler from the recorded rows only, copies excluded
         constant_inputs = [names[i] for i in np.flatnonzero(x_scale == 0)]; x_scale[x_scale == 0] = 1.0
         y_mean, y_scale = y.mean(axis=0), y.std(axis=0); y_scale[y_scale == 0] = 1.0
+        chunk = opts["action_chunk"]; chunk_stride = opts["action_chunk_stride"]
+        ychunk = chunk_labels(y, ranges, chunk, chunk_stride)            # (N, 9 * chunk); == y when chunk == 1
+        y_mean_c, y_scale_c = np.tile(y_mean, chunk), np.tile(y_scale, chunk)
+        row_weight = np.ones(len(y), dtype=np.float32); trigger_rows_weighted = 0
+        if opts["trigger_weight"] != 1.0:
+            tr = [r for r in trigger_rows(y, ranges) if r is not None]
+            row_weight[tr] = opts["trigger_weight"]; trigger_rows_weighted = len(tr)
         trigger_info = None
         if opts["trigger_copies"] > 0:
             rows = trigger_rows(y, ranges)
-            xc, yc, sigma = trigger_copies(x, y, names, rows, opts["trigger_copies"], opts["trigger_qd_jitter"])
+            xc, yc, sigma = trigger_copies(x, ychunk, names, rows, opts["trigger_copies"], opts["trigger_qd_jitter"])
             trigger_info = {"copies_per_episode": opts["trigger_copies"], "episodes_with_trigger_row": sum(r is not None for r in rows),
                             "episodes_without": sum(r is None for r in rows), "rows_added": int(len(xc)),
                             "recorded_rows": int(len(x)), "qd_jitter_rad_s": [float(v) for v in sigma],
@@ -463,11 +512,13 @@ def train(dataset, split_path, config_path, output, horizon_s=40.0, device_name=
                             "rule": "per training episode, the first row of the terminal run of exactly-zero wheel labels, copied with its "
                                     "recorded features and labels; N(0, sigma_j) added to the seven arm-velocity features only; "
                                     "input/output scaler computed from the recorded rows before the copies were appended"}
-            x = np.vstack([x, xc]); y = np.vstack([y, yc])
-        xn = ((x - x_mean) / x_scale).astype(np.float32); yn = ((y - y_mean) / y_scale).astype(np.float32)
+            x = np.vstack([x, xc]); ychunk = np.vstack([ychunk, yc]); y = np.vstack([y, yc[:, :9]])
+            row_weight = np.concatenate([row_weight, np.ones(len(xc), dtype=np.float32)])
+        xn = ((x - x_mean) / x_scale).astype(np.float32); yn = ((ychunk - y_mean_c) / y_scale_c).astype(np.float32)
         vxn = ((vx - x_mean) / x_scale).astype(np.float32)
         tx = torch.from_numpy(xn).to(device); ty = torch.from_numpy(yn).to(device); tvx = torch.from_numpy(vxn).to(device)
         centres = None; tb = None; tw = None
+        trw = torch.from_numpy(row_weight).to(device) if opts["trigger_weight"] != 1.0 else None
         if categorical:
             # Symmetric bins over the demonstrated wheel envelope; an odd count puts one bin centre exactly at zero.
             limit = float(np.abs(y[:, :2]).max())
@@ -485,7 +536,7 @@ def train(dataset, split_path, config_path, output, horizon_s=40.0, device_name=
         if augment:
             prev_cols = [names.index(n) for n in PREV_WHEEL_NAMES]
             col_mask = torch.zeros(len(names), dtype=torch.bool, device=device); col_mask[prev_cols] = True
-        out_width = 9 if centres is None else 2 * len(centres) + 7
+        out_width = 9 * chunk if centres is None else 2 * len(centres) + 7
         widths = [len(names), *hp["hidden_layer_sizes"], out_width]
         layers = []
         for i, (a, b) in enumerate(zip(widths[:-1], widths[1:])):
@@ -502,14 +553,14 @@ def train(dataset, split_path, config_path, output, horizon_s=40.0, device_name=
         optimizer = torch.optim.Adam(network.parameters(), lr=hp["learning_rate"], betas=(.9, .999), eps=1e-8)
 
         def export():
-            return EgocentricPolicy(spec, x_mean, x_scale, y_mean, y_scale,
+            return EgocentricPolicy(spec, x_mean, x_scale, y_mean_c, y_scale_c,
                                     [l.weight.detach().cpu().numpy().T.copy() for l in network[::2]],
-                                    [l.bias.detach().cpu().numpy().copy() for l in network[::2]], centres)
+                                    [l.bias.detach().cpu().numpy().copy() for l in network[::2]], centres, action_chunk=chunk)
 
         def score():
             with torch.no_grad():
                 pred = np.concatenate([network(tvx[s:s + 16384]).double().cpu().numpy() for s in range(0, len(tvx), 16384)])
-            pred = decode_outputs(pred, y_mean, y_scale, centres)
+            pred = decode_outputs(pred, y_mean_c, y_scale_c, centres)[:, :9]   # the executed (first) step of the chunk
             return float(np.mean([errors(vy[a:b], pred[a:b], y_scale)["balanced_nrmse"] for a, b in vranges]))
 
         def row_objective(xb, idx):
@@ -523,10 +574,15 @@ def train(dataset, split_path, config_path, output, horizon_s=40.0, device_name=
             else:
                 diff = out[:, :2] - ty[idx, :2]
                 wheel = .5 * diff.square().sum(dim=1) if opts["wheel_loss"] == "l2" else diff.abs().sum(dim=1)
-                arm = out[:, 2:]
+                arm = out[:, 2:9]
+                if chunk > 1:   # later chunk steps: half-sum L2 on all their columns, added to the wheel term
+                    wheel = wheel + .5 * (out[:, 9:] - ty[idx, 9:]).square().sum(dim=1)
             if tw is not None:
                 wheel = wheel * tw[idx]
-            return wheel + .5 * (arm - ty[idx, 2:]).square().sum(dim=1)
+            rows = wheel + .5 * (arm - ty[idx, 2:9]).square().sum(dim=1)
+            if trw is not None:
+                rows = rows * trw[idx]
+            return rows
 
         def augmented(xb, size):
             """Anti-copycat on the previous-command columns: swap them between rows and add noise, both in normalized units."""
@@ -602,6 +658,9 @@ def train(dataset, split_path, config_path, output, horizon_s=40.0, device_name=
                 "egocentric_options": opts, "wheel_output": opts["wheel_output"],
                 "wheel_bin_centres": None if centres is None else centres.tolist(),
                 "stop_rows_in_training": stop_rows, "training_rows": int(n), "trigger_copies": trigger_info,
+                "trigger_weight": {"weight": opts["trigger_weight"], "rows_weighted": trigger_rows_weighted} if opts["trigger_weight"] != 1.0 else None,
+                "action_chunk": {"steps": chunk, "stride_rows": chunk_stride, "horizon_s": chunk * chunk_stride * spec["dt_s"],
+                                 "executed": "first step", "outputs": 9 * chunk} if chunk > 1 else None,
                 "episode_filter": episode_filter, "training_episodes": len(split["training"]), "validation_episodes": len(split["validation"]),
                 "prev_wheel_augmentation": None if not augment else {"shuffle_p": opts["prev_wheel_shuffle_p"], "noise_std_normalized": opts["prev_wheel_noise_std"]},
                 "regression_parameters": sum(p.numel() for p in network.parameters()), "weight_dtype": "float32",

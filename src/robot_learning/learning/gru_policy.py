@@ -30,7 +30,7 @@ import numpy as np
 from robot_learning.data.storage import read_json, write_json, sha256, utc_now, git_info
 from robot_learning.settings import PROJECT_ROOT
 from robot_learning.simulation.config import episode_defaults, resolve_episode_config
-from .dataset import inventory, load_episode, validate_partition, inventory_fingerprint, extra_inventory, record_directory
+from .dataset import inventory, load_episode, validate_partition, drop_expert_failures, inventory_fingerprint, extra_inventory, record_directory
 from .egocentric import (FEATURE_NAMES, VARIANTS, STATEFUL_VARIANTS, encode, validate_spec, spec_from_episode_config,
                          load_episode_features, VARIANT)
 from .metrics import errors, aggregate
@@ -224,6 +224,27 @@ def group_statistics(feats, labels):
     return x_mean, x_scale, y_mean, y_scale
 
 
+
+def sequence_trigger_weights(Y, L, y_mean, y_scale, weight):
+    """(n, T) float32 loss weights for padded, normalised label sequences: 1 on valid rows, 0 on padding, `weight` on each
+    episode's trigger row (first row of its terminal run of exactly-zero wheel labels, found in normalised units).
+    Returns (weights, number of weighted rows)."""
+    n, T = Y.shape[:2]
+    w = (np.arange(T)[None, :] < np.asarray(L)[:, None]).astype(np.float32)
+    zero = ((0.0 - np.asarray(y_mean)[:2]) / np.asarray(y_scale)[:2]).astype(np.float32)
+    count = 0
+    if weight != 1.0:
+        for i in range(n):
+            wheels = np.asarray(Y[i, :L[i], :2]); z = np.all(np.abs(wheels - zero) <= 1e-5, axis=1)
+            if L[i] == 0 or not z[-1]:
+                continue
+            k = L[i] - 1
+            while k > 0 and z[k - 1]:
+                k -= 1
+            w[i, k] = weight; count += 1
+    return w, count
+
+
 def normalised_group(directory, records, spec, mode, stats=None):
     """`padded_group` normalised and cast to float32 one episode at a time, so the padded float64 arrays and their
     normalised copies never exist (4914 episodes padded to 28 s cost ~110 GB that way and ~20 GB this way).
@@ -242,7 +263,7 @@ def normalised_group(directory, records, spec, mode, stats=None):
 
 def train(dataset, split_path, config_path, output, horizon_s=40.0, device_name="cuda",
           hidden=128, chunk_steps=1000, episodes_per_batch=8, mode="egocentric_clock_v1", stride=1,
-          head_width=128, validation_episodes_per_batch=8):
+          head_width=128, validation_episodes_per_batch=8, trigger_weight=1.0):
     os.environ.setdefault("CUBLAS_WORKSPACE_CONFIG", ":4096:8")
     os.environ.setdefault("PYTORCH_CUDA_ALLOC_CONF", "expandable_segments:True")
     import torch
@@ -256,6 +277,12 @@ def train(dataset, split_path, config_path, output, horizon_s=40.0, device_name=
         raise ValueError("Split belongs to another dataset")
     records = inventory(dataset) + extra_inventory(saved)
     split = validate_partition(records, {k: saved[k] for k in ["training", "validation"]})
+    keep_failures = bool(config.get("keep_expert_failures", True)); episode_filter = {"keep_expert_failures": keep_failures}
+    if not keep_failures:
+        split, counts = drop_expert_failures(split); episode_filter.update(counts)
+    if not isinstance(trigger_weight, (int, float)) or isinstance(trigger_weight, bool) or not math.isfinite(trigger_weight) or trigger_weight < 1:
+        raise ValueError("trigger_weight must be a finite number >= 1")
+    trigger_weight = float(trigger_weight)
     source_cfg = read_json(dataset / "config.json")
     episode_cfg = resolve_episode_config({k: v for k, v in source_cfg.items() if k in episode_defaults()})
     dt = read_json(dataset / "episodes" / f"{records[0]['episode_id']}.json")["dt"]
@@ -290,6 +317,8 @@ def train(dataset, split_path, config_path, output, horizon_s=40.0, device_name=
         X, Y, L, stats, _ = normalised_group(dataset, split["training"], spec, mode)
         x_mean, x_scale, y_mean, y_scale = stats
         mask = np.arange(X.shape[1])[None, :] < L[:, None]
+        weights, trigger_rows_weighted = sequence_trigger_weights(Y, L, y_mean, y_scale, trigger_weight)
+        tw = torch.from_numpy(weights).to(device); del weights
         tx = torch.from_numpy(X).to(device); ty = torch.from_numpy(Y).to(device); tmask = torch.from_numpy(mask).to(device)
         del X, Y
         VX, _, VL, _, VYS = normalised_group(dataset, split["validation"], spec, mode, stats)  # training statistics
@@ -323,7 +352,8 @@ def train(dataset, split_path, config_path, output, horizon_s=40.0, device_name=
                     bx = tx[idx, c:c + chunk_rows]; by = ty[idx, c:c + chunk_rows]
                     out, h = network(bx, stride, h)
                     count = bm.sum()
-                    squared = ((out - by).square().sum(dim=2) * bm).sum() / count
+                    bw = tw[idx, c:c + chunk_rows]
+                    squared = ((out - by).square().sum(dim=2) * bw).sum() / count
                     objective = .5 * squared + (.5 * hp["alpha"] / max(1, int(count))) * sum(
                         p.square().sum() for name, p in network.named_parameters() if "weight" in name)
                     optimizer.zero_grad(set_to_none=True); objective.backward()
@@ -375,6 +405,8 @@ def train(dataset, split_path, config_path, output, horizon_s=40.0, device_name=
                 "cell": "gru", "hidden": hidden, "layers": 1, "head_width": head_width,
                 "memory_stride_steps": stride, "reaction_period_steps": 1,
                 "tbptt_chunk_decisions": chunk_steps, "episodes_per_batch": episodes_per_batch, "gradient_clip_norm": 10.0,
+                "episode_filter": episode_filter, "training_episodes": len(split["training"]), "validation_episodes": len(split["validation"]),
+                "trigger_weight": {"weight": trigger_weight, "rows_weighted": trigger_rows_weighted} if trigger_weight != 1.0 else None,
                 "regression_parameters": sum(p.numel() for p in network.parameters()), "weight_dtype": "float32",
                 "input_features": len(names), "input_names": names, "independent_outputs": 9, "feature_spec": spec,
                 "control_period": f"head reacts every physics step (1 ms); GRU memory updated every {stride} step(s); state reset per episode",
@@ -414,9 +446,11 @@ def main(argv=None):
     parser.add_argument("--inputs", default="egocentric_clock_v1", choices=sorted(MODES),
                         help="raw21: the assignment's explicit interface; otherwise an input variant of egocentric.py "
                              "(egocentric_clock_v1, raw21_clock_v1, raw21_egocentric_clock_v1)")
+    parser.add_argument("--trigger-weight", type=float, default=1.0, help="Loss weight of each episode's trigger row (first terminal zero-wheel row)")
     parser.add_argument("--stride", type=int, default=1, help="Memory update period in physics steps; the head reacts every step")
     args = parser.parse_args(argv)
     _, metrics = train(args.dataset, args.split, args.config, args.output_dir, args.horizon_s, args.device,
-                       args.hidden, args.chunk_steps, args.episodes_per_batch, args.inputs, args.stride, args.head_width)
+                       args.hidden, args.chunk_steps, args.episodes_per_batch, args.inputs, args.stride, args.head_width,
+                       trigger_weight=args.trigger_weight)
     print(f"validation: episode-macro balanced NRMSE={metrics['validation']['model']['episode_macro']['balanced_nrmse']:.6f}")
     return 0

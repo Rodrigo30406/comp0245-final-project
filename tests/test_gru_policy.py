@@ -155,7 +155,40 @@ class TrainingRunTests(unittest.TestCase):
                 loaded = GRUPolicy.load(root / f'run_{mode}/model.npz')
                 x = np.random.default_rng(9).normal(size=(3, 21))
                 np.testing.assert_array_equal(loaded.predict(x), policy.predict(x))
+                self.assertEqual(info['episode_filter'], {'keep_expert_failures': True}); self.assertIsNone(info['trigger_weight'])
+
+    def test_trigger_weight_and_expert_success_filter(self):
+        from robot_learning.learning.gru_policy import train
+        from robot_learning.learning.dataset import inventory
+        from robot_learning.learning.train import DEFAULT_CONFIG
+        with tempfile.TemporaryDirectory() as tmp, threadpool_limits(limits=1):
+            root = Path(tmp); data = root / 'data'; data.mkdir(); make_dense_dataset(data, episodes=6, stop_tail=20, failures=2)
+            records = inventory(data)
+            write_json(root / 'split.json', {'dataset': str(data), 'training': records[:3] + records[4:5], 'validation': records[3:4] + records[5:6]})
+            cfg = read_json(DEFAULT_CONFIG.parent / 'mlp_pytorch_successes.json')
+            cfg['mlp'].update(max_epochs=2, patience=100); cfg['torch']['device'] = 'cpu'; write_json(root / 'cfg.json', cfg)
+            policy, metrics = train(data, root / 'split.json', root / 'cfg.json', root / 'run', 40.0, 'cpu', hidden=8, chunk_steps=16,
+                                    episodes_per_batch=2, mode='raw21_targetpolar_clock_v1', stride=4, head_width=6, trigger_weight=30.0)
+            info = read_json(root / 'run/model_info.json')
+            self.assertEqual(info['episode_filter'], {'keep_expert_failures': False, 'training': {'kept': 3, 'dropped_expert_failures': 1}, 'validation': {'kept': 1, 'dropped_expert_failures': 1}})
+            self.assertEqual(info['trigger_weight'], {'weight': 30.0, 'rows_weighted': 3}); self.assertEqual(info['training_episodes'], 3)
+            with self.assertRaises(ValueError):
+                train(data, root / 'split.json', root / 'cfg.json', root / 'run_bad', 40.0, 'cpu', hidden=8, chunk_steps=16, episodes_per_batch=2,
+                      mode='raw21_targetpolar_clock_v1', stride=4, head_width=6, trigger_weight=0.5)
 
 
 if __name__ == '__main__':
     unittest.main()
+
+
+class SequenceTriggerWeightTests(unittest.TestCase):
+    def test_trigger_row_weight_in_normalised_padded_sequences(self):
+        from robot_learning.learning.gru_policy import sequence_trigger_weights
+        y_mean = np.array([0.5, -0.5] + [0.0] * 7); y_scale = np.array([2.0, 4.0] + [1.0] * 7)
+        raw = np.ones((2, 10, 9)); raw[0, 6:, :2] = 0.0; raw[1, 3:5, :2] = 0.0   # ep 0 stops at row 6 (L=10); ep 1 never stops (L=8)
+        Y = ((raw - y_mean) / y_scale).astype(np.float32); Y[1, 8:] = ((0 - y_mean) / y_scale)   # padding looks like a zero label
+        w, n = sequence_trigger_weights(Y, np.array([10, 8]), y_mean, y_scale, 7.0)
+        self.assertEqual(n, 1); self.assertEqual(w.dtype, np.float32)
+        np.testing.assert_array_equal(w[0], [1, 1, 1, 1, 1, 1, 7, 1, 1, 1]); np.testing.assert_array_equal(w[1], [1] * 8 + [0, 0])
+        w1, n1 = sequence_trigger_weights(Y, np.array([10, 8]), y_mean, y_scale, 1.0); self.assertEqual(n1, 0)
+        np.testing.assert_array_equal(w1[0], 1.0)
