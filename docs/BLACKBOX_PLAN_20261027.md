@@ -1729,9 +1729,10 @@ all on mixture v2 (§6z) unless stated:
    9 × 10 at a 20 ms chunk stride), the policy executes the first; loss on the whole chunk. The reach onset then appears in
    the labels of the ~200 rows before it instead of one, with no change to the data. The outputs remain wheel and arm
    commands (a short horizon of them). Prediction: ignition without copies; precision at least that of K 144.
-4. **DAgger**: the learner's parked, arm-asleep states labelled by the expert. Needs the expert-state protocol first
-   (`docs/BASELINE_LIMITATIONS.md` L2: the expert is stateful, so its label at a learner state depends on how its FSM and
-   q_des are initialised); design note before any collection.
+4. ~~DAgger~~ **deferred (Rodrigo, 18:05)**. Not impossible: a shadow expert run on the learner's trajectory (as the
+   teammate's hybrid) gives causal labels, but the done latch, the 25 s timeout and which rows to keep need rules that
+   amount to designing a new expert (`docs/BASELINE_LIMITATIONS.md` L2). If taken up later: first run the shadow on the
+   existing K 144 / GRU traces and check that its labels at the parked-asleep and creeping states are coherent.
 
 Rule of the wave: one factor per arm, 3 seeds, both v2 validations, 1 / 2 / 5 cm stable arrivals + held 10 s + the
 teammate's columns, mechanistic probe (`arm_switch_probe.py`) on every arm. `src/` is edited only between the running
@@ -1868,8 +1869,8 @@ chains (collectors and trainers hash their sources).
 - 2 Nov 17:30: mixture v2 decided and launched (§6z): `goal_reference: start` for random-start data, expert successes only.
   Collections running (3072 + 1024 episodes, 14 workers) beside the E9 K 144 seeds 1–2 chain. Then replacements, split v2,
   control + E9 K 144 (3 seeds each), both validations. v1 replacement collection e10: 262 / 278 succeeded.
-- 2 Nov 17:50: second wave decided (§6aa): K 144 + band (queued), trigger weight on MLP / GRU / gated, action chunking,
-  DAgger design; phase-balanced sampling rejected. Implementation starts when the running trainer and collectors end.
+- 2 Nov 17:50: second wave decided (§6aa): K 144 + band (queued), trigger weight on MLP / GRU / gated, action chunking;
+  phase-balanced sampling rejected; DAgger deferred (18:05). Implementation starts when the running trainer and collectors end.
 - Next, on request: E6 (§6c, nominal data without the clock) — the cheapest test of the reach-trigger mechanism.
 - E2 needs a collector mode; nothing in `src/` is edited while a collector,
   trainer or evaluator is running (provenance guards).
