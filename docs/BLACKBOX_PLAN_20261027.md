@@ -1200,6 +1200,14 @@ E8, decided with Rodrigo on 2 Nov, all on the 4096 mixture with the 28 pure inpu
 - **E8f — transformer with relative position**, conditional on E8d: if the dead band alone lets the transformer latch, the
   positional change is not needed.
 
+Pause lengths before the restart (closed-loop traces, base below 2 cm/s for ≥ 0.5 s and moving again afterwards):
+transformer 3.2 / 4.2 / 1.7 s median (p75 5.3 / 7.2 / 2.8 s, up to 32 s; 201 / 226 / 110 pauses), GRU 0.7 / 1.4 / 1.1 s
+(p75 ≤ 2.5 s), MLP 28 2.3–2.8 s (p75 7–9 s). So the transformer does see its base nearly still for several seconds and
+restarts anyway: a near-still base creeping at ~0.7 cm/s is not the exactly-still base of the demonstrations (2 cm of
+drift in 3 s is visible in the 28 features), which is what E8d tests with an exact zero; if an exact stop of several
+seconds in its own context still does not latch it, the gate with the transformer as memory (E8a with attention) is the
+next arm.
+
 New probe for every arm: the instant and the distance to the base goal at which the wheel command becomes exactly zero
 and whether it stays zero (closed early / on time / never).
 
