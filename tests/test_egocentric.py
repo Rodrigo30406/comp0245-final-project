@@ -400,6 +400,73 @@ class TrainingOptionTests(unittest.TestCase):
             np.testing.assert_allclose(np.stack([loaded.predict_action(o) for o in x]), expand_actions(policy.predict(x)), rtol=1e-6, atol=1e-6)
 
 
+class TriggerRowTests(unittest.TestCase):
+    """E9 trigger copies: the trigger row is the first row of the terminal zero-wheel run; copies keep labels and jitter only arm qd."""
+
+    def test_trigger_row_is_the_first_row_of_the_terminal_zero_wheel_run(self):
+        from robot_learning.learning.egocentric import trigger_rows
+        y = np.ones((12, 9))
+        y[3:5, :2] = 0.0          # a zero spell in the middle does not count
+        y[8:, :2] = 0.0           # terminal run: rows 8..11 -> trigger 8
+        self.assertEqual(trigger_rows(y, [(0, 12)]), [8])
+        y2 = np.ones((4, 9)); y2[:, :2] = 0.0     # zero from the first row: trigger 0
+        y3 = np.ones((4, 9))                       # never stops: None
+        y4 = np.ones((4, 9)); y4[3, 0] = 0.0       # one wheel zero only: None
+        yy = np.vstack([y, y2, y3, y4])
+        self.assertEqual(trigger_rows(yy, [(0, 12), (12, 16), (16, 20), (20, 24)]), [8, 12, None, None])
+
+    def test_copies_keep_labels_and_jitter_only_the_arm_velocities(self):
+        from robot_learning.learning.egocentric import trigger_copies, trigger_rows, VARIANTS
+        names = VARIANTS["raw21_targetpolar_clock_v1"]
+        rng = np.random.default_rng(3); x = rng.normal(size=(30, len(names))); y = rng.normal(size=(30, 9)); y[20:, :2] = 0.0
+        rows = trigger_rows(y, [(0, 30)]); self.assertEqual(rows, [20])
+        xc, yc, sigma = trigger_copies(x, y, names, rows, 5, "auto")
+        self.assertEqual(xc.shape, (5, len(names))); np.testing.assert_array_equal(yc, np.repeat(y[[20]], 5, axis=0))
+        qd = [names.index(f"arm_qd_{i}") for i in range(1, 8)]; other = [i for i in range(len(names)) if i not in qd]
+        np.testing.assert_array_equal(xc[:, other], np.repeat(x[[20]], 5, axis=0)[:, other])
+        self.assertTrue((xc[:, qd] != x[20, qd]).all())
+        np.testing.assert_allclose(sigma, x[:20][:, qd].std(axis=0))           # moving rows only
+        xc2, _, _ = trigger_copies(x, y, names, rows, 5, "auto"); np.testing.assert_array_equal(xc, xc2)   # fixed rng
+        xc3, _, s3 = trigger_copies(x, y, names, rows, 5, 0.0); np.testing.assert_array_equal(xc3, np.repeat(x[[20]], 5, axis=0))
+        np.testing.assert_array_equal(s3, 0.0)
+        xe, ye, _ = trigger_copies(x, y, names, [None], 5, "auto"); self.assertEqual((len(xe), len(ye)), (0, 0))
+
+    def test_option_validation(self):
+        from robot_learning.learning.egocentric import resolve_options
+        self.assertEqual(resolve_options({}, "raw21_targetpolar_clock_v1", {"trigger_copies": 16})["trigger_copies"], 16)
+        self.assertEqual(resolve_options({}, "raw21_targetpolar_clock_v1", {"trigger_qd_jitter": 0.2})["trigger_qd_jitter"], 0.2)
+        for bad in ({"trigger_copies": -1}, {"trigger_copies": 2.0}, {"trigger_copies": True}, {"trigger_qd_jitter": -0.1},
+                    {"trigger_qd_jitter": "std"}):
+            with self.assertRaises(ValueError):
+                resolve_options({}, "raw21_targetpolar_clock_v1", bad)
+
+
+@unittest.skipUnless(TORCH_AVAILABLE, 'Optional PyTorch environment is not installed')
+class TriggerCopyTrainingTests(unittest.TestCase):
+    def test_training_appends_the_copies_after_fitting_the_scaler(self):
+        from robot_learning.learning.egocentric import train, load_group, spec_from_episode_config
+        from robot_learning.learning.dataset import inventory
+        from robot_learning.learning.train import DEFAULT_CONFIG
+        from robot_learning.data.storage import read_json
+        with tempfile.TemporaryDirectory() as tmp, threadpool_limits(limits=1):
+            root = Path(tmp); data = root / 'data'; data.mkdir(); make_dense_dataset(data, stop_tail=20)
+            records = inventory(data)
+            write_json(root / 'split.json', {'dataset': str(data), 'training': records[:4], 'validation': records[4:]})
+            cfg = read_json(DEFAULT_CONFIG.parent / 'mlp_pytorch.json')
+            cfg['mlp'].update(hidden_layer_sizes=[16, 16], batch_size=16, max_epochs=2, patience=100); cfg['torch']['device'] = 'cpu'
+            cfg['egocentric_options'] = {"trigger_copies": 16}; write_json(root / 'cfg.json', cfg)
+            policy, metrics = train(data, root / 'split.json', root / 'cfg.json', root / 'run', 40.0, 'cpu', "raw21_targetpolar_clock_v1")
+            info = read_json(root / 'run/model_info.json')
+            t = info['trigger_copies']
+            self.assertEqual((t['copies_per_episode'], t['episodes_with_trigger_row'], t['episodes_without'], t['rows_added']), (16, 4, 0, 64))
+            self.assertEqual(info['training_rows'], 4 * 80 + 64); self.assertEqual(info['stop_rows_in_training'], 4 * 20 + 64)
+            self.assertEqual(len(t['qd_jitter_rad_s']), 7); self.assertTrue(all(v > 0 for v in t['qd_jitter_rad_s']))
+            x, _, _ = load_group(data, records[:4], policy.spec)
+            np.testing.assert_allclose(policy.x_mean, x.mean(axis=0), rtol=1e-6, atol=1e-9)   # scaler from the recorded rows only
+            loaded = EgocentricPolicy.load(root / 'run/model.npz')
+            xx = np.random.default_rng(9).normal(size=(3, 21)); np.testing.assert_array_equal(loaded.predict(xx), policy.predict(xx))
+
+
 @unittest.skipUnless(TORCH_AVAILABLE, 'Optional PyTorch environment is not installed')
 class ExtraDatasetTests(unittest.TestCase):
     """A split may add whole datasets on top of its primary one; records are tagged, never merged by ID."""

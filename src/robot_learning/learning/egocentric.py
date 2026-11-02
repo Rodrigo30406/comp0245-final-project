@@ -75,7 +75,10 @@ DEFAULT_OPTIONS = {"wheel_loss": "l2",            # l2 | l1 on the two wheel out
                    "wheel_output": "regression",  # regression | categorical (softmax over wheel_bins velocity bins, argmax decode)
                    "wheel_bins": 41,              # odd, so one bin is exactly zero; range = max |demonstrated wheel command|
                    "prev_wheel_shuffle_p": 0.0,   # action-input variants: fraction of rows whose previous command is swapped within the batch
-                   "prev_wheel_noise_std": 0.0}   # action-input variants: N(0, std) noise on the normalized previous command
+                   "prev_wheel_noise_std": 0.0,   # action-input variants: N(0, std) noise on the normalized previous command
+                   "trigger_copies": 0,           # E9: copies per training episode of its first terminal zero-wheel row (the stop/reach onset)
+                   "trigger_qd_jitter": "auto"}   # rad/s N(0, s) on the arm velocities of those copies; "auto" = std of arm qd over the moving rows
+TRIGGER_JITTER_SEED = 0  # one fixed rng for the trigger-copy jitter, so every training seed sees the same added rows
 
 
 def resolve_options(config, variant, overrides=None):
@@ -96,7 +99,49 @@ def resolve_options(config, variant, overrides=None):
         raise ValueError("prev_wheel_shuffle_p is a probability")
     if (opts["prev_wheel_shuffle_p"] or opts["prev_wheel_noise_std"]) and variant not in ACTION_INPUT_VARIANTS:
         raise ValueError("prev_wheel options need an action-input variant")
+    if type(opts["trigger_copies"]) is not int or opts["trigger_copies"] < 0:
+        raise ValueError("trigger_copies must be an integer >= 0")
+    jitter = opts["trigger_qd_jitter"]
+    if jitter != "auto" and (not isinstance(jitter, (int, float)) or isinstance(jitter, bool) or not math.isfinite(jitter) or jitter < 0):
+        raise ValueError('trigger_qd_jitter must be "auto" or a finite number >= 0 (rad/s)')
+    if jitter != "auto":
+        opts["trigger_qd_jitter"] = float(jitter)
     return opts
+
+
+def trigger_rows(y, ranges):
+    """Index of the trigger row of each episode: the first row of its terminal run of exactly-zero wheel labels (the
+    expert's navigation end, where the wheels stop and the reach torque starts). Label-derived only: no expert phase or
+    done flag is read. None for an episode whose last row still has a non-zero wheel command."""
+    y = np.asarray(y)
+    out = []
+    for a, b in ranges:
+        zero = (y[a:b, :2] == 0).all(axis=1)
+        if b <= a or not zero[-1]:
+            out.append(None); continue
+        k = len(zero) - 1
+        while k > 0 and zero[k - 1]:
+            k -= 1
+        out.append(a + k)
+    return out
+
+
+def trigger_copies(x, y, names, rows, copies, jitter="auto", seed=TRIGGER_JITTER_SEED):
+    """`copies` copies of each trigger row (x features and y labels exactly as recorded) with N(0, sigma_j) noise added
+    to the seven arm-velocity features only. sigma_j = `jitter` (rad/s), or with "auto" the per-joint std of arm qd over
+    the rows whose demonstrated wheels are not both zero (the arm's velocity noise while the base moves). Returns
+    (x_copies, y_copies, sigma)."""
+    rows = [r for r in rows if r is not None]
+    qd_cols = [names.index(f"arm_qd_{i}") for i in range(1, 8)]
+    moving = ~(np.asarray(y)[:, :2] == 0).all(axis=1)
+    sigma = (np.asarray(x)[moving][:, qd_cols].std(axis=0) if jitter == "auto" else np.full(7, float(jitter)))
+    if not rows or copies <= 0:
+        return np.zeros((0, len(names))), np.zeros((0, np.asarray(y).shape[1])), sigma
+    idx = np.repeat(np.asarray(rows, dtype=np.int64), copies)
+    xc = np.asarray(x, dtype=np.float64)[idx].copy(); yc = np.asarray(y, dtype=np.float64)[idx].copy()
+    rng = np.random.default_rng(seed)
+    xc[:, qd_cols] += rng.normal(0.0, 1.0, (len(idx), 7)) * sigma
+    return xc, yc, sigma
 
 
 def decode_outputs(out, y_mean, y_scale, wheel_bin_centres=None):
@@ -398,11 +443,23 @@ def train(dataset, split_path, config_path, output, horizon_s=40.0, device_name=
     write_json(output / "run.json", manifest)
     started = time.perf_counter()
     try:
-        x, y, _ = load_group(dataset, split["training"], spec)
+        x, y, ranges = load_group(dataset, split["training"], spec)
         vx, vy, vranges = load_group(dataset, split["validation"], spec)
-        x_mean, x_scale = x.mean(axis=0), x.std(axis=0)
+        x_mean, x_scale = x.mean(axis=0), x.std(axis=0)   # scaler from the recorded rows only, copies excluded
         constant_inputs = [names[i] for i in np.flatnonzero(x_scale == 0)]; x_scale[x_scale == 0] = 1.0
         y_mean, y_scale = y.mean(axis=0), y.std(axis=0); y_scale[y_scale == 0] = 1.0
+        trigger_info = None
+        if opts["trigger_copies"] > 0:
+            rows = trigger_rows(y, ranges)
+            xc, yc, sigma = trigger_copies(x, y, names, rows, opts["trigger_copies"], opts["trigger_qd_jitter"])
+            trigger_info = {"copies_per_episode": opts["trigger_copies"], "episodes_with_trigger_row": sum(r is not None for r in rows),
+                            "episodes_without": sum(r is None for r in rows), "rows_added": int(len(xc)),
+                            "recorded_rows": int(len(x)), "qd_jitter_rad_s": [float(v) for v in sigma],
+                            "jitter_rule": opts["trigger_qd_jitter"], "jitter_seed": TRIGGER_JITTER_SEED,
+                            "rule": "per training episode, the first row of the terminal run of exactly-zero wheel labels, copied with its "
+                                    "recorded features and labels; N(0, sigma_j) added to the seven arm-velocity features only; "
+                                    "input/output scaler computed from the recorded rows before the copies were appended"}
+            x = np.vstack([x, xc]); y = np.vstack([y, yc])
         xn = ((x - x_mean) / x_scale).astype(np.float32); yn = ((y - y_mean) / y_scale).astype(np.float32)
         vxn = ((vx - x_mean) / x_scale).astype(np.float32)
         tx = torch.from_numpy(xn).to(device); ty = torch.from_numpy(yn).to(device); tvx = torch.from_numpy(vxn).to(device)
@@ -540,7 +597,7 @@ def train(dataset, split_path, config_path, output, horizon_s=40.0, device_name=
                 "output_activation": "identity" if not categorical else "identity (wheel logits) + argmax bin centre",
                 "egocentric_options": opts, "wheel_output": opts["wheel_output"],
                 "wheel_bin_centres": None if centres is None else centres.tolist(),
-                "stop_rows_in_training": stop_rows, "training_rows": int(n),
+                "stop_rows_in_training": stop_rows, "training_rows": int(n), "trigger_copies": trigger_info,
                 "prev_wheel_augmentation": None if not augment else {"shuffle_p": opts["prev_wheel_shuffle_p"], "noise_std_normalized": opts["prev_wheel_noise_std"]},
                 "regression_parameters": sum(p.numel() for p in network.parameters()), "weight_dtype": "float32",
                 "input_features": len(names), "input_names": names, "independent_outputs": 9,
