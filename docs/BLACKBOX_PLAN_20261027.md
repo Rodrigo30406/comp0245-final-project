@@ -1252,6 +1252,35 @@ validation, medians over episodes):
 - GRU seeds 0 and 2 behave as MLPs here (raw 0.38 under the band for seed 2, 88 % of the zero samples above 0.3; seed 0
   rarely stops at all, 10 % of the time at zero and most of it while the base is actually moving on a transient dip).
 
+### 6t.1 Why the MLP does not reach when the dead band stops it: the arm's start is triggered by the arm's own velocity
+
+With the band the MLP 28 stops in the right place: first exact stop at 7.1–7.4 s, base 5 cm from where the expert
+parks (within 10 cm in 87–93 % of the episodes), end effector 19–21 cm from the target, exactly what the expert has when
+its navigation finishes (20 cm). The stop lasts 6–9 s. During it the arm does not move (0.001 rad) and the policy's arm
+torque is the expert's HOLD torque (distance 0.28 to the hold torque vs 2.4 to the first reach torque, 2–3 % along the
+hold→reach axis), at every heading error, including the 60 episodes within 1° of the required bearing. So the base is
+parked and the policy keeps the arm at home until the clock pushes the wheel command over the band and the base leaves.
+
+Offline swap test (`scripts/analysis/arm_switch_probe.py`, 71 nominal episodes, MLP 28 seeds 0/1/2, arm output as a
+fraction along hold→reach): on the expert's own row at the done instant the policy outputs reach (+1.6, overshooting);
+the same row with the policy's base pose, +1.3; with the policy's clock, +1.6; with the policy's arm state, −0.02. Within
+the arm state it is the velocities: angles from the resting sample before done, +2.2; velocities set to zero, −0.08
+(seed 2: +0.01). The policy's arm therefore reaches only once the arm is already moving. The reason is in the
+demonstrations: the expert's reach torque starts the instant navigation finishes and the joints exceed 0.05 rad/s within
+the same millisecond (0.09 rad/s on the done row, 0.54 rad/s 20 ms later), so "arm at rest at home, base parked, label =
+reach" exists for about one row per 12 000, while "arm at rest at home, base in the box, label = hold" fills the whole
+orient phase. The regressor learns hold for a resting arm and reach for a moving arm: a self-sustaining loop with no
+ignition. Without the band the ignition came from the base: in the E4 evaluation the arm first exceeds 0.1 rad/s at 18 s
+median, while the base moves at 7.8 cm/s (still in only 12 % of the episodes), i.e. the creeping base jostles the arm
+and the loop catches. The band removes the jostle. The base velocity is not an input (the 21 inputs are base pose, 7
+arm angles, 7 arm velocities, target), so the policy has no other cue that the base has stopped.
+
+This is the same thin-shell defect as the base stop (§6g), one level up: the arm's phase switch is a step in the labels
+at an input configuration the demonstrations visit for a millisecond. GRU seed 1 carries it in its state (its arm moves
+0.30 rad during its 21 s stop and reaches 4 cm at best), which is why it is the only arm of the programme with a
+working arm-after-stop. It also says what the gate must do: switching the wheels off is not enough, the stop state must
+also hand the arm its first push (or the arm head must see a "base stopped" signal), otherwise E8a inherits this.
+
 Conclusion for the E8 programme: an output-side threshold cannot rescue a policy whose zero sits at the threshold, and
 the clock makes any fixed threshold a timer. The gate (E8a, a learned stop state that multiplies the wheel command) and
 the soft threshold learned in training (E8e) remain the two ways to obtain an exact zero from the MLP; for the GRU the
@@ -1355,7 +1384,9 @@ is built on a GRU or on the transformer (§6s).
   policies' zero predictions sit below 0.35 (p99) and their drive commands above 0.7 (p1). A dead band at 0.45 is free offline.
 - 2 Nov 10:20: E8d partial (§6t): dead band 0.45 on MLP 28 and GRU 28, no gain. The MLP freezes at the edge of its
   zero (raw 0.31–0.38 under the band) and the clock pushes it over in 8–9 s; GRU seed 1 holds an exact zero for 25 s
-  to the end of the episode and still arrives 94, because the stop is 10 cm off. Transformer 28 and MLP 32 running.
+  to the end of the episode and still arrives 94, because the stop is 10 cm off. §6t.1: the MLP's arm starts only when it is
+  already moving (reach is triggered by the arm velocities; the resting-arm reach rows are ~1 per 12 000); the creeping base used
+  to jostle it, the band removes the jostle. Transformer 28 and MLP 32 running.
 - Next, on request: E6 (§6c, nominal data without the clock) — the cheapest test of the reach-trigger mechanism.
 - E2 needs a collector mode; nothing in `src/` is edited while a collector,
   trainer or evaluator is running (provenance guards).
