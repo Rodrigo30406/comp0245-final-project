@@ -1671,8 +1671,12 @@ Same picture on both pipelines: from ~0 to ~50% touch-success, with the arm exte
 third of the reaches held for 10 s. Where theirs is ahead is the base: reach 5 cm 90% against our 61–69%, i.e. their base
 brings the arm within 5 cm more often. Candidates, all addressed by mixture v2 (§6z): our random-start data drives to the
 origin-referenced goal (theirs to the start-referenced one), and our training set carries the 217 expert failures (theirs
-filters them). Their arm-extended rate is lower than ours only because of the target distribution (their expert 82%, ours
-75%: short reaches move the EE less than 10 cm).
+filters them). "Arm extended" is an ignition flag, not a quality measure: it saturates (their expert 82%, ours 75%, because short
+reaches move the EE less than 10 cm) and it rewards moving too much. Our K 144 trips it in 98% because its arm travels a
+median 30 cm *more* than the expert on the same target: 23 cm where the expert moves 7 cm (51 short reaches, still touched
+in 80%), 70 cm where the expert moves 28 cm (154 long reaches, touched in 39%). Quality is read from reach 5 cm, stable
+1 cm and held 10 s. The settled / held / parked columns of this table are computed from our 100 ms traces (theirs at 1 ms),
+so they can be slightly optimistic; success and reach use the 1 ms minimum distance.
 
 **Caveats.** One seed per K (seeds 1–2 at K 144 running); the training set still holds the 217 expert failures (the
 success-only retraining of §6z comes next); the K rule was pre-registered but the three K values were a guess from the
