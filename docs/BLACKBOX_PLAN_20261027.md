@@ -1581,7 +1581,7 @@ so stable 1 cm arrivals will trail 5 cm arrivals by their held-10 s gap. It is t
 have (no new data, no memory, ~30 min per seed), and it combines with E8d/E8e (dead band / soft threshold) which remove the
 creep but left the arm asleep precisely for lack of this row.
 
-## 6y. E9, trigger copies in our trainer (2 Nov 13:50, pre-registered before any result)
+## 6y. E9, trigger copies in our trainer (2 Nov 15:20, pre-registered before any result)
 
 **Implementation** (`egocentric_options`: `trigger_copies` K, `trigger_qd_jitter` "auto" | rad/s; commit `d5df73c`, 109 tests).
 Per training episode the trigger row is **the first row of the terminal run of exactly-zero wheel labels**; K copies of it
@@ -1612,6 +1612,50 @@ episodes (control 3 / 103 / 15 of 205); parked rate up because the base reads th
 creep unchanged, so held-10 s and 1 cm arrivals trail the 5 cm arrivals; some early reaches from a misplaced base (their
 `extended_not_reached` 19%, tip-overs 3%). Runs: `runs/training/mlp_e9_mixture4096_polar_trig{K}_seed{s}`,
 evaluations `runs/evaluation/e9_ksweep_mlp28_on_{clean,e1_random}_validation_20261102`, then the chosen K's three seeds.
+
+### 6y.1 K sweep results (2 Nov 15:41–17:04): the ignition row is the missing piece, and K = 144 holds
+
+Seed 0, 4096 mixture, both validations (`e9_ksweep_mlp28_on_{clean,e1_random}_validation_20261102`). Stable arrivals of 205:
+
+| K (seed 0) | offline NRMSE | Nominal 1 / 2 / 5 cm | parked | arm ext. | both | drift after parking | held ≥ 10 s | moving at 40 s | Random 1 / 2 / 5 cm | parked | arm ext. | held ≥ 10 s |
+|---|---:|---|---:|---:|---:|---:|---:|---:|---|---:|---:|---:|
+| control MLP 28 (§6i, seeds 0/1/2) | 0.145–0.149 | 0 / 0–1 / 23–30 | 119–126 | 3 / 103 / 15 | | | | 199–203 | 0 / 0 / 11–17 | 33–68 | 3 / 105 / 11 | |
+| 16 | 0.159 | 48 / 84 / 141 | 100 | 197 | 98 | 1.22 m | 22 | 187 | 47 / 61 / 89 | 44 | 194 | 23 |
+| **144** | 0.166 | **96 / 124 / 140** | 101 | 198 | 97 | 0.22 m | **107** | 111 | **103 / 116 / 121** | 36 | 197 | **103** |
+| 512 | 0.177 | 86 / 101 / 119 | 102 | 149 | 80 | 1.62 m | 79 | 183 | 66 / 83 / 98 | 31 | 145 | 58 |
+| expert | | 205 / 205 / 205 | | | | | | 0 | 201 / 201 / 201 | | | |
+
+**Rule applied:** every K extends the arm in > 50% of the nominal episodes (197 / 198 / 149 of 205); the tie-break (most
+stable 1 cm arrivals, nominal + random) picks **K = 144** (199 against 95 and 152). Seeds 1 and 2 at K = 144 launched
+17:20 (`chain_e9c.sh`), evaluations `e9_trig144_mlp28_on_{clean,e1_random}_validation_20261102`.
+
+**What the numbers say.**
+
+- **Ignition, measured.** `arm_switch_probe.py` on the expert's done row with the policy's own resting-arm state (the
+  §6t.1 swap; fraction along hold→reach, control −0.02): K 16 **+0.12**, K 144 **+0.96**, K 512 **+1.27**. On the
+  policy's own parked row in closed loop: +0.14 / +0.76 / +0.81. The copies move the regressor's output at the resting-arm
+  parked state from "hold" to "reach"; the arm then extends in 197–198 of 205 nominal episodes (control 3–103). Even
+  K 16's +0.12 is enough to start it (their K 16 had r 0.12 too, §6x): the loop catches from the smallest nudge, as the
+  teammate's push control predicted.
+- **1 cm arrivals go from 0 to 96 / 103** (nominal / random), the best of the programme by a factor of four (previous
+  best: E8b seed 0, 23). 5 cm arrivals 140 / 121 against the GRU's best single seed 102 / 99.
+- **The base parks because the arm moves (§6h), and the creep is what is left.** Parked 100–102 nominal (control
+  119–126, so not more parking: *better* parking). K 144's drift after parking is 0.22 m median and 107 episodes hold the
+  target 10 s; K 16 drifts 1.22 m and holds in 22, K 512 drifts 1.62 m and holds in 79. Still moving at 40 s: 111 / 187 /
+  183 (control 199–203). The remaining failures are the §6h creep (base leaves after the arm arrived), now visible as
+  "arrived, then left": 5 cm arrivals 140 but held 10 s 107.
+- **Random starts: the gap to nominal closes.** 103 / 116 / 121 random against 96 / 124 / 140 nominal; the control had
+  11–17 at 5 cm on random starts. The ignition does not depend on the approach history, only on the parked state.
+- **Too much weight fires early.** K 512 extends the arm in fewer episodes (149 / 145) with the worst drift (1.62 m) and
+  the worst offline fit (0.177); its stop rows are 0.24 m / 0.49 rad from the expert's done pose (K 144: 0.06 m / 0.08
+  rad). The teammate saw the same at their K 256 (§6x).
+- **Offline fit is anti-correlated with the gain**, again (0.145 → 0.159 → 0.166 → 0.177 while closed loop improves then
+  degrades): the validation NRMSE is dominated by the orient-phase look-alike rows whose conditional mean the copies
+  deliberately move.
+
+**Caveats.** One seed per K (seeds 1–2 at K 144 running); the training set still holds the 217 expert failures (the
+success-only retraining of §6z comes next); the K rule was pre-registered but the three K values were a guess from the
+row-count argument, so 144 is "the best of three", not an optimum.
 
 ## 7. Status
 
@@ -1729,8 +1773,18 @@ evaluations `runs/evaluation/e9_ksweep_mlp28_on_{clean,e1_random}_validation_202
   §6x explains it with §6t.1: it re-weights the one resting-arm reach row per episode, the arm ignites and the base reads it as
   the phase flag (§6h); creep remains (half the successes do not hold 10 s). Label-derived re-weighting, not privileged input.
   E9 (same option in our trainer, MLP 28, 4096 mixture) proposed, not launched.
-- 2 Nov 13:50: E9 launched (§6y): trigger copies in our trainer, K sweep 16 / 144 / 512 at seed 0 first (our 1 kHz rows make
+- 2 Nov 15:20: E9 launched (§6y): trigger copies in our trainer, K sweep 16 / 144 / 512 at seed 0 first (our 1 kHz rows make
   their K = 16 nine times lighter), both validations, K rule pre-registered; then 3 seeds at the chosen K. E8c / E8e wait.
+- 2 Nov 17:04: E9 K sweep done (§6y.1): seed 0, nominal 1/2/5 cm = 48/84/141 (K 16), **96/124/140 (K 144)**, 86/101/119
+  (K 512); random 47/61/89, **103/116/121**, 66/83/98; arm extended 197/198/149 of 205 (control 3–103); held 10 s 22/107/79.
+  Probe: output at the resting-arm parked row −0.02 (control) → +0.12 / +0.96 / +1.27. K = 144 chosen by the pre-registered
+  rule; seeds 1–2 launched 17:20 with the replacement collection of the 278 failed scenarios in parallel.
+- 2 Nov 17:15: rule from Rodrigo: **train and select on expert successes only**; failed scenarios are re-collected with
+  another start pose / noise seed and discarded if they fail again. The 4096 mixture holds 217 training + 61 validation
+  expert failures (195 navigation timeouts: 25 s circling 8.0–8.5 cm from the goal, then zero wheels with the base 2.5 m
+  away and the arm reaching 1.1 m toward a 2 m target: 605k rows, 5% of all zero-wheel rows). `keep_expert_failures=false`
+  implemented in the egocentric trainer (it was declared but unused), configs `mlp_pytorch_successes*.json`, spec
+  `e10_replacement_expert_failures_dart_low.json` (278 scenarios). Next: §6z, control + E9 K 144 on success-only data.
 - Next, on request: E6 (§6c, nominal data without the clock) — the cheapest test of the reach-trigger mechanism.
 - E2 needs a collector mode; nothing in `src/` is edited while a collector,
   trainer or evaluator is running (provenance guards).

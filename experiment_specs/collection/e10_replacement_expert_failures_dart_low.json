@@ -1432,6 +1432,5 @@
   "torque_std": 1.0,
   "hold_steps": 50,
   "seed": 20261032
- },
- "notes": "Re-collection of the 278 scenarios of the 4096 mixture (runs/splits/e3_mixture_4096.json) whose expert run failed (195 navigation timeouts at 25 s + 22 stalls): same targets, new uniform start poses and noise seed. Failures depend on the start pose and the noise, not on the target (0 of 1024 multistart targets fail from every start)."
+ }
 }
