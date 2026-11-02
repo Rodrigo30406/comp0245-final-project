@@ -974,6 +974,17 @@ heading of a few degrees and by the latch state, which is not in the inputs). Th
 evaluating) will say whether the argmax sharpens that boundary; the GRU on this mixture (the only arm with a state
 that can hold the latch) is relaunched below.
 
+**Why the box fills with rotations (measured 2 Nov, 354 E2 and 339 nominal successful episodes).** The expert's goal is
+0.65 m from the target in a direction that does not depend on where the robot comes from, and the expert drives facing
+the goal, not the target. From the nominal start pose the line robot→goal happens to point almost at the target, so the
+base enters the 8 cm box with a heading error of 8° median and the `orient` spin is short (27% of the in-box rows are
+moving). From the E2 ring (0.25–1.3 m from the target, any direction) the approach comes from the side or from inside
+the standoff radius, and the base enters the box with a heading error of **141° median (84% above 90°)**: it then spins
+at full speed inside the box for ~2.4 s (74% of the in-box rows are moving; 81% for starts inside the standoff radius,
+69% for starts outside). The rotation is not an artefact of the random initial yaw (the `align` phase fixes that at the
+start); it is the expert's own `orient` phase, which E2 makes long exactly at the place where the stop should be
+demonstrated.
+
 ## 6p. E2 on the categorical head (2 Nov 00:14–03:17): the rotation rows reach the argmax too
 
 Three MLP-28 with the 41-bin wheel head on the 6144 mixture (`mlp_e2_mixture6144_polar_cat41_seed*`), offline NRMSE
