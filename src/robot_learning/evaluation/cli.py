@@ -114,7 +114,7 @@ def prepare(split_path, model_arguments, protocol, output, limit=None, *, allow_
                         raise ValueError('Different physics/assets/expert across model datasets')
         if any(sha256(model_dataset/name)!=digest for name,digest in manifest['dataset_hashes'].items()):
             raise ValueError('Training dataset metadata changed')
-        if info['kind'] not in ('ordinary_least_squares','mlp_regressor','egocentric_mlp_regressor','gru_regressor','transformer_regressor'):
+        if info['kind'] not in ('ordinary_least_squares','mlp_regressor','egocentric_mlp_regressor','gru_regressor','transformer_regressor','gru_gated_regressor'):
             raise ValueError('Unsupported policy')
         policies[label]={'kind':info['kind'],'artifact':f'models/{label}.npz',
                          'sha256':manifest['model_sha256'],'training_run':str(run)}

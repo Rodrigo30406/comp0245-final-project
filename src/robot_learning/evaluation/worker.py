@@ -65,6 +65,9 @@ def run_rollout(directory, job):
             elif spec['kind'] == 'transformer_regressor':
                 from robot_learning.learning.transformer_policy import TransformerPolicy
                 model = TransformerPolicy.load(path)
+            elif spec['kind'] == 'gru_gated_regressor':
+                from robot_learning.learning.gated_policy import GatedPolicy
+                model = GatedPolicy.load(path)
             else:
                 model = (MLPPolicy if spec['kind'] == 'mlp_regressor' else LinearPolicy).load(path)
             def policy(observation):

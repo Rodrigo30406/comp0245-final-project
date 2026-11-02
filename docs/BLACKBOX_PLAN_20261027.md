@@ -1277,8 +1277,10 @@ reach" exists for about one row per 12 000, while "arm at rest at home, base in 
 orient phase. The regressor learns hold for a resting arm and reach for a moving arm: a self-sustaining loop with no
 ignition. Without the band the ignition came from the base: in the E4 evaluation the arm first exceeds 0.1 rad/s at 18 s
 median, while the base moves at 7.8 cm/s (still in only 12 % of the episodes), i.e. the creeping base jostles the arm
-and the loop catches. The band removes the jostle. The base velocity is not an input (the 21 inputs are base pose, 7
-arm angles, 7 arm velocities, target), so the policy has no other cue that the base has stopped.
+and the loop catches. The band removes the jostle. Knowing that the base has stopped is not what the arm lacks: the
+MLP 31 of E4 (28 pure inputs + finite-difference base velocity) parks with 9–20 cm of drift and extends the arm in 0 of
+205 episodes for seeds 1 and 2 (130 for seed 0). The defect is the single resting-arm reach row per episode against the
+whole orient phase of resting-arm hold rows, which no stateless regressor resolves whatever it is told about the base.
 
 This is the same thin-shell defect as the base stop (§6g), one level up: the arm's phase switch is a step in the labels
 at an input configuration the demonstrations visit for a millisecond. GRU seed 1 carries it in its state (its arm moves
@@ -1306,6 +1308,33 @@ what E8a's gate must be wired to (the gate value as an input of the arm head, or
 state), and it is why GRU seed 1, which carries the stop in its state, is the only model whose arm works after the stop.
 The transformer did not latch with an exact stop in its context (82–91 % restarts), so the gate is built on a GRU, not
 on the transformer; E8f (relative positions) is dropped.
+
+## 6u. E8a (gated stop) and E8b (MLP→GRU): design and launch (2 Nov 11:40)
+
+Implementation: `src/robot_learning/learning/gated_policy.py` (kind `gru_gated_regressor`, trainer
+`scripts/train_gated.py --architecture gated|mlp_gru`), NumPy inference verified against the torch twin by test and at the
+end of each run (`tests/test_gated_policy.py`, 105 tests pass). Both keep the brief's two outputs.
+
+- **E8a `gated`.** u_t = head([x_t, g_t]) is a stateless MLP on the 28 pure features plus the scalar gate; a GRU of 32
+  units reads the feature history every 20 ms and emits a stop score s_t = σ(w_s·h_t + b_s); the gate is
+  g_t = 1 − max_{τ≤t} s_τ, so it starts at 1 (bias init −4), can only fall and never reopens within an episode. Wheels =
+  g_t · (head wheels in rad/s), so g_t = 0 is an exact zero whatever the head says; arm torques = head arm torques, and
+  because the head sees g_t the arm has the "base stopped" signal it never had (§6t.1). Trained end to end from the wheel
+  and arm labels only (masked MSE in normalised units, the gate acting in physical units inside the network); nothing
+  tells the gate when to close except the labels going to zero. The trainer records where the gate closes on 64
+  validation episodes (`metrics.json → validation.gate`) against the time the wheel labels go to zero.
+- **E8b `mlp_gru`** (Rodrigo's hybrid). e_t = relu(W_e x_t + b_e) with 64 units feeds a GRU of 128 units (20 ms); the head
+  reads [h_t, x_t] as in the base GRU. Same data, same loss.
+
+Both on the 4096 nominal + random mixture (`runs/splits/e3_mixture_4096.json`), 3 seeds, one trainer at a time, then the
+two validations (205 nominal goals, 205 random-start goals) with the standard protocol (no dead band). Runs
+`runs/training/gru_e8a_gated_mixture4096_polar_seed{0,1,2}`, `runs/training/gru_e8b_mlpgru_mixture4096_polar_seed{0,1,2}`;
+evaluations `runs/evaluation/e8a_gated_on_{clean,e1_random}_validation_20261102`, `e8b_mlpgru_on_…`.
+Predictions, written before the results: (i) E8a's gate closes within 0.5 s of the label zero on the validation
+episodes if the stop is learnable from history at all; (ii) in closed loop E8a stops exactly and the arm starts (both ≥
+GRU seed 1's 11 "both" per 205), the open question being whether its stateless head drives into the box better than the
+GRU (§6q: approach is the GRU's defect); (iii) E8b behaves like the base GRU (one seed latching, two not) unless the
+encoder makes the latch easier to find, which would show as all three seeds latching.
 
 ## 7. Status
 
@@ -1407,7 +1436,8 @@ on the transformer; E8f (relative positions) is dropped.
   zero (raw 0.31–0.38 under the band) and the clock pushes it over in 8–9 s; GRU seed 1 holds an exact zero for 25 s
   to the end of the episode and still arrives 94, because the stop is 10 cm off. §6t.1: the MLP's arm starts only when it is
   already moving (reach is triggered by the arm velocities; the resting-arm reach rows are ~1 per 12 000); the creeping base used
-  to jostle it, the band removes the jostle. Same for the transformer and the MLP 32. Next: E8a gate wired to the arm head too, E8b, E8c, E8e.
+  to jostle it, the band removes the jostle. Same for the transformer and the MLP 32.
+- 2 Nov 11:40: E8a (gated stop, gate seen by the arm head) and E8b (MLP→GRU) implemented, tested (105), launched (§6u).
 - Next, on request: E6 (§6c, nominal data without the clock) — the cheapest test of the reach-trigger mechanism.
 - E2 needs a collector mode; nothing in `src/` is edited while a collector,
   trainer or evaluator is running (provenance guards).
