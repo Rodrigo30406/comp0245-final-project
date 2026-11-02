@@ -54,6 +54,9 @@ def resolve_episode_config(requested):
     if type(cfg["max_steps"]) is not int or cfg["max_steps"] <= 0:
         raise ValueError("max_steps must be a positive integer")
     vector(cfg["fixed_finger_angles"], 6, "fixed_finger_angles")
+    if cfg["goal_reference"] not in ("origin", "start"):
+        raise ValueError('goal_reference must be "origin" (the lecturer\'s rule: bearing from the world origin) or "start" '
+                         '(bearing from the base start position; identical when the robot starts at the origin)')
     for group in ("base_controller", "arm_controller", "stop"):
         for key, value in cfg[group].items():
             number(value, f"{group}.{key}", positive=True)

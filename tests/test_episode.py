@@ -17,7 +17,7 @@ from robot_learning.data.storage import read_json, write_json
 from robot_learning.data.worker import run_episode
 from robot_learning.settings import get_roboenv_root
 from robot_learning.simulation.config import episode_defaults, resolve_episode_config
-from robot_learning.simulation.episode import Episode
+from robot_learning.simulation.episode import Episode, base_goal
 from robot_learning.simulation.interactive import run_interactive
 
 
@@ -80,3 +80,32 @@ class EpisodeTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class GoalReferenceTests(unittest.TestCase):
+    """goal_reference: "origin" is the lecturer's rule (bearing from the world origin); "start" takes the bearing from
+    the base start position and is identical for the nominal start at the origin."""
+
+    def test_default_is_origin_and_values_are_validated(self):
+        self.assertEqual(episode_defaults()["goal_reference"], "origin")
+        self.assertEqual(resolve_episode_config({"goal_reference": "start"})["goal_reference"], "start")
+        with self.assertRaises(ValueError):
+            resolve_episode_config({"goal_reference": "nearest"})
+
+    def test_start_reference_equals_origin_rule_at_the_nominal_start_and_moves_the_goal_otherwise(self):
+        table = episode_defaults()["standoff"]
+        target = np.array([1.5, -0.8, 0.5])
+        b0, g0 = base_goal(target, [0.0, 0.0], table)
+        self.assertAlmostEqual(b0, float(np.arctan2(-0.8, 1.5)))
+        standoff = float(np.interp(0.5, table["heights"], table["distances"]))
+        np.testing.assert_allclose(g0, target[:2] - standoff * np.array([np.cos(b0), np.sin(b0)]))
+        np.testing.assert_allclose(np.linalg.norm(g0 - target[:2]), standoff)
+        # a start on the far side of the target: the origin rule parks the base facing away from the start, the
+        # start rule parks it on the near side of the ring, at the same standoff distance
+        start = np.array([3.0, -1.6])
+        b1, g1 = base_goal(target, start, table)
+        np.testing.assert_allclose(np.linalg.norm(g1 - target[:2]), standoff)
+        self.assertLess(np.linalg.norm(g1 - start), np.linalg.norm(g0 - start))
+        self.assertAlmostEqual(b1, float(np.arctan2(target[1] - start[1], target[0] - start[0])))
+        # degenerate: target above the reference point -> bearing 0, as the lecturer's code
+        self.assertEqual(base_goal([0.0, 0.0, 0.5], [0.0, 0.0], table)[0], 0.0)

@@ -19,6 +19,18 @@ from .config import episode_defaults, resolve_episode_config, vector
 from .setup import create_dynamics, create_simulation
 
 
+def base_goal(target, reference_xy, standoff_table):
+    """The expert's base goal: standoff(z) behind the target along the bearing from `reference_xy` to the target.
+    The lecturer's code takes the bearing from the world origin, where his robot always starts (goal_reference
+    "origin"); "start" uses the base start position instead, which is the same point for the nominal start and keeps
+    the goal on the near side of the standoff ring for any other start. Returns (goal_bearing, goal_xy)."""
+    target = np.asarray(target, dtype=float); reference_xy = np.asarray(reference_xy, dtype=float)
+    standoff = float(np.interp(target[2], standoff_table["heights"], standoff_table["distances"]))
+    rel = target[:2] - reference_xy
+    bearing = float(np.arctan2(rel[1], rel[0])) if np.linalg.norm(rel) > 1e-4 else 0.0
+    return bearing, target[:2] - standoff * np.array([np.cos(bearing), np.sin(bearing)])
+
+
 class Episode:
     """One fresh simulator and controller state; use as a context manager."""
 
@@ -91,9 +103,9 @@ class Episode:
         self.arm_params = ArmControllerParams(**cfg["arm_controller"])
         self.criteria = StopCriteria(max_steps=cfg["max_steps"], **cfg["stop"])
         self.nav = BaseNavState()
-        standoff = float(np.interp(self.target[2], cfg["standoff"]["heights"], cfg["standoff"]["distances"]))
-        self.goal_bearing = float(np.arctan2(self.target[1], self.target[0])) if np.linalg.norm(self.target[:2]) > 1e-4 else 0.0
-        self.goal = self.target[:2] - standoff * np.array([np.cos(self.goal_bearing), np.sin(self.goal_bearing)])
+        reference = np.zeros(2) if cfg["goal_reference"] == "origin" else np.asarray(self.state["base"][:2], dtype=float)
+        self.goal_reference_xy = reference
+        self.goal_bearing, self.goal = base_goal(self.target, reference, cfg["standoff"])
         self.command = MotorCommands()
         self.steps = 0
         self.termination = None
