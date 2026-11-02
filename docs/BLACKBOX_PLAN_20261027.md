@@ -1121,6 +1121,9 @@ What is established, with the measurement that establishes it:
    (115–162), whose 10 extra features encode the expert's goal construction and were therefore set aside as
    privileged (§0, §1).
 
+The stop region, the demonstrated zero rows and the policy's creep are drawn in `STOP_ZONE_EXPLAINED.md`
+(`scripts/analysis/stop_zone_figures.py`, `docs/figures/stop_zone/`).
+
 Open decisions (Rodrigo's):
 
 - **E0, the white-box contrast**: a single latched `arrived` bit from the expert's phase as an extra input would show
