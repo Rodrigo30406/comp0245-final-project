@@ -1653,6 +1653,27 @@ stable 1 cm arrivals, nominal + random) picks **K = 144** (199 against 95 and 15
   degrades): the validation NRMSE is dominated by the orient-phase look-alike rows whose conditional mean the copies
   deliberately move.
 
+**Under the teammate's protocol** (`scripts/analysis/teammate_protocol_metrics.py`: success = EE within 10 mm at some instant,
+no dwell; settled = < 15 mm for 1 s after; held 10 s; reach 2 / 5 cm = minimum error; arm extended = EE moved > 10 cm in the
+base frame; parked = ring distance < 0.2 m and still 1 s; our traces are 100 ms, theirs 1 ms), seed 0 of 205:
+
+| policy | success | settled | held 10 s | reach 2 cm | reach 5 cm | arm extended | parked |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| K 144, nominal | 49.3% | 48.8% | 28.8% | 62.0% | 68.8% | 97.6% | 72.7% |
+| K 144, random starts | 51.2% | 50.7% | 33.2% | 57.1% | 60.5% | 97.6% | 62.0% |
+| K 16 / K 512, nominal | 30.7% / 43.4% | 24.4% / 42.4% | 2.4% / 10.2% | 47.3% / 50.7% | 71.2% / 59.5% | 96.1% / 73.2% | 70.7% / 48.8% |
+| MLP 28 control, nominal (3 seeds) | 0–1.5% | 0% | 0% | 1.5% | 14–16% | 1.5–53% | 28–54% |
+| their C3 (K 16 at stride 9), DEV random starts, 5 seeds | 52–70% | 46–65% | 14–40% | 73–80% | 89–92% | 79–85% | 69–92% |
+| their baseline `ego-novw`, DEV | 0.3% | 0% | 0% | 0.3% | 5% | 0% | 0% |
+| our expert, nominal / random | 100% / 98% | 100% / 98% | 99.5% / 97.6% | 100% / 98% | 100% / 98% | 75% / 75% | 100% / 98% |
+
+Same picture on both pipelines: from ~0 to ~50% touch-success, with the arm extending in nearly every episode and about a
+third of the reaches held for 10 s. Where theirs is ahead is the base: reach 5 cm 90% against our 61–69%, i.e. their base
+brings the arm within 5 cm more often. Candidates, all addressed by mixture v2 (§6z): our random-start data drives to the
+origin-referenced goal (theirs to the start-referenced one), and our training set carries the 217 expert failures (theirs
+filters them). Their arm-extended rate is lower than ours only because of the target distribution (their expert 82%, ours
+75%: short reaches move the EE less than 10 cm).
+
 **Caveats.** One seed per K (seeds 1–2 at K 144 running); the training set still holds the 217 expert failures (the
 success-only retraining of §6z comes next); the K rule was pre-registered but the three K values were a guess from the
 row-count argument, so 144 is "the best of three", not an optimum.
