@@ -1657,6 +1657,35 @@ stable 1 cm arrivals, nominal + random) picks **K = 144** (199 against 95 and 15
 success-only retraining of §6z comes next); the K rule was pre-registered but the three K values were a guess from the
 row-count argument, so 144 is "the best of three", not an optimum.
 
+## 6z. Mixture v2 (2 Nov 17:30, pre-registered): goal from the start pose, expert successes only
+
+**Why.** The lecturer's expert takes the goal bearing from the world origin (`atan2(target_y, target_x)`), where his robot
+always starts. With a random start the goal is still "the point of the standoff ring facing the origin", which can be the
+far side of the target from where the robot is, so the expert drives past the target and around it. 75% of mixture v1
+(multistart, E1, E2) and the v1 random validation carry that geometry. Rodrigo's call: irrational, fix it. Second rule
+(§7, 17:15): train and select on expert successes only.
+
+**Change.** `goal_reference` in the expert config (`experiment_specs/expert/default.json`): `origin` (default, the
+lecturer's rule, bit-identical to before) or `start` (bearing from the base start position; the same goal for the nominal
+start, the near side of the ring for any other). Implemented in `simulation/episode.py::base_goal`, tested
+(`tests/test_episode.py::GoalReferenceTests`). It is a generalisation of the goal's reference point, not a change to the
+control law; the teammate's collector made the same choice (§6x).
+
+**Data.** `e3_multistart3x_dart_low_v2_startgoal` (3072 episodes, same targets, start poses and noise seeds as v1) and
+`e1_randompose_dart_low_v2_startgoal` (1024, the random validation bank), collected 17:30– with 14 workers; then the
+replacement collection of their expert failures (new start / noise seed; a scenario that fails twice is discarded).
+Split v2 = nominal (819 training / 205 validation geometries, unchanged) + multistart v2, validation by geometry as in v1
+(`make_mixture_split.py`, extended to map replacement episodes to their plan target); trainers run with
+`keep_expert_failures: false`. The v1 replacement collection (`e10`, 278 scenarios, origin goal) gave 262 successes and
+16 second failures; it is not used in v2 (origin geometry).
+
+**Runs (pre-registered).** On split v2, 3 seeds each, both v2 validations (nominal unchanged, random v2):
+(1) MLP 28 pure control; (2) E9 K = 144. Predictions: the control's base failures on random starts shrink (the goal is now
+where the approach ends) but the arm still does not ignite (§6t.1 is about the parked state, not the path); E9 keeps its
+ignition (96–103 at 1 cm on v1) and gains on random starts; dropping the 605k post-timeout rows (zero wheels 2.5 m from the
+goal, §7 17:15) should reduce the stops far from the box (E8a closed at 0.45–0.64 m; MLP 28 stopped outside in 76–96
+episodes). All v1 numbers stay in this document as "mixture v1, origin goal"; v1 and v2 are not compared across.
+
 ## 7. Status
 
 - Done: decomposition (§1), variant `raw21_target_clock_v1`; E1 collected,
@@ -1785,6 +1814,9 @@ row-count argument, so 144 is "the best of three", not an optimum.
   away and the arm reaching 1.1 m toward a 2 m target: 605k rows, 5% of all zero-wheel rows). `keep_expert_failures=false`
   implemented in the egocentric trainer (it was declared but unused), configs `mlp_pytorch_successes*.json`, spec
   `e10_replacement_expert_failures_dart_low.json` (278 scenarios). Next: §6z, control + E9 K 144 on success-only data.
+- 2 Nov 17:30: mixture v2 decided and launched (§6z): `goal_reference: start` for random-start data, expert successes only.
+  Collections running (3072 + 1024 episodes, 14 workers) beside the E9 K 144 seeds 1–2 chain. Then replacements, split v2,
+  control + E9 K 144 (3 seeds each), both validations. v1 replacement collection e10: 262 / 278 succeeded.
 - Next, on request: E6 (§6c, nominal data without the clock) — the cheapest test of the reach-trigger mechanism.
 - E2 needs a collector mode; nothing in `src/` is edited while a collector,
   trainer or evaluator is running (provenance guards).
