@@ -1170,6 +1170,39 @@ That is the closed-loop test (E8d below): the dead band as a declared output fil
 Its learned counterpart is a soft-threshold output (`wheel = sign(u) · max(|u| − τ, 0)`), which makes every |u| < τ an
 exact zero during training as well, so the zero rows stop pulling the regression towards a point.
 
+## 6s. The transformer's stop is also in its context, and the E8 programme (2 Nov 07:40)
+
+`stop_basin` on the three E5 transformers (teacher-forced history up to the expert's stop, then the current pose
+displaced): **2–3% of the drive level for every displacement up to 40 cm towards or away from the target**, exactly like
+the GRU (1–2%) and unlike the MLP 28 (13–23% at 40 cm towards). So the transformer *does* hold a stop it has seen in its
+context, whatever the pose says; the earlier reading of §6j ("creeps like the MLP because it has no latch") was wrong
+about the cause. What differs is closed loop: its own residual while parked is 0.10–0.11 rad/s median (§6r), larger than
+the GRU seed 1's 0.06, so its context never contains a clean stop event and the latch it can hold is never triggered. The
+memory models need to *see themselves stopped* before they can hold the stop. That is a second argument for the dead
+band (E8d): an exact zero on the wheels puts a real stop into the context.
+
+E8, decided with Rodrigo on 2 Nov, all on the 4096 mixture with the 28 pure inputs, 3 seeds, both validations:
+
+- **E8d — dead band 0.45 rad/s at the output** of the trained models (MLP 28 control, GRU 28, transformer 28, MLP 32), a
+  declared protocol variant (`experiment_specs/evaluation/validation_deadband045.json`, `wheel_dead_band_rad_s`; the
+  evaluator zeroes the four wheels when both commands are below the band, learned policies only, recorded per episode).
+  No retraining. Launched 2 Nov 07:40 (`chain_e8d.sh`, commit `509c6d4`), outputs `runs/evaluation/e8d_db045_*_20261102`.
+- **E8a — gated stop**: wheels = g_t · MLP(x_t), g_t = g_{t−1} · (1 − σ(GRU(x_1..t))), g_0 = 1, reset per episode. The
+  memory can only attenuate a command produced from the current frame, never produce it; the gate is non-increasing by
+  construction, so a closed stop stays closed as the expert's `done` does; trained end to end from the wheel and arm
+  labels only (no stop label, no extra output).
+- **E8b — MLP → GRU** (Rodrigo's hybrid): a learned encoder of the current frame feeding the GRU, command from the GRU.
+- **E8c — GRU with geometry by default**: command = MLP(x_t) + GRU correction with an L2 penalty on the correction, and
+  hidden-state resets at random times plus hidden-state noise during training (broken histories), so the memory cannot
+  time the phases by counting.
+- **E8e — soft-threshold output** on the MLP 28: wheel = sign(u) · max(|u| − τ, 0), τ = 0.45 fixed (learned variant if
+  the fixed one works), so |u| < τ is an exact zero during training too.
+- **E8f — transformer with relative position**, conditional on E8d: if the dead band alone lets the transformer latch, the
+  positional change is not needed.
+
+New probe for every arm: the instant and the distance to the base goal at which the wheel command becomes exactly zero
+and whether it stays zero (closed early / on time / never).
+
 ## 7. Status
 
 - Done: decomposition (§1), variant `raw21_target_clock_v1`; E1 collected,
@@ -1261,6 +1294,8 @@ exact zero during training as well, so the zero rows stop pulling the regression
   displacement up to 40 cm), closed loop the approach passes 18–44 cm from the box and rotates at the arrival as in §6o.
   E7 + E2 complete. §8 gathers the whole programme (table of every arm, six established points, open decisions).
 - 28-input pure-transform variant done and reported in §6e (branch `rodrigo-pure28` merged).
+- 2 Nov 07:40: transformer stop basin flat (§6s); E8 programme agreed; E8d (dead band 0.45 on trained models) launched,
+  12 models × 2 validations, 8 workers per evaluation, two evaluations at a time.
 - 2 Nov 06:50: zero separability measured (§6r): the expert never emits a non-zero wheel command below 0.45 rad/s; the
   policies' zero predictions sit below 0.35 (p99) and their drive commands above 0.7 (p1). A dead band at 0.45 is free offline.
 - Next, on request: E6 (§6c, nominal data without the clock) — the cheapest test of the reach-trigger mechanism.
