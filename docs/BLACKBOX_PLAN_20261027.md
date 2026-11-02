@@ -1211,12 +1211,12 @@ next arm.
 New probe for every arm: the instant and the distance to the base goal at which the wheel command becomes exactly zero
 and whether it stays zero (closed early / on time / never).
 
-## 6t. E8d, dead band 0.45 rad/s at the evaluator output (2 Nov 07:40–, partial: MLP 28 and GRU 28 done)
+## 6t. E8d, dead band 0.45 rad/s at the evaluator output (2 Nov 07:40–10:40)
 
 Setting: the trained E4 models unchanged; the evaluator zeroes the four wheel commands whenever
 max|wheel| < 0.45 rad/s (`experiment_specs/evaluation/validation_deadband045.json`, §6r; `wheel_dead_band_rad_s` recorded
 in every episode record; the expert is never filtered). Same 205 nominal goals and 205 random-start goals as every
-other arm. Transformer 28 and MLP 32 are still running (this section is completed when they finish).
+other arm. Four families, 12 models, 24 evaluations (`runs/evaluation/e8d_db045_{mlp28,gru28,tf28,mlp32}_on_{clean,e1_random}_validation_20261102`).
 
 Stable arrivals 1/2/5 cm, seeds 0/1/2, with the dead band vs without (E4, §6g/§6i):
 
@@ -1226,9 +1226,14 @@ Stable arrivals 1/2/5 cm, seeds 0/1/2, with the dead band vs without (E4, §6g/�
 | MLP 28 control | random | 0/0/11, 0/0/15, 0/0/17 | 0/0/13, 0/0/16, 0/1/14 |
 | GRU 28, memory 20 ms | nominal | 6/6/32, 19/50/102, 4/8/27 | 0/3/28, 25/50/94, 5/9/29 |
 | GRU 28, memory 20 ms | random | 6/9/29, 29/57/99, 5/8/26 | 3/6/23, 35/55/92, 4/10/28 |
+| transformer 28, attention 20 s | nominal | 25/42/81, 29/43/76, 8/13/47 | 12/24/68, 10/14/40, 6/14/41 |
+| transformer 28, attention 20 s | random | 9/29/60, 5/14/32, 3/4/29 | 9/26/54, 7/11/33, 3/5/27 |
+| MLP 32 mixture (E3, rule-based features) | nominal | 22/32/51, 34/56/93, 15/38/78 | 23/42/68, 8/22/55, 1/12/55 |
+| MLP 32 mixture (E3, rule-based features) | random | 16/22/51, 37/65/113, 10/30/71 | 19/37/64, 9/12/46, 3/8/45 |
 
-No gain anywhere; the seed-to-seed noise of ±5 covers every difference. The probes say why, and the two families fail
-for opposite reasons (`scripts/analysis/deadband_raw_drift.py`, `creep_profile.py`, `restart_trigger.py`, nominal
+No gain anywhere, and a loss where the stop used to be jostled into reaching: the transformer drops 81/76 → 68/40 and
+the MLP 32 drops 93/113 → 55/46 (seed 1). The probes say why, and the stateless families and the GRU fail for opposite
+reasons (`scripts/analysis/deadband_raw_drift.py`, `creep_profile.py`, `restart_trigger.py`, nominal
 validation, medians over episodes):
 
 - **MLP 28: the dead band freezes the base at the edge of the policy's zero, not inside it.** The policy ramps its
@@ -1281,11 +1286,26 @@ at an input configuration the demonstrations visit for a millisecond. GRU seed 1
 working arm-after-stop. It also says what the gate must do: switching the wheels off is not enough, the stop state must
 also hand the arm its first push (or the arm head must see a "base stopped" signal), otherwise E8a inherits this.
 
+- **Transformer 28 and MLP 32 under the band: the same two defects, in different proportions.** Both stop at the edge
+  of their zero (raw max|wheel| 0.33–0.36 → 0.43–0.44 over the spell for the transformer, 0.35–0.41 → 0.43–0.44 for the
+  MLP 32) and both keep the arm at home while stopped (arm joints move 0.005–0.009 rad over the spell). The transformer's
+  spell lasts 3–9 s and ends in a restart in 82–91 % of the episodes; its arm output on its own stop rows is −0.03 on the
+  hold→reach axis, and on the expert's done row with its own arm state +0.18 (base pose and clock irrelevant, as for
+  the MLP 28). Even open loop on the expert's rows its arm is slow: −0.24 in the first second after done, +0.78 at 1–3 s.
+  The MLP 32 holds the exact stop much longer (16–19 s median, to the end of the episode in 9–37 %, base parked in
+  170–182 of 205 with 3–15 cm of drift after parking) because its rule-based features put its zero deeper under the
+  band, but the arm extends in only 37–47 episodes (134 for seed 1 without the band): its arm output on its own stop
+  rows is +0.12, with the expert's arm velocities +1.6. So for every stateless model the band converts "creep and
+  restart" into "stand still with the arm at home", and the arrivals it used to get from a jostled arm disappear.
+
 Conclusion for the E8 programme: an output-side threshold cannot rescue a policy whose zero sits at the threshold, and
-the clock makes any fixed threshold a timer. The gate (E8a, a learned stop state that multiplies the wheel command) and
-the soft threshold learned in training (E8e) remain the two ways to obtain an exact zero from the MLP; for the GRU the
-dead band is already a clean stop and the work is the approach (E8c). The transformer result decides whether the gate
-is built on a GRU or on the transformer (§6s).
+the clock makes any fixed threshold a timer. More important, E8d shows that an exact zero alone is not the goal: once
+the base is exactly still, every stateless policy keeps the arm at home, because the arm's start was learned from its
+own velocity (§6t.1). The stop state therefore has to do two things, switch the wheels off and start the arm. That is
+what E8a's gate must be wired to (the gate value as an input of the arm head, or the arm head conditioned on the stop
+state), and it is why GRU seed 1, which carries the stop in its state, is the only model whose arm works after the stop.
+The transformer did not latch with an exact stop in its context (82–91 % restarts), so the gate is built on a GRU, not
+on the transformer; E8f (relative positions) is dropped.
 
 ## 7. Status
 
@@ -1382,11 +1402,12 @@ is built on a GRU or on the transformer (§6s).
   12 models × 2 validations, 8 workers per evaluation, two evaluations at a time.
 - 2 Nov 06:50: zero separability measured (§6r): the expert never emits a non-zero wheel command below 0.45 rad/s; the
   policies' zero predictions sit below 0.35 (p99) and their drive commands above 0.7 (p1). A dead band at 0.45 is free offline.
-- 2 Nov 10:20: E8d partial (§6t): dead band 0.45 on MLP 28 and GRU 28, no gain. The MLP freezes at the edge of its
+- 2 Nov 10:40: E8d complete (§6t): dead band 0.45 on MLP 28, GRU 28, transformer 28, MLP 32; no gain, losses where
+  a jostled arm used to reach (transformer 81/76 → 68/40, MLP 32 93/113 → 55/46). The MLP freezes at the edge of its
   zero (raw 0.31–0.38 under the band) and the clock pushes it over in 8–9 s; GRU seed 1 holds an exact zero for 25 s
   to the end of the episode and still arrives 94, because the stop is 10 cm off. §6t.1: the MLP's arm starts only when it is
   already moving (reach is triggered by the arm velocities; the resting-arm reach rows are ~1 per 12 000); the creeping base used
-  to jostle it, the band removes the jostle. Transformer 28 and MLP 32 running.
+  to jostle it, the band removes the jostle. Same for the transformer and the MLP 32. Next: E8a gate wired to the arm head too, E8b, E8c, E8e.
 - Next, on request: E6 (§6c, nominal data without the clock) — the cheapest test of the reach-trigger mechanism.
 - E2 needs a collector mode; nothing in `src/` is edited while a collector,
   trainer or evaluator is running (provenance guards).

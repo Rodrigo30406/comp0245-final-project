@@ -50,6 +50,10 @@ EVALS = {  # evaluation dir -> {policy label in summary: (display name, training
     "e7d_mlp_prevwheel_on_clean_validation_20261101": {f"mlp_prevwheel_seed{s}": (f"E7d nominal + random 4096: MLP 30 (28 pure + previous wheel command), seed {s}", f"mlp_e7d_mixture4096_prevwheel_seed{s}") for s in range(3)},
     "e2_mlp_polar_on_clean_validation_20261101": {f"mlp_polar_e2_seed{s}": (f"E2 nominal + random + near-target 6144: MLP 28 pure, seed {s}", f"mlp_e2_mixture6144_polar_seed{s}") for s in range(3)},
     "e2_mlp_cat41_on_clean_validation_20261101": {f"mlp_cat41_e2_seed{s}": (f"E2 nominal + random + near-target 6144: MLP 28 pure, categorical wheels, seed {s}", f"mlp_e2_mixture6144_polar_cat41_seed{s}") for s in range(3)},
+    "e8d_db045_mlp28_on_clean_validation_20261102": {f"mlp28_db045_seed{s}": (f"E8d: E4 MLP 28 control + wheel dead band 0.45 rad/s at evaluation, seed {s}", f"mlp_e4_mixture4096_raw21polar_seed{s}") for s in range(3)},
+    "e8d_db045_gru28_on_clean_validation_20261102": {f"gru28_db045_seed{s}": (f"E8d: E4 GRU 28 pure, memory 20 ms + wheel dead band 0.45 rad/s at evaluation, seed {s}", f"gru_e4_mixture4096_raw21polar_stride20_seed{s}") for s in range(3)},
+    "e8d_db045_tf28_on_clean_validation_20261102": {f"tf28_db045_seed{s}": (f"E8d: E5 transformer 28 pure + wheel dead band 0.45 rad/s at evaluation, seed {s}", f"tf_e5_mixture4096_raw21polar_stride20_seed{s}") for s in range(3)},
+    "e8d_db045_mlp32_on_clean_validation_20261102": {f"mlp32_db045_seed{s}": (f"E8d: E3 MLP 32 mixture + wheel dead band 0.45 rad/s at evaluation, seed {s}", f"mlp_e3_mixture4096_raw21plus_seed{s}") for s in range(3)},
     "e2_gru_polar_on_clean_validation_20261101": {f"gru_polar_e2_seed{s}": (f"E2 nominal + random + near-target 6144: GRU 28 pure, memory 20 ms, seed {s}", f"gru_e2_mixture6144_polar_stride20_seed{s}") for s in range(3)},
     "dart_low_gru_egocentric_on_clean_validation_20261027": {"gru_dartlow_ego_mem1ms": ("GRU 25 egocentric, memory 1 ms, DART low noise", "gru_dart_low_ego_stride1")},
 }
