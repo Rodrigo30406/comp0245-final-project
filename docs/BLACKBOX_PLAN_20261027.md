@@ -1495,6 +1495,92 @@ feature encoder in front of the GRU changes neither of the two measured defects 
 no latch in closed loop); the latch of §6q was a seed-dependent solution of the same optimisation, not something the
 input layer withheld. E8b closed.
 
+## 6x. The teammate's C3 "trigger-frame copies" (branch `feature/step3c-trigger-copies`, 31 Oct): why it works
+
+Read on 2 Nov from Whitea02's branch (`final/robotnik_arm_task/`, report `report.txt` §"实验 C3", code `train_policy.py
+--trigger-copies`, features `bc_features.py`, policy `policies/bc_policy.py`). Their pipeline is independent of ours (same
+lecturer expert and parameters: pos_tol 0.08, ang_tol 0.05, standoff interp, 25 s navigation timeout, 0.25 m/s arm; own
+collector, sklearn MLP, own evaluator), so the comparison is at the level of mechanisms, not of files.
+
+**What they changed.** One thing: the training rows. Their baseline `ego-novw` is a stateless MLP 128×128 (Adam, batch 200,
+early stopping on the validation loss) on 20 pure features (target in the base frame dx, dy, target z, planar distance,
+cos/sin of its bearing, arm q, arm qd; no base speed, no clock, no world pose), trained on 1 613 episodes (2 000 collected,
+seed 1, random start within 2 m and any yaw, 50% of them with DART-style command noise, expert failures filtered out), one
+row every 9 ms. C3 appends to those rows **K = 16 copies per episode of the recorded frame k0 = the first `nav_done` step**
+(wheel labels exactly 0, arm torque label = the first reach torque, median jump 27.9 N·m), inputs and labels exactly as
+recorded, with Gaussian jitter on the 7 arm velocities only (σ per joint = std of arm qd over the navigation rows, one
+fixed rng). Normalisation, features, network, split, validation loss and early stopping are unchanged; 25 808 rows added
+(1.5% of the training rows). K was picked among {16, 64, 256} as the smallest that extends the arm in >30% of a pilot
+closed-loop run with the expert base (rule amended after seeing the pilot; recorded as such in their report).
+
+**What they got** (their protocol v1.1; `success` = EE within 10 mm at some instant ≤ 40 s with the episode ending as
+`reached`, no dwell; 5 seeds):
+
+| Set (300 / 200 episodes, random starts) | success | stable 5 / 2 / 1 cm (our criterion, 0.5 s dwell) | held 10 s | parked | arm extended | tipped |
+|---|---:|---|---:|---:|---:|---:|
+| baseline `ego-novw` DEV, seed 0 | 1 | 15 / 1 / 0 | 0 | 0 | 0 | 0 |
+| C3 DEV, seeds 0–4 | 210 / 157 / 190 / 180 / 170 | 267–275 / 219–241 / 151–198 | 119 / 42 / 72 / 84 / 86 | 208–276 | 236–254 | 23 / 7 / 8 / 10 / 0 |
+| C3 HARD, seeds 0–4 | 128 / 102 / 110 / 111 / 112 | 167–182 / 136–146 / 94–113 | 60 / 34 / 45 / 57 / 58 | 131–175 | 163–178 | 0–1 |
+| C3 CONFIRM (new seeds 100–104), mean | 64.3% | reach 5 cm 92.7%, 2 cm 81.3% | 26.5% | — | 84.1% | 1.4% |
+
+Their expert on DEV: success 298/300, held 10 s 296, arm extended 245 (short reaches do not move the EE 10 cm).
+
+**Why it works: it is the ignition row of §6t.1, re-weighted.** Our §6t.1 swap test showed the MLP's arm reaches only once
+the arm is already moving: "arm at rest at home, base parked, label = reach" exists for about one row per 12 000 in the
+demonstrations, while "arm at rest at home, base in the box, label = hold" fills the whole orient phase, so the regressor
+learns hold for a resting arm and reach for a moving arm, a self-sustaining loop with no ignition. Their offline analysis
+(C0) found the same thing independently: in their stride-9 rows the trigger state is 147 rows of 1.8 M (0.008%), each
+episode has ~74 look-alike rows labelled hold, the MSE conditional mean on that state is therefore "hold", and both of
+their networks output r = 0.00 at the recorded k0 frame (r = fraction of the hold→reach torque jump produced) and
+0.76–0.96 one millisecond later, when the arm is already moving. Their "push control" (same parked state, arm velocities
+replaced by the recorded values 1 ms after k0) gives r = 0.67–0.87: the loop catches from the smallest nudge. C3 adds 16
+labelled copies of the ignition state against ~74 look-alikes, so the conditional mean at that state moves ~0.1–0.2 toward
+reach (their measured r on the training copies: 0.12; on the recorded k0 frames of the validation set: 0.12 for K 16, 0.30
+for K 64, 0.48 for K 256). Offline that looks like nothing (r ≈ 0 on the frozen parked state, validation loss *doubles*:
+0.026 → 0.055–0.063, early stopping 2–3× earlier), but in closed loop a 0.1–0.2 fraction of the reach torque for a few
+milliseconds is enough to move the joints past the ~0.05 rad/s where the regressor switches to reach, and the arm then
+drives itself to the target: arm extended 0% → 79% with the expert base (their EM cell) and 0.4% → 81% with the learned
+base. The jitter on arm qd matters for the same reason: it widens the ignition state from "exactly at rest" to the band of
+small velocities the arm actually has when the base parks (their fixed input: arm qd when the base has just stopped is
+0.1–0.5 rad/s, not 0).
+
+**Why the base then stops.** Our §6h finding: the base reads the arm as its phase flag (arm moving ⇒ navigation is over ⇒
+wheels zero). Once the arm ignites, their parked rate goes 12% → 81% and `parked_no_arm` 54% → 0%, with no change to the
+base's own rows. The residual creep is still there: half of their successes do not hold 10 s (`held_10s` 27% vs success
+60%; base displacement during the hold median 6 cm, EE leaves the 15 mm band at median 3.2 s), the same 6–10% residual
+command we measured in §6h–§6i. Their circling (base never parks) only drops 32% → 12%, confirming that part of the base
+failures is the base's own (their estimate ~10%), not the arm's.
+
+**Is it legitimate under our black-box rule?** Yes, with one wording caveat. The policy is a pure function of the current
+observation (no clock, no expert state, no base speed; they dropped the measured wheel speeds on purpose). The only use of
+the expert's internals is in *selecting* which training row to duplicate: the first `nav_done` row, read from the
+recording. That row is identifiable from the labels alone (first row whose wheel labels are exactly zero after the drive,
+where the arm torque jumps), so it is label-derived re-weighting, the same class as our E7a stop weight, not privileged
+input. The jittered copies are input-side augmentation with the original label. For the report it should be described as
+"K copies of the first zero-wheel row per demonstration", not "of the expert's done flag".
+
+**Why our E7a did not do this.** E7a weighted ×8 the *wheel* loss on *all* rows with zero demonstrated wheels (27.6% of the
+rows, almost all with the arm already reaching). It left the arm loss untouched and did not single out the one resting-arm
+row, so the ignition state kept its conditional mean "hold" and the arm never started (3 / 103 / 15 → 7 / 113 / 2 arms
+extended). C3 duplicates the whole row (both heads) and only that row.
+
+**Costs they measured.** New failure classes: `extended_not_reached` 6% → 19% (EE enters 5 cm, not 1 cm: the arm fires
+from a base pose that is not exactly the expert's), `tipped` 0.1% → 3.2% (48 sideways tip-overs, 23 in seed 0), early
+reaches 5.5% before the shadow FSM's `nav_done` (never for the expert) but 96% on the ring and oriented. K 64 / 256 trigger
+as often (79%) but succeed less (52% / 36% on the pilot) with more `extended_not_reached`: more weight fires earlier and
+less precisely. Confound they flag themselves: the added rows also change the optimisation (more Adam steps per epoch,
+earlier early stopping, doubled validation loss), so "trigger samples" and "training-process change" are not separated.
+
+**For us (E9, proposed, not launched).** The same intervention fits our trainer as an `egocentric_options` entry
+(`trigger_copies: K`, `trigger_qd_jitter: auto`): per training episode, take the first row with `base_navigation_done`
+(equivalently the first exactly-zero wheel label), append K copies with N(0, σ_j) on the 7 arm velocities, labels
+untouched, scaler from the original rows only. Test on MLP 28 pure, 4096 mixture, 3 seeds, both validations, with the
+§6t.1 swap probe (`arm_switch_probe.py`) before and after as the mechanistic check: the prediction is r on the resting-arm
+parked row going from −0.02 to ≈ +0.1–0.2 and the arm extending in most nominal episodes; the creep (§6h) should remain,
+so stable 1 cm arrivals will trail 5 cm arrivals by their held-10 s gap. It is the cheapest test of the §6t.1 mechanism we
+have (no new data, no memory, ~30 min per seed), and it combines with E8d/E8e (dead band / soft threshold) which remove the
+creep but left the arm asleep precisely for lack of this row.
+
 ## 7. Status
 
 - Done: decomposition (§1), variant `raw21_target_clock_v1`; E1 collected,
@@ -1606,6 +1692,11 @@ input layer withheld. E8b closed.
 - 2 Nov 12:34: E8b done and reported in §6w: 55 / 44 / 79 nominal, 62 / 49 / 43 random, offline 0.136–0.162. No seed
   latches (wheels zero to the end in 0 / 10 / 0), parks and restarts with 13–25% residual like the stateless models; the
   encoder evens the seeds out at the base GRU's non-latching level. E8a + E8b closed; E8c and E8e next, one trainer at a time.
+- 2 Nov 13:40: read the teammate's `feature/step3c-trigger-copies` (C3: 16 copies per episode of the first zero-wheel row with
+  arm-qd jitter, stateless MLP 20 pure inputs): success 52–70% DEV, stable 5 cm ~90%, held 10 s 14–40%, from a 0.3% baseline.
+  §6x explains it with §6t.1: it re-weights the one resting-arm reach row per episode, the arm ignites and the base reads it as
+  the phase flag (§6h); creep remains (half the successes do not hold 10 s). Label-derived re-weighting, not privileged input.
+  E9 (same option in our trainer, MLP 28, 4096 mixture) proposed, not launched.
 - Next, on request: E6 (§6c, nominal data without the clock) — the cheapest test of the reach-trigger mechanism.
 - E2 needs a collector mode; nothing in `src/` is edited while a collector,
   trainer or evaluator is running (provenance guards).
