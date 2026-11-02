@@ -44,6 +44,13 @@ EVALS = {  # evaluation dir -> {policy label in summary: (display name, training
     "e4_gru_polar_on_clean_validation_20261029": {f"gru_polar_mem20ms_seed{s}": (f"E4 nominal + random 4096: GRU 28 pure, memory 20 ms, seed {s}", f"gru_e4_mixture4096_raw21polar_stride20_seed{s}") for s in range(3)},
     "e4_mlp_polar_on_clean_validation_20261029": {f"mlp_polar_seed{s}": (f"E4 nominal + random 4096: MLP 28 pure (control), seed {s}", f"mlp_e4_mixture4096_raw21polar_seed{s}") for s in range(3)},
     "e5_tf_polar_on_clean_validation_20261030": {f"tf_polar_mem20s_seed{s}": (f"E5 nominal + random 4096: transformer 28 pure, attention 20 s, seed {s}", f"tf_e5_mixture4096_raw21polar_stride20_seed{s}") for s in range(3)},
+    "e7a_mlp_stopw8_on_clean_validation_20261101": {f"mlp_stopw8_seed{s}": (f"E7a nominal + random 4096: MLP 28 pure, stop rows weighted x8, seed {s}", f"mlp_e7a_mixture4096_polar_stopw8_seed{s}") for s in range(3)},
+    "e7b_mlp_l1_on_clean_validation_20261101": {f"mlp_l1_seed{s}": (f"E7b nominal + random 4096: MLP 28 pure, L1 wheel loss, seed {s}", f"mlp_e7b_mixture4096_polar_l1_seed{s}") for s in range(3)},
+    "e7c_mlp_cat41_on_clean_validation_20261101": {f"mlp_cat41_seed{s}": (f"E7c nominal + random 4096: MLP 28 pure, categorical wheels (41 bins), seed {s}", f"mlp_e7c_mixture4096_polar_cat41_seed{s}") for s in range(3)},
+    "e7d_mlp_prevwheel_on_clean_validation_20261101": {f"mlp_prevwheel_seed{s}": (f"E7d nominal + random 4096: MLP 30 (28 pure + previous wheel command), seed {s}", f"mlp_e7d_mixture4096_prevwheel_seed{s}") for s in range(3)},
+    "e2_mlp_polar_on_clean_validation_20261101": {f"mlp_polar_e2_seed{s}": (f"E2 nominal + random + near-target 6144: MLP 28 pure, seed {s}", f"mlp_e2_mixture6144_polar_seed{s}") for s in range(3)},
+    "e2_mlp_cat41_on_clean_validation_20261101": {f"mlp_cat41_e2_seed{s}": (f"E2 nominal + random + near-target 6144: MLP 28 pure, categorical wheels, seed {s}", f"mlp_e2_mixture6144_polar_cat41_seed{s}") for s in range(3)},
+    "e2_gru_polar_on_clean_validation_20261101": {f"gru_polar_e2_seed{s}": (f"E2 nominal + random + near-target 6144: GRU 28 pure, memory 20 ms, seed {s}", f"gru_e2_mixture6144_polar_stride20_seed{s}") for s in range(3)},
     "dart_low_gru_egocentric_on_clean_validation_20261027": {"gru_dartlow_ego_mem1ms": ("GRU 25 egocentric, memory 1 ms, DART low noise", "gru_dart_low_ego_stride1")},
 }
 

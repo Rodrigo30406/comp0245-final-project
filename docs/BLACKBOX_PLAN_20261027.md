@@ -823,6 +823,60 @@ holds 4914 training / 1230 validation episodes over the three datasets, validati
 from every start pose, as before. Successful E2 episodes last 11.1 s median (p95 15.2 s), start 0.25–1.3 m from
 the target (median 0.80 m).
 
+## 6m. E7c (1 Nov, 19:14–22:09): categorical wheels remove the creep and replace it with chatter and a clock-gated stop
+
+Three MLP-28 whose wheel head is a 41-way classifier per wheel (bins of 0.156 over the demonstrated range ±3.12,
+cross-entropy, argmax at inference; `mlp_e7c_mixture4096_polar_cat41_seed*`, 31,705 parameters), same 4096 mixture,
+same two validations. Offline NRMSE 0.170 / 0.162 / 0.161 (control 0.145–0.149: the quantisation costs 0.015–0.025).
+Stable arrivals at 5 cm of 205:
+
+| Model on the 4096 mixture | open-loop residual after the stop | clock frozen at the stop, 20–30 s | Nominal: arrivals | parked | arm | moving at 40 s | stopped outside tolerance | Random: arrivals | parked | arm | moving at 40 s |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| MLP 28 pure (control, §6i) | 1–5% | 3–9% | 23 / 30 / 27 | 119–126 | 3 / 103 / 15 | 199–203 | 2–6 | 11 / 15 / 17 | 33–68 | 3 / 105 / 11 | 199–204 |
+| **E7c** categorical 41 bins | **0%** | **0–2%** | 39 / 24 / 32 | 103–105 | 124 / 60 / 165 | **103 / 89 / 152** | **93 / 114 / 46** | 31 / 25 / 31 | 79–107 | 137 / 68 / 161 | 106 / 72 / 131 |
+
+The arrivals do not move (39 / 24 / 32 against 23 / 30 / 27), but the failure changes shape: for the first time half of
+the robots are **stopped** at 40 s, just not in the right place (median distance to the base goal 0.39–0.78 m, after
+having passed within 2–3 cm of it). The traces say why, in three measurements (`scripts/analysis/restart_trigger.py`,
+`restart_cause.py`, `zero_by_clock.py`; logs in the scratchpad `e7c_*.log`):
+
+- **The zero bin is never chosen near the goal.** While the base is "parked" (speed < 0.02 m/s, 111–123 nominal
+  episodes), 100% of the sampled wheel outputs are non-zero bins: median 0.47 (three bins from zero), p90 0.62–0.70,
+  with the sign changing from sample to sample (`[+0.47, +0.62]`, `[−0.47, −0.47]`, `[−0.47, +0.62]`, `[+0.47, −0.47]`
+  in consecutive 100 ms samples of episode 0). The base does not move because the commands cancel on average; the
+  creep is 1.1–1.4 cm (control 6–9 cm), heading change 1.3–2.5°. In open loop, on the demonstrated stop states, the
+  same models output exactly zero 100% of the time, so this is again the off-shell state: a few centimetres inside
+  the standoff radius the posterior over the 41 bins has no dominant mode, and the argmax jumps between the small
+  "orient"-like corrections of either sign (the expert's orient commands are 0.76–3.0 in magnitude, p10–p90).
+- **The restart is not a drift of a zero; it is a run of same-sign chatter.** Re-running the policy from the
+  parked instant on three input streams (observation held and clock running; real observations with the clock
+  frozen; full replay), the 0.5 s moving average of the wheel command exceeds a drive level of 0.3 within 0.4 s on
+  all three streams in 91–100% of the episodes: the parked output is at drive level from the first instant, in
+  any of the three decompositions. The recorded restart happens after 2.3–6.0 s, when the signs stop cancelling
+  (`[+0.78, +0.47]` for 2 s in episode 0: a slow forward arc). The control's regression restart behaves differently:
+  its output is a small residual (duty cycle above 0.3: 5–8%) that grows with the clock and drifts the base for
+  6–9 s before the 0.3 level is reached (clock-only stream reproduces the restart in 59–91% of episodes at 6–9 s).
+- **The stop that finally happens is the 25 s rule of the stalled demonstrations.** Episodes that end stopped
+  outside tolerance stop at a median clock of 25.2 s (seed 0; 55% within 24–27 s) and 26.1 s (seed 1), 0.22–0.28 m
+  from the target, i.e. inside the standoff shell (0.65–0.80 m), where the chatter run had driven them. The zero bin
+  is output in 2–6% of the samples between 12 and 24.5 s and in 34–49% after 25.5 s. In the training split, every
+  row with clock ≥ 25 s is a stalled episode whose wheels are exactly zero (114k rows, 100%; the expert's navigation
+  timeout), and rows of successful episodes are exactly zero in 1% (0–5 s), 23% (5–10 s), 53% (10–15 s), 78%
+  (15–20 s) and 100% (20–25 s, 7k rows) of the cases. A classifier learns the hard boundary "clock ≥ 25 s → zero"
+  that the data presents, independent of the base's position; the regression models never output an exact zero
+  there (0% of samples) and keep moving at 40 s in 199–204 episodes. Seed 2 is in between (stop at 30.4 s median,
+  0.70 m from the target, 152 still moving).
+- The arm fires more often (124 / 60 / 165 nominal, control 3 / 103 / 15) because the base is still more often and
+  for longer: the arm's cue is the posture (§6c), and a chattering base holds that posture. "Both parked and extended"
+  reaches 98 / 41 / 90 episodes, but the base then leaves, so the stable arrivals stay at 24–39.
+
+Conclusion for E7c: the categorical head does solve the exact problem it was built for (no small residual: the zero
+is exactly zero wherever the model chooses it) and exposes the real one more clearly than the regression did. Off the
+demonstrated shell the model has no basis for choosing zero, whatever the output parametrisation; it chooses zero
+only where the data forces it, and in this data that place is the clock, not the pose. The fix remains data in the
+off-shell states (E2, phase B, which also runs the categorical head on the 6144 mixture so the two effects can be
+separated) or an input that carries the latch (E7d).
+
 ## 7. Status
 
 - Done: decomposition (§1), variant `raw21_target_clock_v1`; E1 collected,
@@ -880,7 +934,12 @@ the target (median 0.80 m).
   `config.json` / `model_info.json` (`egocentric_options`). Expected to finish 2 Nov morning.
 - E7a/E7b done and reported in §6l (1 Nov 20:13): open-loop residual 0–1% but the closed-loop creep is unchanged;
   arrivals 19–44 (stop weight) and 9–20 (L1) against 23–30 for the control. E2 collected (1775 successes, 273 stalls,
-  same stall rate as the base data). E7c evaluating, E7d training, phase B queued.
+  same stall rate as the base data).
+- E7c done and reported in §6m (1 Nov 22:09): arrivals unchanged (24–39), but the categorical head replaces the creep
+  with sign-alternating chatter at three bins from zero and a stop gated by the 25 s clock of the stalled
+  demonstrations (every training row after 25 s has zero wheels). E7d trained (offline NRMSE 0.104–0.108, the
+  copycat signature) and evaluating; phase B (6144 mixture with E2) training, one trainer at a time, RAM logged every
+  30 s (`rss_monitor.log` in the scratchpad).
 - 28-input pure-transform variant done and reported in §6e (branch `rodrigo-pure28` merged).
 - Next, on request: E6 (§6c, nominal data without the clock) — the cheapest test of the reach-trigger mechanism.
 - E2 needs a collector mode; nothing in `src/` is edited while a collector,
