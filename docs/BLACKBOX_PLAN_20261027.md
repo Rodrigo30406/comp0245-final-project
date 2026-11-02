@@ -1082,9 +1082,11 @@ remaining arm (relaunched below with the memory fix).
   GRU seeds run alone, one at a time.
 - E2 categorical done and reported in §6p (2 Nov 03:17): 20 / 14 / 23 arrivals, same rotation at the arrival as the
   regression. E2 closed for the MLP family.
-- 2 Nov 03:30: GRU trainer memory fix applied (`normalised_group` in `gru_policy.py`: per-episode normalisation and
-  float32 cast, statistics from the same valid rows, test `GroupLoadingTests`; 98 tests OK) and the three E2 GRU seeds
-  relaunched alone (`chain_gru_e2.sh`), evaluations after the third seed.
+- 2 Nov 03:20: GRU trainer memory fix applied (`normalised_group` in `gru_policy.py`: per-episode normalisation and
+  float32 cast, statistics from the same valid rows, test `GroupLoadingTests`; 98 tests OK, commit `4f4e95c`) and the
+  three E2 GRU seeds relaunched alone (`chain_gru_e2.sh`), evaluations after the third seed. Verified: the load of the
+  4914-episode group peaks at 43 GB RSS (was killed past 77 GB), 24 GB during training, 29 GB on the GPU; the first
+  epoch starts 90 s after launch.
 - 28-input pure-transform variant done and reported in §6e (branch `rodrigo-pure28` merged).
 - Next, on request: E6 (§6c, nominal data without the clock) — the cheapest test of the reach-trigger mechanism.
 - E2 needs a collector mode; nothing in `src/` is edited while a collector,
