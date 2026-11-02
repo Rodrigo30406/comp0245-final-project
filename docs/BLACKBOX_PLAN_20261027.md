@@ -921,6 +921,59 @@ accident of the first zero; augmented until the copycat disappears, the model st
 A latch has to be a function of the state history (the GRU's hidden state, phase B) or of data that covers the states
 where the decision is actually taken (E2). E7d is closed.
 
+## 6o. E2 on the MLP 28 (1 Nov 22:09 – 2 Nov 02:34): near-target starts teach "rotate" inside the tolerance box
+
+Three MLP-28 on the 6144 mixture (nominal 1024 + random starts 3072 + near-target starts 2048; split
+`runs/splits/e2_mixture_6144.json`, 4914 / 1230 episodes; `mlp_e2_mixture6144_polar_seed*`), same two validations.
+Offline NRMSE 0.148 / 0.151 / 0.150 (the 4096 control: 0.145–0.149). Stable arrivals at 5 cm of 205:
+
+| MLP 28 pure | data | Nominal: arrivals | within 10 cm of the base goal | parked | arm | moving at 40 s | Random: arrivals | within 10 cm | parked | moving at 40 s |
+|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| control (§6i) | 4096 | 23 / 30 / 27 | 195 / 198 / 190 | 119–126 | 3 / 103 / 15 | 199–203 | 11 / 15 / 17 | 137 / 137 / 123 | 33–68 | 199–204 |
+| **E2** | 6144 | **14 / 17 / 13** | 150 / 156 / 185 | 42–67 | 1 / 31 / 48 | 198–203 | 12 / 10 / 9 | 112 / 120 / 134 | 35–47 | 197–203 |
+
+More data, from the region where the robot fails, made the base stop less often (42–67 parks against 120–142) and
+even reach the goal less often on the nominal starts. Measurements (`scripts/analysis/arrival_profile.py`,
+`arrival_heading.py`, `zero_by_park_distance.py`, `stop_basin.py`; logs `e2_*.log`):
+
+- **The stop basin on the demonstrated states is unchanged.** Displacing the demonstrated stop pose (teacher-forced,
+  arm at hold) gives 2% |wheel| inside the 8 cm box, 2–5% in the 8–15 cm ring, 2–3% with a yaw offset: identical to
+  the control. The data did not narrow the stop; it changed what the model does on the way in.
+- **The residual at the arrival doubled, and the new part is a rotation.** In the second around the closest approach
+  the wheel command is 0.73–0.83 (control 0.45–0.58). Decomposed into a drive (right + left)/2 and a rotation
+  (right − left)/2: control 0.28–0.42 drive, 0.20–0.23 rotation; E2 0.45–0.56 drive, **0.43–0.49 rotation**. The
+  heading error to the target at that instant is 1.1–2.2° median, inside the expert's 2.9° tolerance for 130–160 of
+  the 205 episodes; the model rotates anyway. The lowest 1 s mean |wheel| in an episode is 0.12–0.39 (control
+  0.06–0.14; below 0.1 in 17–87 episodes against 76–119). Where the base does park the creep is the control's
+  (10–12% of the driving command, 7–15 cm towards the target).
+- **What the near-target data says inside the tolerance box.** Successful episodes, rows binned by distance between
+  the base and the expert's own base goal (`base_goal_xy`), rows within 8 cm of it:
+
+  | dataset | rows within 8 cm of the goal | of which wheels exactly zero | non-zero rows: median \|wheel\| | phase |
+  |---|---:|---:|---:|---|
+  | nominal 1024 | 25% of all rows | **82%** | 1.40 | 100% orient |
+  | E3 random starts | 22% | 63% | 3.00 | 100% orient |
+  | E2 near-target starts | 24% | **44%** | **3.00** | 100% orient |
+
+  A near-target start has a random yaw and often lies on the far side of the target, so the expert reaches its base
+  goal facing the wrong way and spends seconds rotating in place at full speed (the `orient` phase, |wheel| = 3.0)
+  before the latch; in E2 more than half of the rows inside the tolerance box are such rotations, against 18% in
+  the nominal data. In the 6144 mixture the "inside the box" rows went from roughly 70% zero to 60% zero with the
+  non-zero mode at saturation. The expert resolves this with its 0.05 rad heading test and a latch; a regressor
+  fitted to these rows learns a blend "inside the box → some rotation" whose weight grows with the share of
+  rotation rows, and that blend is what appears at the closed-loop arrival with a 1–2° heading error. The same data
+  also added short drives from arbitrary headings around the goal (29–38% drive rows at 8–20 cm), which is where
+  the nominal approach got worse (150–185 within 10 cm).
+- Offline the three models are as good as the control (0.148–0.151) and the open-loop stop is as clean: the fourth
+  arm in a row whose offline metric does not see the closed-loop change.
+
+Conclusion for E2: coverage of the near-goal region does not help if the expert's behaviour there is dominated by a
+rotation that a 0.05 rad threshold and a latch turn off. The demonstrations contain the decision but not its
+boundary at a resolution the regressor can learn from 1 ms rows (the stop rows and the rotate rows differ by a
+heading of a few degrees and by the latch state, which is not in the inputs). The E2 categorical models (same data,
+evaluating) will say whether the argmax sharpens that boundary; the GRU on this mixture (the only arm with a state
+that can hold the latch) is relaunched below.
+
 ## 7. Status
 
 - Done: decomposition (§1), variant `raw21_target_clock_v1`; E1 collected,
@@ -989,6 +1042,17 @@ where the decision is actually taken (E2). E7d is closed.
   0.13–0.17); the off-shell residual at arrival is twice the control's and the base never parks. E7d closed.
   Phase B: MLP 28 on the 6144 mixture trained (offline 0.148 / 0.151 / 0.150, peak RSS 46 GB) and evaluating;
   categorical 41 bins on the 6144 mixture training; GRU next.
+- E2 MLP 28 done and reported in §6o (2 Nov 02:34): 14 / 17 / 13 arrivals, worse than the 4096 control; the
+  near-target starts fill the tolerance box with full-speed `orient` rotations (56% of the rows inside 8 cm are
+  non-zero, median 3.0) and the closed-loop arrival residual doubles with a rotation component. E2 categorical
+  (offline 0.157 / 0.160 / 0.161) evaluating.
+- 2 Nov 02:38: the GRU trainer on the 6144 mixture was OOM-killed while loading (RSS 50 → 77 GB in one minute, the
+  machine at 0 available; `padded_group` materialises the training set as a float64 array padded to the longest
+  episode, 28 s of stalls, and normalises it in two more float64 copies: ~110 GB on 4914 episodes). The chain was
+  stopped before the second seed repeated it; the categorical evaluators were left running. Fix (after the
+  evaluators finish, nothing in `src/` is edited while they run): fill the normalised float32 tensors per episode
+  from the same statistics, which reproduces the current numbers bit for bit at a third of the memory; then the three
+  GRU seeds run alone, one at a time.
 - 28-input pure-transform variant done and reported in §6e (branch `rodrigo-pure28` merged).
 - Next, on request: E6 (§6c, nominal data without the clock) — the cheapest test of the reach-trigger mechanism.
 - E2 needs a collector mode; nothing in `src/` is edited while a collector,
