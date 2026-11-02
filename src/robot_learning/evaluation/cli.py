@@ -15,7 +15,7 @@ from robot_learning.settings import PROJECT_ROOT, get_roboenv_root
 from robot_learning.data.storage import read_json, write_json, sha256, provenance, snapshot_sources, utc_now
 from robot_learning.data.scheduler import THREAD_VARIABLES, stop_processes, validate_workers
 from robot_learning.learning.dataset import inventory, validate_partition, extra_inventory, record_directory
-from robot_learning.simulation.config import resolve_episode_config, episode_defaults
+from robot_learning.simulation.config import resolve_episode_config, episode_defaults, same_expert_configuration
 
 DEFAULT_CONFIG = PROJECT_ROOT/'experiment_specs/evaluation/validation.json'
 
@@ -103,7 +103,7 @@ def prepare(split_path, model_arguments, protocol, output, limit=None, *, allow_
             model_cfg_source=read_json(model_dataset/'config.json')
             model_cfg=resolve_episode_config({k:v for k,v in model_cfg_source.items() if k in episode_defaults()})
             model_cfg['headless']=True
-            if model_cfg!=cfg:
+            if not same_expert_configuration(model_cfg, cfg):
                 raise ValueError('Different physical/expert configurations across learning-curve datasets')
             model_provenance=read_json(model_dataset/'provenance.json')
             source_provenance=read_json(dataset/'provenance.json')

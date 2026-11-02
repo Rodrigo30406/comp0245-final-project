@@ -21,7 +21,7 @@ import numpy as np
 
 from robot_learning.data.storage import read_json, write_json, sha256, utc_now, git_info
 from robot_learning.settings import PROJECT_ROOT
-from robot_learning.simulation.config import episode_defaults, resolve_episode_config
+from robot_learning.simulation.config import episode_defaults, resolve_episode_config, same_expert_configuration
 from .dataset import inventory, load_episode, validate_partition, inventory_fingerprint, extra_inventory, record_directory, drop_expert_failures
 from .metrics import errors, aggregate
 from .model import INPUT_NAMES, OUTPUT_NAMES, expand_actions
@@ -460,7 +460,7 @@ def train(dataset, split_path, config_path, output, horizon_s=40.0, device_name=
         extra = Path(extra).resolve()
         extra_cfg = resolve_episode_config({k: v for k, v in read_json(extra / "config.json").items() if k in episode_defaults()})
         extra_dt = read_json(extra / "episodes" / f"{inventory(extra)[0]['episode_id']}.json")["dt"]
-        if extra_cfg != episode_cfg or extra_dt != dt:
+        if not same_expert_configuration(extra_cfg, episode_cfg) or extra_dt != dt:
             raise ValueError(f"Extra dataset {extra} has a different episode configuration or dt")
         extra_hashes[str(extra)] = {n: sha256(extra / n) for n in ["dataset.json", "config.json", "scenarios.json", "schema.json", "provenance.json"]}
     spec = spec_from_episode_config(episode_cfg, dt, horizon_s, variant); validate_spec(spec)

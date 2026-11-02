@@ -16,7 +16,7 @@ from robot_learning.data.config import generate_scenarios, resolve_config
 from robot_learning.data.storage import read_json, write_json
 from robot_learning.data.worker import run_episode
 from robot_learning.settings import get_roboenv_root
-from robot_learning.simulation.config import episode_defaults, resolve_episode_config
+from robot_learning.simulation.config import episode_defaults, resolve_episode_config, same_expert_configuration
 from robot_learning.simulation.episode import Episode, base_goal
 from robot_learning.simulation.interactive import run_interactive
 
@@ -109,3 +109,11 @@ class GoalReferenceTests(unittest.TestCase):
         self.assertAlmostEqual(b1, float(np.arctan2(target[1] - start[1], target[0] - start[0])))
         # degenerate: target above the reference point -> bearing 0, as the lecturer's code
         self.assertEqual(base_goal([0.0, 0.0, 0.5], [0.0, 0.0], table)[0], 0.0)
+
+
+class ExpertConfigurationComparisonTests(unittest.TestCase):
+    def test_goal_reference_is_the_only_tolerated_difference(self):
+        a = resolve_episode_config({}); b = resolve_episode_config({"goal_reference": "start"})
+        self.assertTrue(same_expert_configuration(a, b)); self.assertTrue(same_expert_configuration(a, a))
+        c = resolve_episode_config({"base_controller": {"pos_tol": 0.09}})
+        self.assertFalse(same_expert_configuration(a, c))
