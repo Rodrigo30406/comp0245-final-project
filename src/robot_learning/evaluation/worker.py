@@ -18,6 +18,18 @@ def action_limits(episode_config):
     return np.array([wheel]*4 + [episode_config['arm_controller']['max_torque']]*7)
 
 
+def make_action_filter(limits, wheel_dead_band=0.0):
+    """Clip to the declared envelope; with a dead band, wheel commands whose largest magnitude is below it become exactly
+    zero (the torques are untouched). The band applies to learned policies only (see cli.validate_protocol)."""
+    limits = np.asarray(limits, dtype=float)
+    def apply(action):
+        action = np.clip(action, -limits, limits)
+        if wheel_dead_band > 0 and np.abs(action[:4]).max() < wheel_dead_band:
+            action = action.copy(); action[:4] = 0.0
+        return action
+    return apply
+
+
 def joint_limit_violations(q, lower, upper):
     # PyBullet uses lower > upper for continuous joints: these have no angular bound.
     bounded = np.isfinite(lower) & np.isfinite(upper) & (lower < upper)
@@ -33,8 +45,10 @@ def run_rollout(directory, job):
     started = time.monotonic(); limits = action_limits(cfg)
     clipped = np.zeros(11, dtype=np.int64); peak_raw = np.zeros(11)
     prediction_ns = 0; count = 0; violations = 0; joint_counts = np.zeros(7,dtype=np.int64)
+    dead_band = float(protocol.get('wheel_dead_band_rad_s', 0.)) if spec['kind'] != 'expert' else 0.0
     record = {**job, 'status': 'running', 'limits': limits.tolist(),
               'limits_meaning': 'expert command envelope, not a hardware certification',
+              'wheel_dead_band_rad_s': dead_band,
               'valid': False, 'metrics': None}
     write_json(output, record)
     try:
@@ -63,7 +77,7 @@ def run_rollout(directory, job):
         # Effective dt is checked after setup; horizon is integer physical steps.
         with Episode(scenario['target'], cfg, get_roboenv_root(), scenario['initial_base'],
                      policy=policy, horizon_steps=1,
-                     action_filter=lambda action: np.clip(action, -limits, limits)) as episode:
+                     action_filter=make_action_filter(limits, dead_band)) as episode:
             if policy is not None and hasattr(model, 'reset'):
                 model.reset(episode.dt)
             steps = int(round(protocol['horizon_s']/episode.dt))

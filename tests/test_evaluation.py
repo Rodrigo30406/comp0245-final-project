@@ -10,7 +10,7 @@ from pathlib import Path
 from unittest.mock import patch
 import numpy as np
 from robot_learning.evaluation.metrics import TaskMetrics
-from robot_learning.evaluation.worker import action_limits, joint_limit_violations
+from robot_learning.evaluation.worker import action_limits, joint_limit_violations, make_action_filter
 from robot_learning.evaluation.cli import validate_protocol, verify_frozen_files
 from robot_learning.data.storage import read_json, sha256
 from robot_learning.settings import PROJECT_ROOT, get_roboenv_root
@@ -61,6 +61,20 @@ class EvaluationMetricTests(unittest.TestCase):
         limits=action_limits(resolve_episode_config({}))
         self.assertAlmostEqual(limits[0],(.25+1*.66/2)/.11)
         np.testing.assert_array_equal(limits[4:],[30]*7)
+
+    def test_wheel_dead_band_is_optional_validated_and_zeroes_only_small_wheel_commands(self):
+        cfg=read_json(PROJECT_ROOT/'experiment_specs/evaluation/validation.json')
+        validate_protocol({**cfg,'wheel_dead_band_rad_s':0.45})
+        for bad in [-0.1,float('nan'),'0.45']:
+            with self.assertRaises(ValueError):validate_protocol({**cfg,'wheel_dead_band_rad_s':bad})
+        limits=action_limits(resolve_episode_config({}))
+        plain=make_action_filter(limits); band=make_action_filter(limits,0.45)
+        small=np.array([0.2,-0.3,-0.3,0.2]+[1.0]*7); large=np.array([0.2,-0.5,-0.5,0.2]+[1.0]*7); huge=np.array([9.0]*4+[50.0]*7)
+        np.testing.assert_array_equal(plain(small),small)
+        np.testing.assert_array_equal(band(small),np.array([0.0]*4+[1.0]*7))   # both wheels below the band -> exact zero, torques kept
+        np.testing.assert_array_equal(band(large),large)                       # one wheel at or above the band -> untouched
+        np.testing.assert_array_equal(band(huge),np.concatenate([[limits[0]]*4,[30.0]*7]))   # clipping still applies
+        self.assertIsNot(band(small),small)                                     # the caller's array is not modified
 
 
 class AutonomousEngineTests(unittest.TestCase):
