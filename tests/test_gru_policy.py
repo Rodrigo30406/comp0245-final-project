@@ -104,6 +104,33 @@ class PolicyStateTests(unittest.TestCase):
         np.testing.assert_array_equal(policy.predict(x), policy.predict_features(x))
 
 
+class GroupLoadingTests(unittest.TestCase):
+    def test_normalised_group_matches_the_padded_formula_bit_for_bit(self):
+        from robot_learning.learning.gru_policy import padded_group, normalised_group, group_statistics, episode_group
+        from robot_learning.learning.dataset import inventory
+        with tempfile.TemporaryDirectory() as tmp:
+            data = Path(tmp) / 'data'; data.mkdir(); make_dense_dataset(data); records = inventory(data)
+            for mode in ('egocentric_clock_v1', 'raw21'):
+                X, Y, L = padded_group(data, records, SPEC, mode); mask = np.arange(X.shape[1])[None, :] < L[:, None]
+                fx, fy = X[mask], Y[mask]
+                x_mean, x_scale = fx.mean(axis=0), fx.std(axis=0); x_scale[x_scale == 0] = 1.0
+                y_mean, y_scale = fy.mean(axis=0), fy.std(axis=0); y_scale[y_scale == 0] = 1.0
+                Xn, Yn, Ln, stats, labels = normalised_group(data, records, SPEC, mode)
+                for got, want in zip(stats, (x_mean, x_scale, y_mean, y_scale)):  # same rows; summation order may differ by an ulp
+                    np.testing.assert_allclose(got, want, rtol=1e-12, atol=0)
+                self.assertEqual(Xn.dtype, np.float32); np.testing.assert_array_equal(Ln, L)
+                np.testing.assert_array_equal(Xn, ((X - stats[0]) / stats[1]).astype(np.float32))
+                np.testing.assert_array_equal(Yn, ((Y - stats[2]) / stats[3]).astype(np.float32))
+                for i, lab in enumerate(labels):
+                    np.testing.assert_array_equal(lab, Y[i, :L[i]])
+                # statistics passed in (the validation group uses the training statistics)
+                Xv, _, _, stats_v, _ = normalised_group(data, records[:2], SPEC, mode, stats)
+                self.assertIs(stats_v, stats)
+                np.testing.assert_array_equal(Xv, ((X[:2, :L[:2].max()] - stats[0]) / stats[1]).astype(np.float32))
+                feats, labs, lens = episode_group(data, records, SPEC, mode)
+                self.assertEqual(group_statistics(feats, labs)[0].shape, x_mean.shape)
+
+
 @unittest.skipUnless(TORCH_AVAILABLE, 'Optional PyTorch environment is not installed')
 class TrainingRunTests(unittest.TestCase):
     def test_training_produces_evaluator_compatible_run(self):

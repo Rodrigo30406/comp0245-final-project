@@ -974,6 +974,33 @@ heading of a few degrees and by the latch state, which is not in the inputs). Th
 evaluating) will say whether the argmax sharpens that boundary; the GRU on this mixture (the only arm with a state
 that can hold the latch) is relaunched below.
 
+## 6p. E2 on the categorical head (2 Nov 00:14–03:17): the rotation rows reach the argmax too
+
+Three MLP-28 with the 41-bin wheel head on the 6144 mixture (`mlp_e2_mixture6144_polar_cat41_seed*`), offline NRMSE
+0.157 / 0.160 / 0.161 (E7c on 4096: 0.161–0.170). Stable arrivals at 5 cm of 205:
+
+| categorical 41 bins | data | Nominal: arrivals | parked | arm | moving at 40 s | stopped outside | Random: arrivals | parked | moving at 40 s |
+|---|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| E7c (§6m) | 4096 | 39 / 24 / 32 | 103–105 | 124 / 60 / 165 | 103 / 89 / 152 | 93 / 114 / 46 | 31 / 25 / 31 | 79–107 | 106 / 72 / 131 |
+| **E2 categorical** | 6144 | **20 / 14 / 23** | 69 / 57 / 112 | 27 / 41 / 90 | 199 / 179 / 181 | 6 / 26 / 23 | 20 / 15 / 30 | 63–93 | 190 / 176 / 164 |
+
+Same direction as the regression (§6o): the near-target data costs arrivals (20 / 14 / 23 against 39 / 24 / 32), parks
+and arm extensions. The probes (`arrival_profile`, `arrival_heading`, `creep_profile`, `restart_trigger` on
+`e2_mlp_cat41_on_clean_validation_20261101`):
+
+- The arrival residual is the E2 regression's: 0.70–0.95 around the closest approach, rotation component 0.40–0.49,
+  heading error at arrival 1.2–2.5° median. The argmax does not sharpen the boundary; with 56% of the in-box rows
+  being full-speed rotations, the rotation bins win the argmax more often than before, so the chatter of §6m
+  (100% non-zero samples while "parked", first non-zero bin 0.47–0.55, 2 cycles median, up to 6) now resolves into
+  a drive sooner (restart after 1.6–4.9 s) and the base ends moving in 179–199 episodes.
+- The 25 s clock stop of §6m almost disappears (stopped outside tolerance 6–26 against 46–114): the E2 episodes are
+  short (11 s median) and the mixture's rows after 25 s are now a smaller share of what the zero bin sees, so the
+  classifier's "clock → zero" rule is weaker; it was never the stop we wanted anyway.
+
+E2 is closed for the MLP family: on either head, data from the region where the robot fails makes the failure worse,
+because the expert's behaviour there is the orient rotation and not the stop. The GRU on the same mixture is the one
+remaining arm (relaunched below with the memory fix).
+
 ## 7. Status
 
 - Done: decomposition (§1), variant `raw21_target_clock_v1`; E1 collected,
@@ -1051,8 +1078,13 @@ that can hold the latch) is relaunched below.
   episode, 28 s of stalls, and normalises it in two more float64 copies: ~110 GB on 4914 episodes). The chain was
   stopped before the second seed repeated it; the categorical evaluators were left running. Fix (after the
   evaluators finish, nothing in `src/` is edited while they run): fill the normalised float32 tensors per episode
-  from the same statistics, which reproduces the current numbers bit for bit at a third of the memory; then the three
+  from the same statistics, which reproduces the current numbers at a third of the memory; then the three
   GRU seeds run alone, one at a time.
+- E2 categorical done and reported in §6p (2 Nov 03:17): 20 / 14 / 23 arrivals, same rotation at the arrival as the
+  regression. E2 closed for the MLP family.
+- 2 Nov 03:30: GRU trainer memory fix applied (`normalised_group` in `gru_policy.py`: per-episode normalisation and
+  float32 cast, statistics from the same valid rows, test `GroupLoadingTests`; 98 tests OK) and the three E2 GRU seeds
+  relaunched alone (`chain_gru_e2.sh`), evaluations after the third seed.
 - 28-input pure-transform variant done and reported in §6e (branch `rodrigo-pure28` merged).
 - Next, on request: E6 (§6c, nominal data without the clock) — the cheapest test of the reach-trigger mechanism.
 - E2 needs a collector mode; nothing in `src/` is edited while a collector,

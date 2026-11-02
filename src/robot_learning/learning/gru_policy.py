@@ -190,21 +190,54 @@ def export_policy(network, spec, mode, stats, stride):
                      stride_steps=stride)
 
 
-def padded_group(directory, records, spec, mode):
-    """Per-episode physics-step rows padded to the longest episode; returns lengths too."""
+def episode_group(directory, records, spec, mode):
+    """Per-episode feature and label arrays (float64) in record order, with their lengths."""
     feats, labels = [], []
     for record in records:
         if mode == "raw21":
             f, y, _ = load_episode(record_directory(record, directory), record)
         else:
             f, y = load_episode_features(directory, record, spec)
-        feats.append(f); labels.append(y)
-    lengths = np.array([len(f) for f in feats]); T = int(lengths.max())
-    X = np.zeros((len(feats), T, len(input_names(mode))), dtype=np.float64)
-    Y = np.zeros((len(feats), T, 9), dtype=np.float64)
-    for i, (f, y) in enumerate(zip(feats, labels)):
-        X[i, :len(f)] = f; Y[i, :len(y)] = y
-    return X, Y, lengths
+        feats.append(np.asarray(f, dtype=np.float64)); labels.append(np.asarray(y, dtype=np.float64))
+    return feats, labels, np.array([len(f) for f in feats])
+
+
+def _pad(arrays, length, transform, fill):
+    out = np.empty((len(arrays), length, arrays[0].shape[1]), dtype=fill.dtype); out[...] = fill
+    for i, a in enumerate(arrays):
+        out[i, :len(a)] = transform(a)
+    return out
+
+
+def padded_group(directory, records, spec, mode):
+    """Per-episode physics-step rows padded to the longest episode; returns lengths too."""
+    feats, labels, lengths = episode_group(directory, records, spec, mode); T = int(lengths.max())
+    same = lambda a: a
+    return _pad(feats, T, same, np.zeros(feats[0].shape[1])), _pad(labels, T, same, np.zeros(9)), lengths
+
+
+def group_statistics(feats, labels):
+    """Mean and standard deviation of the valid rows (what `padded_group` under its mask gives); a zero scale becomes 1."""
+    fx = np.concatenate(feats); fy = np.concatenate(labels)
+    x_mean, x_scale = fx.mean(axis=0), fx.std(axis=0); x_scale[x_scale == 0] = 1.0
+    y_mean, y_scale = fy.mean(axis=0), fy.std(axis=0); y_scale[y_scale == 0] = 1.0
+    return x_mean, x_scale, y_mean, y_scale
+
+
+def normalised_group(directory, records, spec, mode, stats=None):
+    """`padded_group` normalised and cast to float32 one episode at a time, so the padded float64 arrays and their
+    normalised copies never exist (4914 episodes padded to 28 s cost ~110 GB that way and ~20 GB this way).
+    For given statistics it is element for element identical to ((padded - mean) / scale).astype(float32), padding
+    rows included; the statistics computed here are those of the same valid rows (summation order can differ from the
+    masked padded array by an ulp). Returns the normalised inputs and labels, the lengths, the statistics (from the
+    valid rows when not given) and the raw per-episode labels for scoring."""
+    feats, labels, lengths = episode_group(directory, records, spec, mode); T = int(lengths.max())
+    stats = group_statistics(feats, labels) if stats is None else stats
+    x_mean, x_scale, y_mean, y_scale = stats
+    nx = lambda a: ((a - x_mean) / x_scale).astype(np.float32); ny = lambda a: ((a - y_mean) / y_scale).astype(np.float32)
+    X = _pad(feats, T, nx, nx(np.zeros((1, len(x_mean))))[0]); del feats
+    Y = _pad(labels, T, ny, ny(np.zeros((1, 9)))[0])
+    return X, Y, lengths, stats, labels
 
 
 def train(dataset, split_path, config_path, output, horizon_s=40.0, device_name="cuda",
@@ -254,18 +287,13 @@ def train(dataset, split_path, config_path, output, horizon_s=40.0, device_name=
     write_json(output / "run.json", manifest)
     started = time.perf_counter()
     try:
-        X, Y, L = padded_group(dataset, split["training"], spec, mode)
-        VX, VY, VL = padded_group(dataset, split["validation"], spec, mode)
+        X, Y, L, stats, _ = normalised_group(dataset, split["training"], spec, mode)
+        x_mean, x_scale, y_mean, y_scale = stats
         mask = np.arange(X.shape[1])[None, :] < L[:, None]
-        flat_x = X[mask]; flat_y = Y[mask]
-        x_mean, x_scale = flat_x.mean(axis=0), flat_x.std(axis=0); x_scale[x_scale == 0] = 1.0
-        y_mean, y_scale = flat_y.mean(axis=0), flat_y.std(axis=0); y_scale[y_scale == 0] = 1.0
-        stats = (x_mean, x_scale, y_mean, y_scale); del flat_x, flat_y
-        tx = torch.from_numpy(((X - x_mean) / x_scale).astype(np.float32)).to(device)
-        ty = torch.from_numpy(((Y - y_mean) / y_scale).astype(np.float32)).to(device)
-        tmask = torch.from_numpy(mask).to(device)
-        tvx = torch.from_numpy(((VX - x_mean) / x_scale).astype(np.float32)).to(device)
+        tx = torch.from_numpy(X).to(device); ty = torch.from_numpy(Y).to(device); tmask = torch.from_numpy(mask).to(device)
         del X, Y
+        VX, _, VL, _, VYS = normalised_group(dataset, split["validation"], spec, mode, stats)  # training statistics
+        tvx = torch.from_numpy(VX).to(device); T_val = VX.shape[1]; del VX
         network = build_network(torch, len(names), hidden, head_width).to(device)
         optimizer = torch.optim.Adam(network.parameters(), lr=hp["learning_rate"], betas=(.9, .999), eps=1e-8)
         rng = np.random.RandomState(hp["seed"]); n = len(tx); T = tx.shape[1]
@@ -279,7 +307,7 @@ def train(dataset, split_path, config_path, output, horizon_s=40.0, device_name=
                     preds.append(out.double().cpu().numpy())
             network.train()
             pred = np.concatenate(preds) * y_scale + y_mean
-            per = [errors(VY[i, :VL[i]], pred[i, :VL[i]], y_scale) for i in range(len(VL))]
+            per = [errors(VYS[i], pred[i, :VL[i]], y_scale) for i in range(len(VL))]
             return float(np.mean([e["balanced_nrmse"] for e in per])), pred, per
 
         best = math.inf; patience_score = math.inf; stale = 0; best_epoch = 0; history = []; epoch = 0; updates = 0
@@ -324,17 +352,18 @@ def train(dataset, split_path, config_path, output, horizon_s=40.0, device_name=
             check.gru.bias_ih_l0.copy_(torch.from_numpy(policy.b_ih)); check.gru.bias_hh_l0.copy_(torch.from_numpy(policy.b_hh))
             check.head1.weight.copy_(torch.from_numpy(policy.w1)); check.head1.bias.copy_(torch.from_numpy(policy.b1))
             check.head2.weight.copy_(torch.from_numpy(policy.w2)); check.head2.bias.copy_(torch.from_numpy(policy.b2))
-            ref, _ = check(torch.from_numpy(((VX[:1, :400] - x_mean) / x_scale)), stride)
+            v0 = episode_group(dataset, split["validation"][:1], spec, mode)[0][0][:400]
+            ref, _ = check(torch.from_numpy(((v0 - x_mean) / x_scale)[None]), stride)
         ref = ref[0].numpy() * y_scale + y_mean
-        np.testing.assert_allclose(policy.predict_features(VX[0, :400]), ref, rtol=1e-8, atol=1e-8)
+        np.testing.assert_allclose(policy.predict_features(v0), ref, rtol=1e-8, atol=1e-8)
         raw = load_episode(dataset, split["validation"][0])[0][:400]
         policy.reset(dt); live = np.stack([policy.predict_action(o) for o in raw]); policy.reset()
         np.testing.assert_allclose(live, expand_actions(policy.predict(raw)), rtol=1e-8, atol=1e-8)
         score, pred, per = validation_score()
-        vmask = np.arange(VX.shape[1])[None, :] < VL[:, None]
+        vmask = np.arange(T_val)[None, :] < VL[:, None]
         metrics = {"validation": {"model": aggregate(per),
-                                  "mean_baseline": aggregate([errors(VY[i, :VL[i]], np.broadcast_to(y_mean, (VL[i], 9)), y_scale) for i in range(len(VL))]),
-                                  "pooled_transitions": {"model": errors(VY[vmask], pred[vmask], y_scale)}}}
+                                  "mean_baseline": aggregate([errors(VYS[i], np.broadcast_to(y_mean, (VL[i], 9)), y_scale) for i in range(len(VL))]),
+                                  "pooled_transitions": {"model": errors(np.concatenate(VYS), pred[vmask], y_scale)}}}
         timings = []; obs = raw[0]; policy.reset(dt)
         for _ in range(100): policy.predict_action(obs)
         for _ in range(2000):
