@@ -779,6 +779,50 @@ Order: E7a–d first (they only need the existing data, ~30 min per seed on the 
 (~20 min for 2048 episodes at 24 workers), then the E2 arms, one trainer at a time. The code for all of it goes in
 before anything is launched (provenance guards). Results in §6l onwards.
 
+## 6l. E7a and E7b (1 Nov, 15:10–20:13): fixing the zero where there is data does not fix the creep
+
+Three MLP-28 with the wheel loss weighted ×8 on the rows whose demonstrated wheels are exactly zero (27.6% of the
+training rows; `mlp_e7a_mixture4096_polar_stopw8_seed*`) and three with L1 instead of L2 on the wheels
+(`mlp_e7b_mixture4096_polar_l1_seed*`), same 4096 mixture, same validations. Stable arrivals at 5 cm of 205:
+
+| Model on the 4096 mixture | offline NRMSE | open-loop residual after the expert's stop | Nominal: arrivals | parked | arm | moving at 40 s | Random: arrivals | parked | arm |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| MLP 28 pure (control, §6i) | 0.145–0.149 | 1–5% | 23 / 30 / 27 | 119–126 | 3 / 103 / 15 | 199–203 | 11 / 15 / 17 | 33–68 | 3 / 105 / 11 |
+| **E7a** stop weight ×8 | 0.148–0.150 | **0–1%** | 19 / 44 / 30 | 93–131 | 7 / 113 / 2 | 196–205 | 14 / 38 / 16 | 39–45 | 3 / 107 / 0 |
+| **E7b** L1 wheels | 0.149–0.150 | **0–1%** | 20 / 18 / 9 | 58–131 | 148 / 25 / 136 | 202–204 | 8 / 7 / 7 | 21–78 | 144 / 27 / 125 |
+
+Both remedies do exactly what they were designed to do and it changes nothing in closed loop:
+
+- **Open loop the zero is now zero.** Teacher-forced after the expert's stop, the residual wheel command is 0–1% at
+  0.5, 2 and 5 s for all six models (control: 1–5%, one seed 5% at 5 s). Frozen at the stop pose and run to 40 s:
+  1–2% up to 20 s, 3–9% in the last ten seconds (the clock, as in §6i). The fit on the demonstrated stop states is
+  as clean as the transformer's (§6j).
+- **Closed loop the creep is unchanged.** On the evaluation traces (`creep_profile.py`) the E7a models park and
+  restart in 62–168 nominal episodes with 6–14% of their driving command still on while parked, creeping 3.6–10 cm
+  towards the target in 90–99% of the cases; E7b: 33–127 episodes, 7–16%, 5–7.6 cm. Control: 120–142 episodes,
+  6–8%, 5.8–9.2 cm. The best seed (E7a seed 2: 6%, 3.6 cm, parked 10.7 s) still leaves in 168 episodes; it only
+  takes longer. Moving at 40 s in 196–205 of 205.
+- **Why.** The loss weighting and the L1 act on the training rows, and every training row sits on the demonstrated
+  stop shell (base at the standoff radius, arm at hold). The parked base in closed loop is a few centimetres and
+  degrees off that shell from the first instant (its own approach error), and the 6–16% it outputs there is an
+  extrapolation that no loss term saw. Making the fitted zero more exact on the shell sharpens the function on the
+  shell; it says nothing about the function 5 cm inside it. The remedy has to put data (E2) or structure that is
+  insensitive to small displacements (E7c categorical, E7d latch through the input) where the robot actually ends up.
+- Arrivals move with the arm, not with the base: E7b extends the arm in 148 / 25 / 136 nominal episodes (control
+  3 / 103 / 15), E7a in 7 / 113 / 2, and the 5 cm arrivals follow the seed-to-seed arm behaviour rather than the
+  wheel loss. The arm head shares the hidden layers with the wheels, so a change in the wheel loss reshuffles which
+  seed happens to learn the arm timing (§6c: the arm reads "base parked" from the posture it never changes). That
+  variance is a separate problem the E2 data should also reduce, by giving the arm more demonstrations of the
+  extension from varied base poses.
+
+E2 collection, same window (15:10–18:49, 24 workers): 2048 near-target starts, 1775 expert successes and 273
+stalls (13.3%; the expert's navigation times out at 25 s). The same stall exists in the base data at the same rate
+(nominal DART-low 129 / 1024 = 12.6%, E3 random starts 149 / 3072, E1 43 / 1024) and every mixture so far has
+kept the stalled episodes (`keep_expert_failures`), so E2 is treated the same: `runs/splits/e2_mixture_6144.json`
+holds 4914 training / 1230 validation episodes over the three datasets, validation = the 205 held-out geometries
+from every start pose, as before. Successful E2 episodes last 11.1 s median (p95 15.2 s), start 0.25–1.3 m from
+the target (median 0.80 m).
+
 ## 7. Status
 
 - Done: decomposition (§1), variant `raw21_target_clock_v1`; E1 collected,
@@ -834,6 +878,9 @@ before anything is launched (provenance guards). Results in §6l onwards.
   (`runs/splits/e2_mixture_6144.json`): MLP 28 pure, categorical, GRU 28 pure. Every arm evaluated on the 205 nominal and
   205 random-start goals (`runs/evaluation/{e7a,e7b,e7c,e7d,e2}_*_20261101`). Trainer options are recorded in each run's
   `config.json` / `model_info.json` (`egocentric_options`). Expected to finish 2 Nov morning.
+- E7a/E7b done and reported in §6l (1 Nov 20:13): open-loop residual 0–1% but the closed-loop creep is unchanged;
+  arrivals 19–44 (stop weight) and 9–20 (L1) against 23–30 for the control. E2 collected (1775 successes, 273 stalls,
+  same stall rate as the base data). E7c evaluating, E7d training, phase B queued.
 - 28-input pure-transform variant done and reported in §6e (branch `rodrigo-pure28` merged).
 - Next, on request: E6 (§6c, nominal data without the clock) — the cheapest test of the reach-trigger mechanism.
 - E2 needs a collector mode; nothing in `src/` is edited while a collector,
