@@ -1711,6 +1711,32 @@ ignition (96–103 at 1 cm on v1) and gains on random starts; dropping the 605k 
 goal, §7 17:15) should reduce the stops far from the box (E8a closed at 0.45–0.64 m; MLP 28 stopped outside in 76–96
 episodes). All v1 numbers stay in this document as "mixture v1, origin goal"; v1 and v2 are not compared across.
 
+## 6aa. Second wave on mixture v2 (decided 2 Nov 17:50, pre-registered): ignition for the models that already stop
+
+Rodrigo rejected phase-balanced sampling (it uses the expert's phase labels: "medio trampa") and approved, in this order,
+all on mixture v2 (§6z) unless stated:
+
+1. **K 144 + dead band 0.45 rad/s** (evaluator option of §6t, no retraining): the three K 144 v1 seeds evaluated with
+   `validation_deadband045.json` on both validations (`e9_trig144_db045_on_*`), queued after the E9c chain. Prediction:
+   the base stops where E8d stopped it (within 10 cm of the expert's spot in 87–93%), the arm now ignites inside that
+   window (+0.96 on the resting-arm row), the moving arm keeps the wheel command under the band (§6h), so held-10 s
+   approaches the number of arrivals (v1: 107 of 140) and drift after parking drops below 0.22 m.
+2. **Trigger weight instead of copies** (`trigger_weight: K`, loss of the trigger row ×K, no duplication, no jitter): on the
+   MLP 28 (same K = 144) to show the equivalence, and in the recurrent trainers for **GRU 28** (§6h recipe, the model with the
+   learned latch) and **E8a gated** (exact zero outside the box): the trigger *step* of each training sequence weighted ×K in
+   the sequence loss. Prediction: MLP ≈ copies; GRU seed-dependent latch + ignition; gated head reaches when the gate closes.
+3. **Action chunking** on the MLP 28: the network predicts the commands of the next H = 200 ms (9 × 200 outputs at 1 ms, or
+   9 × 10 at a 20 ms chunk stride), the policy executes the first; loss on the whole chunk. The reach onset then appears in
+   the labels of the ~200 rows before it instead of one, with no change to the data. The outputs remain wheel and arm
+   commands (a short horizon of them). Prediction: ignition without copies; precision at least that of K 144.
+4. **DAgger**: the learner's parked, arm-asleep states labelled by the expert. Needs the expert-state protocol first
+   (`docs/BASELINE_LIMITATIONS.md` L2: the expert is stateful, so its label at a learner state depends on how its FSM and
+   q_des are initialised); design note before any collection.
+
+Rule of the wave: one factor per arm, 3 seeds, both v2 validations, 1 / 2 / 5 cm stable arrivals + held 10 s + the
+teammate's columns, mechanistic probe (`arm_switch_probe.py`) on every arm. `src/` is edited only between the running
+chains (collectors and trainers hash their sources).
+
 ## 7. Status
 
 - Done: decomposition (§1), variant `raw21_target_clock_v1`; E1 collected,
@@ -1842,6 +1868,8 @@ episodes). All v1 numbers stay in this document as "mixture v1, origin goal"; v1
 - 2 Nov 17:30: mixture v2 decided and launched (§6z): `goal_reference: start` for random-start data, expert successes only.
   Collections running (3072 + 1024 episodes, 14 workers) beside the E9 K 144 seeds 1–2 chain. Then replacements, split v2,
   control + E9 K 144 (3 seeds each), both validations. v1 replacement collection e10: 262 / 278 succeeded.
+- 2 Nov 17:50: second wave decided (§6aa): K 144 + band (queued), trigger weight on MLP / GRU / gated, action chunking,
+  DAgger design; phase-balanced sampling rejected. Implementation starts when the running trainer and collectors end.
 - Next, on request: E6 (§6c, nominal data without the clock) — the cheapest test of the reach-trigger mechanism.
 - E2 needs a collector mode; nothing in `src/` is edited while a collector,
   trainer or evaluator is running (provenance guards).
