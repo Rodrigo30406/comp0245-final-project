@@ -1682,6 +1682,25 @@ so they can be slightly optimistic; success and reach use the 1 ms minimum dista
 success-only retraining of §6z comes next); the K rule was pre-registered but the three K values were a guess from the
 row-count argument, so 144 is "the best of three", not an optimum.
 
+### 6y.2 K = 144, three seeds (2 Nov 18:02–19:14): the best models of the programme
+
+`e9_trig144_mlp28_on_{clean,e1_random}_validation_20261102` (mixture v1, origin goal, expert failures still in the data).
+Stable arrivals of 205:
+
+| K 144 | offline NRMSE | Nominal 1 / 2 / 5 cm | parked | arm ext. | drift after parking | held ≥ 10 s | moving at 40 s | Random 1 / 2 / 5 cm | parked | held ≥ 10 s |
+|---|---:|---|---:|---:|---:|---:|---:|---|---:|---:|
+| seed 0 | 0.166 | 96 / 124 / 140 | 101 | 198 | 0.22 m | 107 | 111 | 103 / 116 / 121 | 36 | 103 |
+| seed 1 | 0.173 | **142 / 158 / 165** | 105 | 181 | 0.32 m | 134 | 137 | 106 / 119 / 123 | 26 | 99 |
+| seed 2 | 0.177 | 132 / 137 / 146 | 88 | 176 | 0.14 m | 131 | 105 | 108 / 111 / 113 | 31 | 107 |
+| MLP 28 control (§6i) | 0.145–0.149 | 0 / 0–1 / 23–30 | 119–126 | 3–103 | | | 199–203 | 0 / 0 / 11–17 | 33–68 | |
+| previous best 1 cm (E8b seed 0) | 0.162 | 23 / 31 / 55 | | | | | | 6 / 24 / 62 | | |
+
+Under the teammate's protocol (§6y.1 definitions): success 49 / 71 / 65% nominal and 51 / 52 / 53% random (their C3: 52–70%
+on random starts); reach 5 cm 69 / 82 / 72% nominal, 57–61% random (theirs 89–92%); held 10 s 29 / 21 / 52% nominal,
+33 / 15 / 45% random (theirs 14–40%). The three seeds agree on the mechanism and differ on the creep: seed 2 drifts least
+(0.14 m) and holds most, seed 1 arrives most and drifts most. The worst offline fit of the three (seed 2, 0.177) has the
+best hold; offline NRMSE keeps pointing the wrong way for this family.
+
 ## 6z. Mixture v2 (2 Nov 17:30, pre-registered): goal from the start pose, expert successes only
 
 **Why.** The lecturer's expert takes the goal bearing from the world origin (`atan2(target_y, target_x)`), where his robot
@@ -1871,6 +1890,9 @@ chains (collectors and trainers hash their sources).
   control + E9 K 144 (3 seeds each), both validations. v1 replacement collection e10: 262 / 278 succeeded.
 - 2 Nov 17:50: second wave decided (§6aa): K 144 + band (queued), trigger weight on MLP / GRU / gated, action chunking;
   phase-balanced sampling rejected; DAgger deferred (18:05). Implementation starts when the running trainer and collectors end.
+- 2 Nov 19:14: K 144 three seeds (§6y.2): nominal 1/2/5 cm = 96/124/140, **142/158/165**, 132/137/146; random 103/116/121,
+  106/119/123, 108/111/113; held 10 s 107 / 134 / 131 nominal. Teammate's success 49–71% nominal, 51–53% random (theirs 52–70%).
+  Dead-band evaluation of the same three seeds running; v2 night chain running (control seed 0 at 18:49).
 - Next, on request: E6 (§6c, nominal data without the clock) — the cheapest test of the reach-trigger mechanism.
 - E2 needs a collector mode; nothing in `src/` is edited while a collector,
   trainer or evaluator is running (provenance guards).
