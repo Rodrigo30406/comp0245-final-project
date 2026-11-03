@@ -1900,8 +1900,12 @@ validations, selection closed loop on the validation geometries only):
 | `gru28_lr3e-4` | Adam 3e-4 (`mlp_pytorch_successes_lr3e-4*.json`) | a smaller step finds a sharper zero / reach boundary |
 | `gru28_epb4` | 4 episodes per batch | twice the updates per epoch, noisier gradient |
 
-Rule: an arm counts as a gain if its three seeds beat the control's three on nominal 1 cm (73–78) and do not lose at 5 cm
-(158–175); winning factors are then combined in one final arm. Reserved test banks untouched. Trainings run one at a time
+| `gru28_trigw144_jit` | trigger weight 144 **+ jitter** (not a pure arm; Rodrigo, 04:30: tune both lines) | the MLP's copies beat its weight because the jitter spreads the ignition over a neighbourhood of arm velocities (§6aa.2); the sequence analogue is fresh N(0, σ_j) on the seven arm-velocity inputs at the weighted step on every pass, σ_j = std of arm qd over the moving rows as in the MLP trainer. Implemented as `--trigger-jitter auto` (`sequence_trigger_rows`, `trigger_jitter_sigma`, model_info `trigger_jitter`), tests in `test_gru_policy.py`. Compared with `gru28_trigw144` (150 / 133 / 102). |
+
+Two lines are tuned in parallel and reported apart: the pure GRU (no label-derived device) and the GRU with the trigger
+device, so the report can state what each costs and buys. Rule: an arm counts as a gain if its three seeds beat its
+control's three on nominal 1 cm (pure: 73–78; device: 150 / 133 / 102) and do not lose at 5 cm; winning factors are then
+combined in one final arm per line. Reserved test banks untouched. Trainings run one at a time
 after the §6z.2 ablation trainers (4–8 min each at stride 20; stride 10 roughly double); evaluations two at a time after the
 ablation evaluations. Expected end ~08:30.
 
@@ -2052,9 +2056,9 @@ ablation evaluations. Expected end ~08:30.
 - 3 Nov 03:20: gated + trigger weight done (§6aa.2): 98 / 78 / 53 at 1 cm nominal, gate closes 44–53 ms before the label zero
   open loop (v1: after), base inside the box in 74 / 78 / 61 (v1 E8a: 0). Ablation §6z.2 relaunched 03:25 on the full v1 split
   (the pre-filtered split file is rejected by the partition check); ~2 h with its two evaluations.
-- 3 Nov 04:30: GRU pure sweep pre-registered and queued (§6ab): hidden 256, stride 10 ms, patience 20, lr 3e-4, 4 episodes per
-  batch; 15 trainings + 10 evaluations behind the §6z.2 ablation. The GRU-with-weight + jitter idea is dropped: Rodrigo wants
-  the GRU tuned without any label-derived device.
+- 3 Nov 04:30: GRU sweep pre-registered and queued (§6ab): pure line (hidden 256, stride 10 ms, patience 20, lr 3e-4, 4 episodes
+  per batch) and device line (trigger weight 144 + arm-qd jitter at the trigger step, implemented 04:40 between trainers,
+  123 tests OK); 18 trainings + 12 evaluations behind the §6z.2 ablation. Both lines are tuned and reported apart.
 - Next, on request: E6 (§6c, nominal data without the clock) — the cheapest test of the reach-trigger mechanism.
 - E2 needs a collector mode; nothing in `src/` is edited while a collector,
   trainer or evaluator is running (provenance guards).
