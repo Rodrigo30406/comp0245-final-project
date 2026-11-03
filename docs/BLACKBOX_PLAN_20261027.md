@@ -2070,6 +2070,29 @@ categorical head (41 bins, argmax) with 144 trigger copies (`v2_mlp28_cat41_trig
   neither changes the black-box status (both are functions of the labels and the outputs). Arm 3 (gated control on v2)
   reports next.
 
+### 6ac.2 Gated stop on v2 with no device (3 Nov 09:40–12:00): the early closing is a property of the data
+
+`v2_gated_control_seed{0,1,2}` (`chain_gated_v2_control.sh`, E8a architecture, hidden 32, head 128, stride 20 ms, no
+trigger weight; 5–9 min each, NRMSE 0.194 / 0.181 / 0.175, best epoch 60 / 86 / 124). Gate timing from
+`metrics.json` (64 validation episodes with a gate, 2 never close):
+
+| gated, mixture v2 | Nominal 1 / 2 / 5 cm | parked | arm ext. | drift | held ≥ 10 s | moving at 40 s | tol. | Random 1 / 2 / 5 cm | held ≥ 10 s | gate closes before the label zero | median offset |
+|---|---|---:|---:|---:|---:|---:|---:|---|---:|---:|---:|
+| control s0 | 20 / 44 / 97 | 22 | 162 | 0.06 m | 49 | 5 | 8 | 12 / 47 / 102 | 56 | 51 of 64 | −137 ms |
+| control s1 | 20 / 41 / 78 | 114 | 142 | 0.17 m | 51 | 56 | 13 | 20 / 35 / 71 | 42 | 58 of 64 | −218 ms |
+| control s2 | 107 / 146 / 180 | 70 | 189 | 0.07 m | 139 | 1 | 35 | 104 / 138 / 171 | 128 | 59 of 64 | −169 ms |
+| + weight 144 s0 / s1 / s2 (§6aa.2) | 98 / 78 / 53 at 1 cm | | | | | | 74 / 78 / 61 | 100 / 58 / 41 at 1 cm | | 62–63 of 64 | −44 to −53 ms |
+
+- **Prediction confirmed on the timing.** The v2 control gate closes before the label zero in 51–59 of 64 validation
+  episodes, 137–218 ms early, further ahead than with the weight (44–53 ms): the early closing is taught by the data (the
+  605k post-timeout rows that made the v1 gate indifferent to the geometry are gone), not by the trigger weight. The v1
+  gate (§6v) confirmed a stop it never caused; the v2 gate causes it.
+- **Prediction only half confirmed on the arrivals.** Two seeds fall to 20 at 1 cm as predicted (the arm ignites,
+  162 / 142 extended, but the base stops 10–12 cm off in 136–192 episodes and the stateless head does not close the
+  distance); seed 2 reaches 107 / 146 / 180, above every gated-with-weight seed. Seed to seed the gated line is the least
+  stable of the programme, and it does not beat the plain GRU control (73–78) on average. Closed as a line; the result
+  that matters from it, that the v2 data make the stop gate causal, is recorded.
+
 ## 7. Status
 
 - Done: decomposition (§1), variant `raw21_target_clock_v1`; E1 collected,
@@ -2232,7 +2255,11 @@ categorical head (41 bins, argmax) with 144 trigger copies (`v2_mlp28_cat41_trig
 - 3 Nov 11:06: parking remedies on v2 + K 144 done (§6ac.1). Band 0.45 at the evaluator: 1 cm 198 / 195 / 190 (was 199 / 193 /
   175), drift 0.07 m every seed, inside the expert's box 118–139 (was 3–52; expert 129), held = arrivals. Categorical 41 + 144
   copies: 176 / 176 / 195 at 1 cm, 201 / 201 / 204 at 5 cm, held 194–203, creep gone inside the model; seed 2 best at 2 / 5 cm so
-  far. With the arm awake, both stop devices work; the coupling diagnosis (§6k, §6t.1) is confirmed. Gated control v2 evaluating.
+  far. With the arm awake, both stop devices work; the coupling diagnosis (§6k, §6t.1) is confirmed. 
+- 3 Nov 12:00: gated control on v2 done (§6ac.2): 20 / 20 / 107 at 1 cm; the gate closes 137–218 ms before the label
+  zero in 51–59 of 64 episodes with no device, so the early closing is the data's. Line closed. Progress README written at the
+  repository root (figures in `docs/figures/progress/`, `scripts/analysis/progress_figures.py`); the old README is
+  `docs/REPOSITORY_GUIDE.md`.
 - Next, on request: E6 (§6c, nominal data without the clock) — the cheapest test of the reach-trigger mechanism.
 - E2 needs a collector mode; nothing in `src/` is edited while a collector,
   trainer or evaluator is running (provenance guards).
