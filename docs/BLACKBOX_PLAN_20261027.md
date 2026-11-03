@@ -1929,6 +1929,25 @@ combined in one final arm per line. Reserved test banks untouched. Trainings run
 after the §6z.2 ablation trainers (4–8 min each at stride 20; stride 10 roughly double); evaluations two at a time after the
 ablation evaluations. Expected end ~08:30.
 
+## 6ac. Parking strategies re-tested on v2 + K 144 (pre-registered 3 Nov 05:20, queued)
+
+**Why.** Every base-parking remedy of E7 / E8 (§6l–§6n, §6t, §6v, §6w) was measured with a sleeping arm, and §6h showed the
+base reads the resting arm as "keep driving". On v2 + K 144 the arm ignites and the base still parks outside the expert's
+8 cm box in most episodes (inside at 40 s: 30 / 3 / 52 of 205 vs 129; seed 1 creeps 0.25 m). The remedies now measure what
+they were meant to measure. Rodrigo's question (05:10): none had been combined with v2 + K 144; the band had only been
+tried on v1 K 144 (§6aa.1).
+
+**Arms** (`chain_park_v2.sh`, after the GRU sweep trainers, evaluations in the shared 3-slot limiter):
+
+1. **Dead band 0.45 rad/s at the evaluator** on the three v2 K 144 models (`v2_mlp28_trig144_db045_on_*`, no retraining).
+   Prediction: drift after parking → ~0.07 m for every seed, "inside the box" rises, held-10 s stays near the arrivals; the
+   §6aa.1 cost (approaches that end short) should be smaller than on v1 because the v2 approach already ends in the box in
+   most episodes (median final 1.2–1.9 cm for seeds 0 and 2).
+2. **Categorical wheels (41 bins, argmax) + 144 trigger copies** (`v2_mlp28_cat41_trig144_seed{0,1,2}`, E7c + E9; smoke-tested
+   together on the test dataset). Prediction: an exact learned zero with the arm awake removes the creep of seed 1's kind
+   without an evaluator device; the E7c chatter (§6m) may remain at the approach's end and cost 1 cm arrivals.
+   E7a stop weight + K 144 is left out as redundant with this arm; E7d (previous command as input) stays closed (§6n).
+
 ## 7. Status
 
 - Done: decomposition (§1), variant `raw21_target_clock_v1`; E1 collected,
@@ -2082,6 +2101,8 @@ ablation evaluations. Expected end ~08:30.
 - 3 Nov 05:01: ablation §6z.2 done: K 144 on v1 with the failures dropped (origin goal) = 120 / 134 / 153 nominal, 157 / 145 /
   121 on the v1 random bank (v1 with failures: 96 / 142 / 132 and 103 / 106 / 108; v2: 199 / 193 / 175). Verdict: both changes
   matter, the goal geometry most; seed 1 drives away after reaching (median end 1.9 m), a mode v2 removed.
+- 3 Nov 05:20: parking remedies on v2 + K 144 pre-registered and queued (§6ac): dead band 0.45 (evaluation only) and
+  categorical wheels + 144 copies (3 seeds), behind the GRU sweep trainers.
 - Next, on request: E6 (§6c, nominal data without the clock) — the cheapest test of the reach-trigger mechanism.
 - E2 needs a collector mode; nothing in `src/` is edited while a collector,
   trainer or evaluator is running (provenance guards).
