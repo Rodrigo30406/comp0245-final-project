@@ -1730,6 +1730,53 @@ ignition (96–103 at 1 cm on v1) and gains on random starts; dropping the 605k 
 goal, §7 17:15) should reduce the stops far from the box (E8a closed at 0.45–0.64 m; MLP 28 stopped outside in 76–96
 episodes). All v1 numbers stay in this document as "mixture v1, origin goal"; v1 and v2 are not compared across.
 
+### 6z.1 Mixture v2 results, control and K 144 (2 Nov 18:46 – 3 Nov 02:27): the arm ignites and the expert is matched
+
+Chain `chain_v2_night.sh`: split `runs/splits/v2_mixture.json` (3 562 training episodes, 3 221 expert successes kept, 341
+dropped; 887 / 802 / 85 validation), configs `mlp_pytorch_successes*.json`, evaluations `v2_<arm>_on_clean_validation_20261102`
+(the unchanged 205 nominal geometries) and `v2_<arm>_on_e1v2_random_validation_20261102` (205 random starts, start-referenced
+goal). Stable arrivals of 205; "parked" / "arm ext." / "drift" / "held" as in §6y.2; "tol." = base inside the expert's
+tolerance at 40 s:
+
+| mixture v2 | offline NRMSE | Nominal 1 / 2 / 5 cm | parked | arm ext. | drift | held ≥ 10 s | moving at 40 s | tol. | Random 1 / 2 / 5 cm | parked | held ≥ 10 s |
+|---|---:|---|---:|---:|---:|---:|---:|---:|---|---:|---:|
+| MLP 28 control s0 | 0.119 | 1 / 9 / 41 | 123 | 4 | 0.10 m | 34 | 38 | 28 | 1 / 8 / 40 | 137 | 33 |
+| control s1 | 0.121 | 0 / 2 / 31 | 137 | 1 | 0.30 m | 26 | 162 | 10 | 0 / 1 / 31 | 147 | 21 |
+| control s2 | 0.122 | 2 / 7 / 39 | 116 | 1 | 0.12 m | 35 | 85 | 0 | 1 / 5 / 38 | 108 | 33 |
+| **K 144 s0** | 0.139 | **199 / 202 / 202** | 145 | 189 | 0.06 m | **202** | 15 | 30 | **200 / 203 / 204** | 133 | **200** |
+| K 144 s1 | 0.135 | 193 / 198 / 204 | 175 | 199 | 0.25 m | 182 | 129 | 3 | 197 / 203 / 203 | 169 | 185 |
+| K 144 s2 | 0.141 | 175 / 194 / 199 | 150 | 180 | 0.14 m | 172 | 36 | 52 | 187 / 196 / 199 | 144 | 188 |
+| expert | | 205 / 205 / 205 | 205 | 154 | | 204 | 0 | 129 | 200 / 200 / 200 | 200 | 198 |
+
+Teammate's protocol (§6y.1 definitions, from the 100 ms traces): K 144 success **97.6 / 94.1 / 86.3%** nominal and
+**97.6 / 96.6 / 91.7%** random (their C3: 52–70%, on v1 K 144: 49–71%); reach 5 cm 97.6–99.5% (theirs ~90%); held 10 s
+95.1 / 47.3 / 41.0% nominal, 90.2 / 49.3 / 43.4% random (theirs 14–40%); arm extended 92 / 98 / 92%. The control: success
+1–2.4%, arm extended 0–4.4%, exactly the v1 picture (§6i) with a better offline fit (0.119–0.122, the best of the programme
+and the worst closed loop: the offline metric is still inverted for this family).
+
+- **Ignition.** Same mechanism as §6y.1, now on clean stop rows. `arm_switch_probe.py` on the nominal traces (80 episodes,
+  median of the arm output on the hold→reach axis of the expert's first second after done): the control predicts +0.11 /
+  +0.09 / +0.03 at its own parked rows and +0.08 / +0.08 / +0.03 at the expert's done row *with the policy's resting arm
+  state* (the base pose and the clock do not matter: +1.5 to +1.7 with the expert's arm state). K 144 predicts +0.88 / +0.86 /
+  +0.70 at its own parked rows; with a resting arm +0.45 / +1.24 / +1.33: seeds 1–2 fire from rest, seed 0 still needs the
+  first centimetres of arm motion, which it gets from its own small residual wheel command.
+- **Precision.** Seed 0 ends at a median 1.2 cm from the target (1 cm band in 199 of 205), where the v1 K 144 seeds ended at
+  96–142 in the band on the *same* 205 nominal geometries. Two things changed in the data (§6z): the 605k post-timeout rows
+  are gone (zero wheels 2.5 m from the goal, arm reaching at 1.1 m) and the random-start episodes drive to the near side of
+  the ring. The ablation that separates them is pre-registered in §6z.2.
+- **What remains.** The base still parks outside the expert's 8 cm box in most episodes (tol. 30 / 3 / 52 vs 129) and seed 1
+  keeps the creep (0.25 m drift, moving at 40 s in 129): the arm absorbs a 10–25 cm base error and the task does not care
+  where the base is. Held-10 s 202 / 182 / 172 is the first time it follows the arrivals. The remaining 3–30 misses are
+  episodes where the stop is far enough that the arm's reach runs out (seed 2's stops outside: 117, median 0.12 m).
+
+### 6z.2 Ablation (pre-registered 3 Nov 03:05, launched): which of the two v2 changes made the difference
+
+K 144, same trainer and seeds, on mixture **v1 with the expert failures dropped** (`runs/splits/e3_mixture_4096_expert_success_only.json`,
+origin goal): `mlp28_trig144_v1succ_seed{0,1,2}`, evaluated on the same 205 nominal geometries (`…_on_clean_validation_20261103`)
+and on the v1 random bank (`…_on_e1_random_validation_20261103`, origin goal, comparable to §6y.2 only). If the nominal 1 cm
+count lands near 175–199 the post-timeout rows were the cause; near 96–142, the goal geometry was; in between, both. Queued
+after the gated arm (one trainer at a time).
+
 ## 6aa. Second wave on mixture v2 (decided 2 Nov 17:50, pre-registered): ignition for the models that already stop
 
 Rodrigo rejected phase-balanced sampling (it uses the expert's phase labels: "medio trampa") and approved, in this order,
@@ -1780,6 +1827,49 @@ Same three v1 models, evaluated with the E8d band (`e9_trig144_db045_on_*`). Sta
   so the band now pays off where the policy was already in the box, and costs where it was not. Net: a 5–10 cm better
   park, same arrivals. A learned zero (E8e soft threshold, or the K 144 model trained on v2 where the stop rows are
   cleaner) is the next test of this coupling; the band stays a diagnostic.
+
+### 6aa.2 Second wave results (3 Nov 02:27): weight ≈ copies on the MLP, the GRU ignites with and without it, chunking does nothing
+
+Same chain, split and validations as §6z.1. Stable arrivals of 205:
+
+| mixture v2 | offline NRMSE (best epoch) | Nominal 1 / 2 / 5 cm | parked | arm ext. | drift | held ≥ 10 s | moving at 40 s | Random 1 / 2 / 5 cm | held ≥ 10 s | teammate success nom. |
+|---|---:|---|---:|---:|---:|---:|---:|---|---:|---:|
+| MLP 28 trigger weight 144 s0 | 0.188 (5) | 150 / 188 / 201 | 119 | 178 | 0.07 m | 188 | 3 | 150 / 186 / 202 | 181 | 76.6% |
+| weight 144 s1 | 0.174 (17) | 181 / 198 / 201 | 146 | 176 | 0.10 m | 194 | 63 | 175 / 192 / 196 | 195 | 88.8% |
+| weight 144 s2 | 0.186 (11) | 183 / 196 / 202 | 77 | 198 | 0.20 m | 191 | 101 | 170 / 193 / 199 | 182 | 90.7% |
+| MLP 28 action chunk 10 × 20 ms s0 | 0.151 (31) | 3 / 10 / 38 | 168 | 4 | 0.05 m | 22 | 1 | 2 / 5 / 38 | 21 | 1.5% |
+| chunk s1 | 0.145 (57) | 2 / 7 / 38 | 112 | 0 | 0.25 m | 34 | 10 | 1 / 7 / 36 | 29 | 1.5% |
+| chunk s2 | 0.149 (50) | 0 / 3 / 36 | 114 | 47 | 0.69 m | 0 | 152 | 0 / 5 / 34 | 1 | 1.0% |
+| GRU 28 trigger weight 144 s0 | 0.189 (36) | 150 / 165 / 201 | 76 | 152 | 0.04 m | 174 | 0 | 135 / 169 / 198 | 163 | 74.1% |
+| GRU weight s1 | 0.197 (26) | 133 / 168 / 188 | 144 | 205 | 0.11 m | 159 | 1 | 116 / 158 / 192 | 154 | 66.3% |
+| GRU weight s2 | 0.195 (27) | 102 / 161 / 186 | 155 | 165 | 0.06 m | 181 | 13 | 111 / 162 / 185 | 163 | 51.7% |
+| GRU 28 control s0 | 0.134 (38) | 78 / 101 / 158 | 175 | 160 | 0.08 m | 104 | 7 | 66 / 84 / 149 | 95 | 38.0% |
+| GRU control s1 | 0.129 (47) | 78 / 125 / 175 | 146 | 194 | 0.14 m | 133 | 15 | 79 / 117 / 177 | 126 | 39.5% |
+| GRU control s2 | 0.135 (39) | 73 / 107 / 158 | 143 | 146 | 0.10 m | 105 | 25 | 71 / 100 / 142 | 95 | 38.5% |
+| E8a gated, trigger weight 144 | crashed (missing import, fixed `1f3ece2`), relaunched 02:50 | | | | | | | | | |
+
+- **Trigger weight ≈ trigger copies, a little below** (150–183 vs 175–199 at 1 cm nominal): the same row re-weighted ×144
+  in the loss instead of duplicated with jitter. The weighted run stops early (best epoch 5–17; the ×144 row makes the
+  validation loss noisy) and fits worse offline (0.17–0.19). Probe at the policy's own parked rows: +0.62 / +0.82 / +0.28,
+  with a resting arm +0.32 / +0.44 / +0.04 (copies: +0.88 / +0.86 / +0.70 and +0.45 / +1.24 / +1.33). The jittered copies
+  spread the ignition over a neighbourhood of arm velocities; the weight concentrates it on one point. Same mechanism,
+  less robust ignition; the copies stay the reference implementation.
+- **Action chunking does not ignite the arm** (prediction of §6aa item 3 wrong). The chunk is 9 separate output heads per
+  horizon step on a shared trunk; the executed head (step 0) is still fitted to one resting-arm reach row per episode, and the
+  reach onset in the labels of the 9 later heads changes the trunk, not the step-0 bias. Arm extended 4 / 0 / 47; seed 2's
+  47 come with a 0.69 m drift and zero holds (it moves at 40 s in 152 episodes: the chunk heads pull the wheel command back
+  toward "drive"). Closed.
+- **GRU 28 control on v2 ignites in all three seeds without any trigger device** (arm extended 160 / 194 / 146, 1 cm
+  73–78, 5 cm 158–175) and parks with 0.08–0.14 m drift; its held-10 s (104 / 133 / 105) is bounded by the parks outside the
+  box, not by the arm. On v1 the GRU 28 was 41 / 43 / 37 at 1 cm (§6q, E2 mixture) and the ignition was seed-dependent (§6h):
+  the recurrent model reads the stop from its own memory, and the clean stop rows of v2 are enough for it to also attach the
+  reach to that state. Caveat: v1 ↔ v2 differ in two things (§6z.2).
+- **GRU 28 + trigger weight 144** latches (moving at 40 s in 0 / 1 / 13 episodes, drift 0.04–0.11 m, the cleanest parks of
+  the programme) and ignites (152 / 205 / 165), 1 cm 150 / 133 / 102: better than its control, below the MLP with copies. The
+  single-row probe does not apply to a recurrent policy (its stateless swaps reset the memory); the sequence-aware version is
+  pending. Trained in 3–7 min per seed at stride 20.
+- **Still true across the wave:** offline NRMSE ranks the arms backwards (control MLP 0.119 → 1 arrival; weighted MLP 0.188 →
+  150). Model selection stays closed loop on the validation geometries; the reserved test banks are untouched.
 
 ## 7. Status
 
@@ -1919,6 +2009,12 @@ Same three v1 models, evaluated with the E8d band (`e9_trig144_db045_on_*`). Sta
   Dead-band evaluation of the same three seeds running; v2 night chain running (control seed 0 at 18:49).
 - 2 Nov 19:55: K 144 + band (§6aa.1): drift after parking 0.22–0.32 → 0.07–0.08 m, but 1 cm arrivals 96/142/132 → 118/147/123
   and held 10 s 107/134/131 → 135/117/127: the band fixes the residual command and kills the slow finish of the approach.
+- 3 Nov 02:27: v2 night chain done (§6z.1, §6aa.2). **K 144 on mixture v2: nominal 1/2/5 cm = 199/202/202, 193/198/204,
+  175/194/199; random 200/203/204, 197/203/203, 187/196/199; held 10 s 202/182/172.** Teammate's success 86–98% (theirs
+  52–70%). Control 0–2 at 1 cm with the best offline fit of the programme (0.119). Trigger weight on the MLP 150/181/183,
+  on the GRU 150/133/102 (latched, 0.04–0.11 m drift); GRU control on v2 73–78 with the arm igniting in all seeds; action
+  chunking 0–3 (closed). The gated arm crashed (`drop_expert_failures` not imported in `gated_policy.py`; test added, fix
+  `1f3ece2`) and was relaunched at 02:50; the §6z.2 ablation (K 144 on v1 successes only) is queued behind it.
 - Next, on request: E6 (§6c, nominal data without the clock) — the cheapest test of the reach-trigger mechanism.
 - E2 needs a collector mode; nothing in `src/` is edited while a collector,
   trainer or evaluator is running (provenance guards).
