@@ -63,6 +63,7 @@ EVALS = {  # evaluation dir -> {policy label in summary: (display name, training
     "v2_mlp28_trigw144_on_clean_validation_20261102": {f"mlp28_trigw144_seed{s}": (f"Mixture v2: MLP 28 pure, trigger row loss weight 144, seed {s}", f"v2_mlp28_trigw144_seed{s}") for s in range(3)},
     "v2_mlp28_chunk10_on_clean_validation_20261102": {f"mlp28_chunk10_seed{s}": (f"Mixture v2: MLP 28 pure, action chunk 10 x 20 ms (first step executed), seed {s}", f"v2_mlp28_chunk10_seed{s}") for s in range(3)},
     "v2_gru28_trigw144_on_clean_validation_20261102": {f"gru28_trigw144_seed{s}": (f"Mixture v2: GRU 28 (stride 20 ms), trigger step loss weight 144, seed {s}", f"v2_gru28_trigw144_seed{s}") for s in range(3)},
+    "v2_gated_trigw144_on_clean_validation_20261102": {f"gated_trigw144_seed{s}": (f"Mixture v2: E8a gated stop (hidden 32, stride 20 ms), trigger step loss weight 144, seed {s}", f"v2_gated_trigw144_seed{s}") for s in range(3)},
     "v2_gru28_control_on_clean_validation_20261102": {f"gru28_control_seed{s}": (f"Mixture v2: GRU 28 (stride 20 ms) control, seed {s}", f"v2_gru28_control_seed{s}") for s in range(3)},
     "e9_trig144_db045_on_clean_validation_20261102": {f"trig144_seed{s}": (f"E9 K 144 seed {s} evaluated with the 0.45 rad/s wheel dead band (E8d option)", f"mlp_e9_mixture4096_polar_trig144_seed{s}") for s in range(3)},
     "e2_gru_polar_on_clean_validation_20261101": {f"gru_polar_e2_seed{s}": (f"E2 nominal + random + near-target 6144: GRU 28 pure, memory 20 ms, seed {s}", f"gru_e2_mixture6144_polar_stride20_seed{s}") for s in range(3)},

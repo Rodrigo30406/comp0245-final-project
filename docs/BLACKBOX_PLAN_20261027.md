@@ -1774,8 +1774,9 @@ and the worst closed loop: the offline metric is still inverted for this family)
 K 144, same trainer and seeds, on mixture **v1 with the expert failures dropped** (`runs/splits/e3_mixture_4096_expert_success_only.json`,
 origin goal): `mlp28_trig144_v1succ_seed{0,1,2}`, evaluated on the same 205 nominal geometries (`…_on_clean_validation_20261103`)
 and on the v1 random bank (`…_on_e1_random_validation_20261103`, origin goal, comparable to §6y.2 only). If the nominal 1 cm
-count lands near 175–199 the post-timeout rows were the cause; near 96–142, the goal geometry was; in between, both. Queued
-after the gated arm (one trainer at a time).
+count lands near 175–199 the post-timeout rows were the cause; near 96–142, the goal geometry was; in between, both. Launched 03:25
+after the gated arm, on the full v1 split `e3_mixture_4096.json` with the trainer's `keep_expert_failures: false` filter (the
+pre-filtered split file `e3_mixture_4096_expert_success_only.json` does not cover the inventory and `validate_partition` rejects it).
 
 ## 6aa. Second wave on mixture v2 (decided 2 Nov 17:50, pre-registered): ignition for the models that already stop
 
@@ -1846,7 +1847,9 @@ Same chain, split and validations as §6z.1. Stable arrivals of 205:
 | GRU 28 control s0 | 0.134 (38) | 78 / 101 / 158 | 175 | 160 | 0.08 m | 104 | 7 | 66 / 84 / 149 | 95 | 38.0% |
 | GRU control s1 | 0.129 (47) | 78 / 125 / 175 | 146 | 194 | 0.14 m | 133 | 15 | 79 / 117 / 177 | 126 | 39.5% |
 | GRU control s2 | 0.135 (39) | 73 / 107 / 158 | 143 | 146 | 0.10 m | 105 | 25 | 71 / 100 / 142 | 95 | 38.5% |
-| E8a gated, trigger weight 144 | crashed (missing import, fixed `1f3ece2`), relaunched 02:50 | | | | | | | | | |
+| E8a gated, trigger weight 144 s0 | 0.244 (57) | 98 / 120 / 157 | 88 | 139 | 0.07 m | 127 | 10 | 100 / 121 / 166 | 123 | 47.8% |
+| gated weight s1 | 0.259 (35) | 78 / 98 / 143 | 100 | 166 | 0.07 m | 106 | 12 | 58 / 78 / 112 | 74 | 38.5% |
+| gated weight s2 | 0.255 (39) | 53 / 93 / 144 | 105 | 144 | 0.07 m | 81 | 22 | 41 / 88 / 140 | 83 | 26.3% |
 
 - **Trigger weight ≈ trigger copies, a little below** (150–183 vs 175–199 at 1 cm nominal): the same row re-weighted ×144
   in the loss instead of duplicated with jitter. The weighted run stops early (best epoch 5–17; the ×144 row makes the
@@ -1868,6 +1871,13 @@ Same chain, split and validations as §6z.1. Stable arrivals of 205:
   the programme) and ignites (152 / 205 / 165), 1 cm 150 / 133 / 102: better than its control, below the MLP with copies. The
   single-row probe does not apply to a recurrent policy (its stateless swaps reset the memory); the sequence-aware version is
   pending. Trained in 3–7 min per seed at stride 20.
+- **E8a gated + trigger weight 144** (crashed at first on a missing import, fixed `1f3ece2`, run 02:50–03:20): 1 cm 98 / 78 / 53
+  nominal, 100 / 58 / 41 random; the arm ignites (139–166) and the base parks with 7 cm drift and moves at 40 s in only 10–22
+  episodes. The gate itself changed character on v2: open loop on the validation sequences it closes (score < 0.5) a median
+  44–53 ms *before* the label goes to zero in 62–63 of 64 episodes (55–57 of them early; p10 −0.15 s, p90 0.00), where the
+  v1 gate (§6v) only closed after the labels were already zero. Clean stop rows make the stop predictable from the geometry;
+  closed loop it still parks inside the expert's box in 74 / 78 / 61 episodes against 129 (v1 E8a: 0), so the remaining
+  misses are a 8–10 cm position error at the stop, not a gate that never fires. Below the MLP with copies on every count.
 - **Still true across the wave:** offline NRMSE ranks the arms backwards (control MLP 0.119 → 1 arrival; weighted MLP 0.188 →
   150). Model selection stays closed loop on the validation geometries; the reserved test banks are untouched.
 
@@ -2015,6 +2025,9 @@ Same chain, split and validations as §6z.1. Stable arrivals of 205:
   on the GRU 150/133/102 (latched, 0.04–0.11 m drift); GRU control on v2 73–78 with the arm igniting in all seeds; action
   chunking 0–3 (closed). The gated arm crashed (`drop_expert_failures` not imported in `gated_policy.py`; test added, fix
   `1f3ece2`) and was relaunched at 02:50; the §6z.2 ablation (K 144 on v1 successes only) is queued behind it.
+- 3 Nov 03:20: gated + trigger weight done (§6aa.2): 98 / 78 / 53 at 1 cm nominal, gate closes 44–53 ms before the label zero
+  open loop (v1: after), base inside the box in 74 / 78 / 61 (v1 E8a: 0). Ablation §6z.2 relaunched 03:25 on the full v1 split
+  (the pre-filtered split file is rejected by the partition check); ~2 h with its two evaluations.
 - Next, on request: E6 (§6c, nominal data without the clock) — the cheapest test of the reach-trigger mechanism.
 - E2 needs a collector mode; nothing in `src/` is edited while a collector,
   trainer or evaluator is running (provenance guards).
