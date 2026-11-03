@@ -1947,6 +1947,14 @@ tried on v1 K 144 (§6aa.1).
    together on the test dataset). Prediction: an exact learned zero with the arm awake removes the creep of seed 1's kind
    without an evaluator device; the E7c chatter (§6m) may remain at the approach's end and cost 1 cm arrivals.
    E7a stop weight + K 144 is left out as redundant with this arm; E7d (previous command as input) stays closed (§6n).
+3. **E8a gated stop on v2 with no device** (`v2_gated_control_seed{0,1,2}`, `chain_gated_v2_control.sh`, after the trainers of
+   arms 1–2; Rodrigo, 05:35: "first check whether it improves with v2"). The v2 gate with trigger weight (§6aa.2) closes 44–53 ms
+   *before* the label zero where the v1 gate (§6v) only confirmed an already-still base, and parks inside the box in 74 / 78 / 61
+   episodes vs 0. This arm separates the two candidate causes. Prediction: the gate's timing is a property of the data
+   (the 605k post-timeout zero-wheel rows 2.5 m from the goal taught the v1 gate that closing has nothing to do with the
+   geometry), so the v2 control gate also closes early and parks in the box in a comparable count; the arm ignites less than
+   with the weight (as the MLP control vs K 144), so 1 cm arrivals fall well below 98 / 78 / 53. If instead the control gate
+   confirms (closes after the label zero), the early closing was the weight's doing.
 
 ## 7. Status
 
