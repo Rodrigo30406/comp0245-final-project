@@ -1,7 +1,7 @@
 # Best model so far: MLP 28 pure + 144 trigger copies on mixture v2 (report, 3 Nov 2026 06:00)
 
-Status: interim. The GRU sweep (§6ab of `BLACKBOX_PLAN_20261027.md`) and the parking remedies (§6ac) are still running;
-nothing here uses the reserved test banks. Everything below is on the development validation geometries.
+Status: interim, updated 3 Nov 13:40. The GRU sweep (§6ab of `BLACKBOX_PLAN_20261027.md`) and the parking remedies (§6ac)
+are done and summarised where they bear on this model; nothing here uses the reserved test banks. Everything below is on the development validation geometries.
 
 ## 1. The model
 
@@ -94,7 +94,10 @@ labels unchanged; 463 824 rows added to 35.4 M (1.3%). The scaler is fitted on t
 of the demonstrations by a label-derived rule, equivalent to a per-row loss weight of 145 plus input noise (the weight
 alone gives 150 / 181 / 183: §6aa.2). It uses no information the dataset does not already contain, but it is an engineering
 decision about which row matters, and the report should say so. The GRU 28 trained on v2 with no such device reaches
-73–78 at 1 cm with the arm igniting in all three seeds (§6aa.2); its tuning is the open comparison (§6ab).
+73–78 at 1 cm with the arm igniting in all three seeds (§6aa.2) and 121–151 (5 cm 177–205) once trained to patience 40
+(§6ab.2, the best model of the programme with no device: seed 2 gives 151 / 198 / 205 and holds 10 s in 193). That is the
+reference for what the device buys: about 50 arrivals per seed at 1 cm, the ignition rate (arm extended 180–199 against
+133–184) and an arrival inside 1 cm rather than between 1 and 2 cm.
 
 ## 5. What did not matter, and what to be careful about
 

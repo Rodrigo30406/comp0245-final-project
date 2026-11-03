@@ -22,6 +22,7 @@ held-out target geometries the model never trained on.
 | best of version 1, black-box inputs (2 Nov) | 96–142 / 124–158 / 140–165 | 103–108 / 111–119 / 113–123 | 49–71% |
 | **version 2: MLP 28 + 144 trigger copies (3 Nov), 3 seeds** | **175–199 / 194–202 / 199–204** | **187–200 / 196–203 / 199–204** | **86–98%** |
 | version 2 + 0.45 rad/s wheel dead band | 190–198 / 196–204 / 197–204 | 189–197 / 194–200 / 199–202 | 94–97% |
+| version 2, best model with no label-derived device: GRU 28, patience 40 (3 Nov) | 121–151 / 154–198 / 177–205 | 103–140 / 134–203 / 172–205 | 60–76% |
 
 Three things made the difference between version 1 and version 2, each measured in isolation: an **ignition row** that
 re-weights the one demonstration row per episode where the arm starts to reach (section 5.1), **training only on
@@ -284,11 +285,17 @@ Everything else was re-run on the version-2 data so the comparison is fair ([§6
 | GRU 28, pure, tuned: hidden 256 | 34 / 30 / 53 | best offline fit of the programme (0.111), arrives least |
 | GRU 28, pure, tuned: patience 20 | 128 / 60 / 150 (5 cm 191 / 177 / 205) | the pure GRU keeps improving in closed loop after the offline curve flattens; the best pure model so far |
 | GRU 28, pure, tuned: stride 10 ms, lr 3e-4, 4 episodes per batch | 36–57, 41–92, 56–105 | no gain |
+| **GRU 28, pure, tuned: patience 40** | **138 / 121 / 151** (5 cm 177 / 193 / 205; random 118 / 103 / 140) | every seed above the control; returns diminish past patience 20 (+10 / +61 / +1 for 2–3× the updates); the best model with no label-derived device (seed 2: 151 / 198 / 205, held 10 s in 193) |
+| GRU 28 + weight 144, patience 20 | 114 / 58 / 148 | training the weighted GRU longer does not help (two seeds lose, one gains); line closed |
 | gated stop (E8a) + weight 144 | 98 / 78 / 53 | on v2 the gate closes 44–53 ms *before* the label zero; on v1 it only confirmed a stop |
 | gated stop, no device | 20 / 20 / 107 | the early closing is a property of the data (137–218 ms before the zero), not of the weight |
 
-A second GRU round (patience 40 for the pure line; patience 20 with the trigger weight) is queued, so that the report can
-state what the device costs and buys against a model that uses none.
+The second GRU round ([§6ab.2](docs/BLACKBOX_PLAN_20261027.md)) settles what the device costs and buys. The best model
+that uses no label-derived device is the GRU 28 trained to patience 40: 121–151 at 1 cm, 154–198 at 2 cm, 177–205 at 5 cm
+over three seeds, with the creep gone and the hold intact. Against it, the trigger copies on the MLP are worth about 50
+arrivals per seed at 1 cm, 20–30 more ignitions (the pure GRU's arm leaves home in 133–184 episodes, the MLP's in 180–199)
+and an arrival inside 1 cm rather than between 1 and 2 cm. Inside the GRU family the offline NRMSE and the closed loop
+finally move together (0.134 → 0.105 as the arrivals go 73–78 → 121–151); across families the inversion of Figure 2c stands.
 
 ## 6. The best model, stated plainly
 
@@ -333,7 +340,8 @@ pixi run --manifest-path ../RoboEnv/pixi.toml -e ml python scripts/evaluate_poli
 
 ## 8. Running now and next
 
-- GRU round two (patience 40 pure; patience 20 with the trigger weight), 3 seeds each, both validations.
+- Nothing on the GPU: the GRU round two is done (§5.5). A third pure round (patience 80) is possible but the trend says a
+  few arrivals for an hour of GPU.
 - Decision between the dead band and the categorical head for the final policy; then the reserved test banks, once, for
   the report.
 - Report (6 pages IEEE) and the in-person demonstration.

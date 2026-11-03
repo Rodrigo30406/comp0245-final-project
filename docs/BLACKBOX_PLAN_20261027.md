@@ -2002,6 +2002,59 @@ updates past the offline plateau, and seed 1 catches up; same rule, against the 
 training longer; rule against the weight-144 control (150 / 133 / 102; 5 cm 186–201). Both lines evaluated on the two v2
 validations; reserved banks untouched.
 
+### 6ab.2 GRU round two (3 Nov 11:35–13:29): patience 40 lifts every pure seed above the control; the weighted GRU does not gain from training longer
+
+Chain `chain_gru_round2b.sh` (six trainings one at a time: 15–24 min each for the pure line, 5–9 min with the weight; four
+evaluations three at a time; 1 h 54 min in all). Same columns as §6ab.1.
+
+| GRU 28 pure, mixture v2 | offline NRMSE (best epoch) | Nominal 1 / 2 / 5 cm | parked | arm ext. | drift | held ≥ 10 s | moving at 40 s | tol. | Random 1 / 2 / 5 cm | held ≥ 10 s | teammate success nom. |
+|---|---:|---|---:|---:|---:|---:|---:|---:|---|---:|---:|
+| control s0 / s1 / s2 (§6aa.2) | 0.129–0.135 (38–47) | 78 / 78 / 73 | 143–175 | 146–194 | 0.08–0.14 m | 104–133 | 7–25 | 15–57 | 66 / 79 / 71 | 95–126 | 38.0–39.5% |
+| patience 20 s0 / s1 / s2 (§6ab.1) | 0.113–0.119 (78–137) | 128 / 60 / 150 | 138–165 | 160–187 | 0.05–0.09 m | 112–180 | 0–12 | 26–88 | 121 / 55 / 135 | 111–168 | 31.2–77.6% |
+| patience 40 s0 | 0.105 (308) | 138 / 160 / 177 | 132 | 133 | 0.06 m | 158 | 7 | 35 | 118 / 153 / 172 | 150 | 67.3% |
+| patience 40 s1 | 0.106 (286) | 121 / 154 / 193 | 170 | 184 | 0.09 m | 167 | 3 | 108 | 103 / 134 / 191 | 156 | 60.0% |
+| **patience 40 s2** | 0.108 (213) | **151 / 198 / 205** | 146 | 158 | 0.05 m | **193** | 0 | 67 | **140 / 203 / 205** | 192 | **75.6%** |
+| expert | | 205 / 205 / 205 | 205 | 154 | | 204 | 0 | 129 | 200 / 200 / 200 | 198 | 100% |
+
+| GRU 28 + trigger device | offline NRMSE (best epoch) | Nominal 1 / 2 / 5 cm | parked | arm ext. | drift | held ≥ 10 s | moving at 40 s | tol. | Random 1 / 2 / 5 cm | held ≥ 10 s | teammate success nom. |
+|---|---:|---|---:|---:|---:|---:|---:|---:|---|---:|---:|
+| weight 144, patience 8, s0 / s1 / s2 (§6aa.2) | 0.189–0.197 (26–36) | 150 / 133 / 102 | 76–155 | 152–205 | 0.04–0.11 m | 159–181 | 0–13 | | 135 / 116 / 111 | 154–163 | 51.7–74.1% |
+| weight 144, patience 20, s0 | 0.173 (100) | 114 / 173 / 199 | 76 | 155 | 0.08 m | 158 | 0 | 27 | 109 / 171 / 196 | 157 | 64.4% |
+| weight 144, patience 20, s1 | 0.179 (56) | 58 / 108 / 196 | 123 | 186 | 0.11 m | 96 | 1 | 47 | 45 / 99 / 190 | 93 | 30.7% |
+| weight 144, patience 20, s2 | 0.183 (39) | 148 / 172 / 195 | 103 | 170 | 0.06 m | 170 | 7 | 59 | 142 / 173 / 195 | 168 | 72.7% |
+
+**Pure line: a gain by the rule, and the first sign of a ceiling.**
+
+- **Every seed beats the control** at 1 cm (138 / 121 / 151 vs 78 / 78 / 73) and none loses at 5 cm (177 / 193 / 205 vs
+  158 / 175 / 158); random 118 / 103 / 140 vs 66 / 79 / 71. Seed 1, which patience 20 had left at epoch 78 and 60 arrivals,
+  ran to epoch 286 and gives 121. Patience 40 is the pure line's final arm: the only factor that won in §6ab.1 was training
+  longer, so there is nothing to combine it with.
+- **The returns are diminishing.** Epochs to the selected checkpoint → nominal 1 cm: control 38 / 47 / 39 → 78 / 78 / 73;
+  patience 20 117 / 78 / 137 → 128 / 60 / 150; patience 40 308 / 286 / 213 → 138 / 121 / 151. Doubling to tripling the
+  updates past patience 20 adds +10 / +61 / +1; seed 2 is the same policy within noise (151 / 198 / 205 vs 150 / 197 / 205).
+  The offline NRMSE kept falling over the same range (0.113–0.119 → 0.105–0.108): inside one family with fixed inputs,
+  capacity and device, the offline metric and the closed loop move together; across families it stays inverted (hidden 256
+  fits 0.111 and arrives 30–53, §6ab.1). A patience 80 or fixed-epoch round would cost about an hour of GPU for what this
+  trend says is a few arrivals; not queued, Rodrigo's call.
+- **What the pure GRU still lacks against the K 144 MLP (199 / 193 / 175) is the ignition rate and the last centimetre.**
+  The arm leaves home in 133 / 184 / 158 episodes (MLP 180–199; seed 0 lost ignitions against its patience-20 version, 187);
+  where it reaches, it arrives at 1–2 cm rather than inside 1 cm (2 cm 160 / 154 / 198 against 1 cm 138 / 121 / 151, median
+  final 4.6–6.4 cm over all episodes against 1.2 cm for the MLP). The base parks inside the expert's tolerance in 35 / 108 / 67
+  (expert 129) and stops 7–12 cm off outside it, with the creep gone (moving at 40 s 0–7, drift 0.05–0.09 m). The hold is good
+  once it reaches: held ≥ 10 s 158 / 167 / 193, seed 2 holding more episodes than any model but the MLP with copies and band.
+- **The pure GRU remains the reference for what the device buys.** Best pure model of the programme: patience 40 seed 2,
+  151 / 198 / 205 nominal, 140 / 203 / 205 random, teammate success 75.6%. Against the K 144 MLP on the same geometries the
+  device is worth about 50 arrivals per seed at 1 cm (121–151 → 175–199), 20–30 ignitions, and a 1 cm instead of a 2 cm
+  arrival; what it costs is stated in §4 of `BEST_MODEL_REPORT_20261103.md`.
+
+**Device line: no gain, the line is closed.** Patience 20 moved the selected epochs from 36 / 26 / 27 to 100 / 56 / 39 and the
+arrivals from 150 / 133 / 102 to 114 / 58 / 148: two seeds lose (−36, −75), one gains (+46), 5 cm 199 / 196 / 195 against
+201 / 188 / 186. The teammate's strict hold (error < 15 mm at every sample for 10 s after the touch) is 6 / 3 / 46 of 205,
+against 89 / 69 / 72 for the pure line at patience 40 and 165–185 for the K 144 MLP: the weighted GRU reaches and then
+wanders inside the 2 cm band, which our 0.5 s dwell counts and the teammate's 10 s does not. The weighted GRU at patience 8
+(150 / 133 / 102, §6aa.2) stays the GRU-with-device reference; the MLP with copies is better than it in every column, so the
+GRU is not pursued further with the device.
+
 ## 6ac. Parking strategies re-tested on v2 + K 144 (pre-registered 3 Nov 05:20, queued)
 
 **Why.** Every base-parking remedy of E7 / E8 (§6l–§6n, §6t, §6v, §6w) was measured with a sleeping arm, and §6h showed the
@@ -2260,6 +2313,10 @@ trigger weight; 5–9 min each, NRMSE 0.194 / 0.181 / 0.175, best epoch 60 / 86 
   zero in 51–59 of 64 episodes with no device, so the early closing is the data's. Line closed. Progress README written at the
   repository root (figures in `docs/figures/progress/`, `scripts/analysis/progress_figures.py`); the old README is
   `docs/REPOSITORY_GUIDE.md`.
+- 3 Nov 13:29: GRU round two done (§6ab.2). Pure line, patience 40: 138 / 121 / 151 at 1 cm (5 cm 177 / 193 / 205), random
+  118 / 103 / 140, epochs 308 / 286 / 213: a gain by the rule over the control (78 / 78 / 73) with diminishing returns past
+  patience 20 (+10 / +61 / +1); seed 2 is the best model with no device (151 / 198 / 205, held 10 s in 193, teammate 75.6%).
+  Device line, weight 144 + patience 20: 114 / 58 / 148 vs 150 / 133 / 102, no gain, line closed. Nothing queued on the GPU.
 - Next, on request: E6 (§6c, nominal data without the clock) — the cheapest test of the reach-trigger mechanism.
 - E2 needs a collector mode; nothing in `src/` is edited while a collector,
   trainer or evaluator is running (provenance guards).
