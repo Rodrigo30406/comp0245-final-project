@@ -261,6 +261,50 @@ def fig_parking():
     plt.close(fig)
 
 
+# ------------------------------------------------------------------- 6. the K sweep (§6y, §6y.1): how 144 was chosen
+def fig_ksweep():
+    K = ["0 (control)", "16", "144", "512"]; x = np.arange(4)
+    nom = {"1 cm": [0, 48, 96, 86], "2 cm": [0, 84, 124, 101], "5 cm": [23, 141, 140, 119]}
+    rnd1 = [0, 47, 103, 66]
+    held = [0, 22, 107, 79]; drift = [np.nan, 1.22, 0.22, 1.62]; armext = [3, 197, 198, 149]; probe = [-0.02, 0.12, 0.96, 1.27]
+    nrmse = [0.145, 0.159, 0.166, 0.177]
+    fig, axes = plt.subplots(1, 4, figsize=(13, 3.5), gridspec_kw={"wspace": 0.35})
+    ax = axes[0]
+    for (lab, v), c, lw in zip(nom.items(), (BLUE, AQUA, MUTED), (2.2, 1.8, 1.6)):
+        ax.plot(x, v, color=c, lw=lw, marker="o", ms=5, label=f"nominal, {lab}")
+    ax.plot(x, rnd1, color=BLUE, lw=1.8, ls=(0, (4, 2)), marker="o", ms=5, mfc="white", label="random start, 1 cm")
+    ax.set_title("stable arrivals (of 205)", loc="left", fontsize=9.5, color=INK)
+    ax.set_ylim(-5, 215); ax.legend(frameon=False, fontsize=7.5, loc="upper left")
+    ax = axes[1]
+    ax.plot(x, armext, color=MUTED, lw=1.6, marker="o", ms=5, label="arm extended")
+    ax.plot(x, held, color=BLUE, lw=2.2, marker="o", ms=5, label="held ≥ 10 s")
+    ax.set_ylim(-5, 215); ax.legend(frameon=False, fontsize=7.5, loc="lower right")
+    ax.set_title("ignition and hold (of 205)", loc="left", fontsize=9.5, color=INK)
+    ax = axes[2]
+    ax.plot(x[1:], drift[1:], color=ORANGE, lw=2.0, marker="s", ms=5)
+    ax.set_ylim(0, 2.0); ax.set_title("drift after parking, median (m)", loc="left", fontsize=9.5, color=INK)
+    ax.text(0, 0.08, "control: no\nclean stop", ha="center", fontsize=7, color=MUTED)
+    ax = axes[3]
+    ax.plot(x, probe, color=BLUE, lw=2.2, marker="o", ms=5)
+    ax.axhline(0, color=MUTED, lw=0.8); ax.axhline(1, color=INK, lw=0.8, ls=(0, (3, 3)))
+    ax.text(0, 1.03, "expert's reach = 1", ha="left", va="bottom", fontsize=7, color=INK)
+    ax.set_ylim(-0.2, 1.65); ax.set_yticks([0, 0.5, 1.0, 1.5])
+    for xi, n in zip(x, nrmse):
+        ax.text(xi, 1.5, f"{n:.3f}", ha="center", fontsize=7, color=MUTED)
+    ax.text(1.5, 1.6, "offline validation NRMSE (worse with K):", ha="center", fontsize=7, color=MUTED)
+    ax.set_title("arm output at the resting-arm stop row", loc="left", fontsize=9.5, color=INK)
+    for ax in axes:
+        ax.set_xticks(x); ax.set_xticklabels(K); ax.set_xlabel("copies per episode, K"); ax.grid(axis="y", color=GRID, lw=0.8)
+        ax.set_axisbelow(True); ax.tick_params(length=0)
+    fig.suptitle("Choosing K (2 Nov, mixture v1, one seed per K): every K ignites the arm; 144 holds best and drifts least",
+                 x=0.01, y=1.04, ha="left", fontsize=10.5, color=INK)
+    fig.text(0.01, -0.06, "Pre-registered rule: the smallest K whose model extends the arm in more than half of the nominal episodes; "
+             "tie-break on 1 cm arrivals (nominal + random): K 16 = 95, K 144 = 199, K 512 = 152. 144 = the teammate's 16 copies × their 9 ms row stride.",
+             fontsize=7.5, color=MUTED)
+    fig.savefig(OUT / "06_k_sweep.png", bbox_inches="tight")
+    plt.close(fig)
+
+
 if __name__ == "__main__":
-    fig_programme(); fig_offline_vs_closed(); ep = fig_trajectories(); fig_probe(); fig_parking()
+    fig_programme(); fig_offline_vs_closed(); ep = fig_trajectories(); fig_probe(); fig_parking(); fig_ksweep()
     print("written", sorted(p.name for p in OUT.glob("*.png")), "trajectory geometry", ep)

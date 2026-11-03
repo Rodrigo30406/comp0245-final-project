@@ -182,9 +182,24 @@ resting states the policy actually visits. Their row selection reads the expert'
 from the labels alone (the first row of the terminal run of exactly-zero wheel commands, identical to the flag in 78 of
 80 episodes), so the device stays within the black-box rule. Implemented in our trainer as `trigger_copies=K` with
 `trigger_qd_jitter=auto` (σ per joint = the standard deviation of the arm velocities over the moving rows, fixed seed),
-scaler fitted on the recorded rows only, labels unchanged. A pre-registered sweep over K ∈ {16, 144, 512} at our 1 kHz row
-rate ([§6y.1](docs/BLACKBOX_PLAN_20261027.md)) selected **K = 144** (their 16 copies at a stride of 9 ms is the same
-fraction). On the version-1 data: 96 / 142 / 132 at 1 cm over three seeds, from 0.
+scaler fitted on the recorded rows only, labels unchanged.
+
+**How K was chosen.** The weight that matters is copies against the look-alike hold rows of the same input region. The
+teammate trains on one row every 9 ms, so their 16 copies are 1.5% of an episode's rows; we train on every 1 ms row, so
+16 copies would be 0.13%. The sweep was pre-registered at **K ∈ {16, 144, 512}** (144 = 16 × 9 keeps their row fraction;
+512 sits between their K 64 and K 256), one seed per K, both validations, with the rule fixed before the result: the
+smallest K whose model extends the arm in more than half of the nominal episodes, tie-break on 1 cm arrivals over the two
+banks ([§6y](docs/BLACKBOX_PLAN_20261027.md)). Every K ignited the arm (197 / 198 / 149 of 205); the tie-break picked
+**144** (199 arrivals against 95 and 152). The mechanism check agreed: at the resting-arm stop row the control predicts
+−0.02 on the hold → reach axis, K 16 +0.12, K 144 +0.96, K 512 +1.27, and the extra weight of 512 fires the reach early,
+from a base 0.24 m off the expert's stop, with the worst drift (Figure 3b). Offline NRMSE worsens monotonically with K
+(0.145 → 0.177) while closed loop improves and then degrades. 144 is the best of three pre-registered values, not an
+optimum. Seeds 1 and 2 at K 144 on the version-1 data: 96 / 142 / 132 at 1 cm, from 0 ([§6y.2](docs/BLACKBOX_PLAN_20261027.md)).
+
+![The K sweep](docs/figures/progress/06_k_sweep.png)
+
+*Figure 3b. The K sweep on the version-1 mixture, seed 0: stable arrivals, hold and creep, and the ignition probe against
+the number of copies per episode.*
 
 ### 5.2 Two data rules
 
