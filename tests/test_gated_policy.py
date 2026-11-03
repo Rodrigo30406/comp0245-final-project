@@ -148,6 +148,22 @@ class TrainingRunTests(unittest.TestCase):
                 if arch == 'gated':
                     self.assertIn('gate', metrics['validation']); self.assertIn('final_gate_median', metrics['validation']['gate'])
 
+    def test_trigger_weight_and_expert_success_filter_gated(self):
+        from robot_learning.learning.gated_policy import train
+        from robot_learning.learning.dataset import inventory
+        from robot_learning.learning.train import DEFAULT_CONFIG
+        with tempfile.TemporaryDirectory() as tmp, threadpool_limits(limits=1):
+            root = Path(tmp); data = root / 'data'; data.mkdir(); make_dense_dataset(data, episodes=6, stop_tail=20, failures=2)
+            records = inventory(data)
+            write_json(root / 'split.json', {'dataset': str(data), 'training': records[:3] + records[4:5], 'validation': records[3:4] + records[5:6]})
+            cfg = read_json(DEFAULT_CONFIG.parent / 'mlp_pytorch_successes.json')
+            cfg['mlp'].update(max_epochs=2, patience=100); cfg['torch']['device'] = 'cpu'; write_json(root / 'cfg.json', cfg)
+            train(data, root / 'split.json', root / 'cfg.json', root / 'run', 40.0, 'cpu', 'gated', hidden=8, chunk_steps=16,
+                  episodes_per_batch=2, mode=MODE, stride=4, head_width=6, encoder_width=5, trigger_weight=30.0)
+            info = read_json(root / 'run/model_info.json')
+            self.assertEqual(info['episode_filter'], {'keep_expert_failures': False, 'training': {'kept': 3, 'dropped_expert_failures': 1}, 'validation': {'kept': 1, 'dropped_expert_failures': 1}})
+            self.assertEqual(info['trigger_weight'], {'weight': 30.0, 'rows_weighted': 3}); self.assertEqual(info['training_episodes'], 3)
+
 
 if __name__ == '__main__':
     unittest.main()

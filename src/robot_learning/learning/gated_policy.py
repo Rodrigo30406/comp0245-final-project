@@ -31,7 +31,7 @@ import numpy as np
 from robot_learning.data.storage import read_json, write_json, sha256, utc_now, git_info
 from robot_learning.settings import PROJECT_ROOT
 from robot_learning.simulation.config import episode_defaults, resolve_episode_config
-from .dataset import inventory, load_episode, validate_partition, extra_inventory
+from .dataset import inventory, load_episode, validate_partition, drop_expert_failures, extra_inventory
 from .egocentric import validate_spec, spec_from_episode_config, VARIANT
 from .gru_policy import (sequence_trigger_weights, MODES, input_names, features_for, gru_step, episode_group, normalised_group)
 from .metrics import errors, aggregate
