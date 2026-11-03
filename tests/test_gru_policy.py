@@ -172,6 +172,17 @@ class TrainingRunTests(unittest.TestCase):
             info = read_json(root / 'run/model_info.json')
             self.assertEqual(info['episode_filter'], {'keep_expert_failures': False, 'training': {'kept': 3, 'dropped_expert_failures': 1}, 'validation': {'kept': 1, 'dropped_expert_failures': 1}})
             self.assertEqual(info['trigger_weight'], {'weight': 30.0, 'rows_weighted': 3}); self.assertEqual(info['training_episodes'], 3)
+            self.assertIsNone(info['trigger_jitter'])
+            policy_j, _ = train(data, root / 'split.json', root / 'cfg.json', root / 'run_j', 40.0, 'cpu', hidden=8, chunk_steps=16,
+                                episodes_per_batch=2, mode='raw21_targetpolar_clock_v1', stride=4, head_width=6, trigger_weight=30.0, trigger_jitter='auto')
+            info_j = read_json(root / 'run_j/model_info.json')
+            self.assertEqual(info_j['trigger_jitter']['rule'], 'auto'); self.assertEqual(len(info_j['trigger_jitter']['qd_sigma_rad_s']), 7)
+            self.assertEqual(info_j['trigger_jitter']['rows_jittered_total'], 3 * info_j['epochs_completed'])
+            x = np.random.default_rng(2).normal(size=(5, 21))
+            self.assertFalse(np.allclose(policy_j.predict(x), policy.predict(x)), 'the jitter changes the fit')
+            with self.assertRaises(ValueError):
+                train(data, root / 'split.json', root / 'cfg.json', root / 'run_bad_j', 40.0, 'cpu', hidden=8, chunk_steps=16, episodes_per_batch=2,
+                      mode='raw21_targetpolar_clock_v1', stride=4, head_width=6, trigger_jitter=-1.0)
             with self.assertRaises(ValueError):
                 train(data, root / 'split.json', root / 'cfg.json', root / 'run_bad', 40.0, 'cpu', hidden=8, chunk_steps=16, episodes_per_batch=2,
                       mode='raw21_targetpolar_clock_v1', stride=4, head_width=6, trigger_weight=0.5)
@@ -192,3 +203,19 @@ class SequenceTriggerWeightTests(unittest.TestCase):
         np.testing.assert_array_equal(w[0], [1, 1, 1, 1, 1, 1, 7, 1, 1, 1]); np.testing.assert_array_equal(w[1], [1] * 8 + [0, 0])
         w1, n1 = sequence_trigger_weights(Y, np.array([10, 8]), y_mean, y_scale, 1.0); self.assertEqual(n1, 0)
         np.testing.assert_array_equal(w1[0], 1.0)
+
+    def test_trigger_rows_and_jitter_sigma(self):
+        from robot_learning.learning.gru_policy import sequence_trigger_rows, trigger_jitter_sigma, input_names
+        names = input_names('raw21_targetpolar_clock_v1'); F = len(names); qd = [names.index(f'arm_qd_{i}') for i in range(1, 8)]
+        y_mean = np.zeros(9); y_scale = np.ones(9); x_scale = np.full(F, 2.0)
+        Y = np.ones((2, 10, 9), dtype=np.float32); Y[0, 6:, :2] = 0.0; Y[1, 3:5, :2] = 0.0
+        np.testing.assert_array_equal(sequence_trigger_rows(Y, np.array([10, 8]), y_mean, y_scale), [6, -1])
+        rng = np.random.default_rng(3); X = np.zeros((2, 10, F), dtype=np.float32)
+        X[:, :, qd] = rng.normal(size=(2, 10, 7)) / 2.0          # normalised units; raw = X * x_scale
+        X[0, 6:, qd] = 50.0                                      # the stopped rows must not count toward the std
+        sig_n, sig_rad, cols = trigger_jitter_sigma(X, Y, np.array([10, 8]), names, x_scale, y_mean, y_scale, 'auto')
+        self.assertEqual(cols, qd)
+        moving = np.concatenate([X[0, :6][:, qd], X[1, [0, 1, 2, 5, 6, 7]][:, qd]]).astype(np.float64) * 2.0   # ep 1 has zero wheels at rows 3-4
+        np.testing.assert_allclose(sig_rad, moving.std(axis=0), rtol=1e-5); np.testing.assert_allclose(sig_n, sig_rad / 2.0, rtol=1e-5)
+        sig_n2, sig_rad2, _ = trigger_jitter_sigma(X, Y, np.array([10, 8]), names, x_scale, y_mean, y_scale, 0.5)
+        np.testing.assert_array_equal(sig_rad2, 0.5); np.testing.assert_allclose(sig_n2, 0.25)
