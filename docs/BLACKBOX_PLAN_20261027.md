@@ -1778,6 +1778,26 @@ count lands near 175–199 the post-timeout rows were the cause; near 96–142, 
 after the gated arm, on the full v1 split `e3_mixture_4096.json` with the trainer's `keep_expert_failures: false` filter (the
 pre-filtered split file `e3_mixture_4096_expert_success_only.json` does not cover the inventory and `validate_partition` rejects it).
 
+**Result (3 Nov 03:25–05:01).** 3 059 training episodes kept (217 dropped), 759 / 61 validation. Stable arrivals of 205:
+
+| K 144, same 205 nominal geometries | offline NRMSE | Nominal 1 / 2 / 5 cm | parked | arm ext. | drift | held ≥ 10 s | moving at 40 s | Random (v1 bank, origin goal) 1 / 2 / 5 cm | held ≥ 10 s |
+|---|---:|---|---:|---:|---:|---:|---:|---|---:|
+| v1, failures in (§6y.2) | 0.166–0.177 | 96 / 142 / 132 | 101 / 105 / 88 | 198 / 181 / 176 | 0.22 / 0.32 / 0.14 m | 107 / 134 / 131 | 111 / 137 / 105 | 103 / 106 / 108 | 103 / 99 / 107 |
+| **v1, failures dropped** | 0.161 / 0.164 / 0.171 | **120 / 134 / 153** | 81 / 117 / 76 | 109 / 152 / 183 | 0.16 / 2.99 / 0.31 m | 118 / 112 / 160 | 93 / 171 / 132 | **157 / 145 / 121** | 150 / 118 / 125 |
+| v2, failures dropped + start goal (§6z.1) | 0.135–0.141 | 199 / 193 / 175 | 145 / 175 / 150 | 189 / 199 / 180 | 0.06 / 0.25 / 0.14 m | 202 / 182 / 172 | 15 / 129 / 36 | (v2 bank) 200 / 197 / 187 | 200 / 185 / 188 |
+
+- **Verdict by the pre-registered rule: both, mostly the goal geometry.** Dropping the 217 failure episodes moves the nominal
+  1 cm count from a median 132 to 134 (seeds +24 / −8 / +21), and the random-start count from 103–108 to 121–157: the
+  post-timeout rows hurt where they were recorded, on random starts. The step from there to 175–199 nominal and 187–200
+  random is the start-referenced goal: with the origin goal the random-start episodes teach a drive toward the far side of
+  the ring, which the nominal geometries never need and which pollutes the drive mapping for them too.
+- **A failure mode the v2 data removed:** seed 1 ends at a median 1.9 m from the target (drift after parking 2.99 m, moving at
+  40 s in 171 episodes, wheel clipping in 14% of rows) although 134 episodes were within 1 cm at some point and 112 held
+  10 s. The arm reaches, then the base restarts and drives away: the origin-goal data contains, for poses near the nominal
+  box, examples that keep driving (random-start episodes passing by on their way around the target). On v2 no seed drifts
+  past 0.25 m. The offline NRMSE (0.161–0.171, better than the v1 K 144 run) again says nothing about this.
+
+
 ## 6aa. Second wave on mixture v2 (decided 2 Nov 17:50, pre-registered): ignition for the models that already stop
 
 Rodrigo rejected phase-balanced sampling (it uses the expert's phase labels: "medio trampa") and approved, in this order,
@@ -2059,6 +2079,9 @@ ablation evaluations. Expected end ~08:30.
 - 3 Nov 04:30: GRU sweep pre-registered and queued (§6ab): pure line (hidden 256, stride 10 ms, patience 20, lr 3e-4, 4 episodes
   per batch) and device line (trigger weight 144 + arm-qd jitter at the trigger step, implemented 04:40 between trainers,
   123 tests OK); 18 trainings + 12 evaluations behind the §6z.2 ablation. Both lines are tuned and reported apart.
+- 3 Nov 05:01: ablation §6z.2 done: K 144 on v1 with the failures dropped (origin goal) = 120 / 134 / 153 nominal, 157 / 145 /
+  121 on the v1 random bank (v1 with failures: 96 / 142 / 132 and 103 / 106 / 108; v2: 199 / 193 / 175). Verdict: both changes
+  matter, the goal geometry most; seed 1 drives away after reaching (median end 1.9 m), a mode v2 removed.
 - Next, on request: E6 (§6c, nominal data without the clock) — the cheapest test of the reach-trigger mechanism.
 - E2 needs a collector mode; nothing in `src/` is edited while a collector,
   trainer or evaluator is running (provenance guards).
