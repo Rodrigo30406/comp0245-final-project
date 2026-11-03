@@ -28,3 +28,15 @@ __pycache__/
 /results/step5/**/logs/
 /results/step5/**/*.log
 /results/step5/pilot_cache/
+# step 6: isolated smoke artifacts, training logs and regenerable trajectories
+/results/step6/smoke/
+/results/step6/**/*.log
+/results/step6/**/traj/
+/results/step6/**/logs/
+/results/step7/smoke/
+/results/step7/**/*.log
+/results/step7/**/traj/
+/results/step7/**/logs/
+/results/step7/mplcfg/
+/results/step7/existing_files_baseline.json
+/results/step6/.gp_figures.lock

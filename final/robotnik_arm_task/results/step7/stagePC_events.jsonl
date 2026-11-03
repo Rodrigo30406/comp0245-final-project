@@ -1,0 +1,49 @@
+{"time": "2026-11-03T13:45:45+00:00", "experiment": "PC", "stage": "controls", "status": "start", "frozen_sha256": "ea5730217df041cfdebf8f5fa18e37acd88f214611da0ab79dca02fbe9a3f7fa"}
+{"time": "2026-11-03T13:45:45+00:00", "experiment": "PC", "stage": "run", "status": "start", "folder": "results/step7/nostall/ego-novw-trig_s0_hard", "n": 6, "synthetic": false}
+{"time": "2026-11-03T13:46:09+00:00", "experiment": "PC", "stage": "run", "status": "end", "folder": "results/step7/nostall/ego-novw-trig_s0_hard", "n": 6, "harness_error": 0, "policy_error": 0, "extended_hold_policy_error": 0}
+{"time": "2026-11-03T13:46:09+00:00", "experiment": "PC", "stage": "run", "status": "start", "folder": "results/step7/nostall/ego-novw-trig_s1_hard", "n": 16, "synthetic": false}
+{"time": "2026-11-03T13:46:52+00:00", "experiment": "PC", "stage": "run", "status": "end", "folder": "results/step7/nostall/ego-novw-trig_s1_hard", "n": 16, "harness_error": 0, "policy_error": 0, "extended_hold_policy_error": 0}
+{"time": "2026-11-03T13:46:52+00:00", "experiment": "PC", "stage": "run", "status": "start", "folder": "results/step7/nostall/ego-novw-trig_s2_hard", "n": 28, "synthetic": false}
+{"time": "2026-11-03T13:48:02+00:00", "experiment": "PC", "stage": "run", "status": "end", "folder": "results/step7/nostall/ego-novw-trig_s2_hard", "n": 28, "harness_error": 0, "policy_error": 0, "extended_hold_policy_error": 0}
+{"time": "2026-11-03T13:48:02+00:00", "experiment": "PC", "stage": "run", "status": "start", "folder": "results/step7/nostall/ego-novw-trig_s3_hard", "n": 3, "synthetic": false}
+{"time": "2026-11-03T13:48:23+00:00", "experiment": "PC", "stage": "run", "status": "end", "folder": "results/step7/nostall/ego-novw-trig_s3_hard", "n": 3, "harness_error": 0, "policy_error": 0, "extended_hold_policy_error": 0}
+{"time": "2026-11-03T13:48:23+00:00", "experiment": "PC", "stage": "run", "status": "start", "folder": "results/step7/nostall/ego-novw-trig_s4_hard", "n": 8, "synthetic": false}
+{"time": "2026-11-03T13:48:50+00:00", "experiment": "PC", "stage": "run", "status": "end", "folder": "results/step7/nostall/ego-novw-trig_s4_hard", "n": 8, "harness_error": 0, "policy_error": 0, "extended_hold_policy_error": 0}
+{"time": "2026-11-03T13:48:50+00:00", "experiment": "PC", "stage": "run", "status": "start", "folder": "results/step7/nostall/ego-novw-trig_s100_confirm", "n": 6, "synthetic": false}
+{"time": "2026-11-03T13:49:12+00:00", "experiment": "PC", "stage": "run", "status": "end", "folder": "results/step7/nostall/ego-novw-trig_s100_confirm", "n": 6, "harness_error": 0, "policy_error": 0, "extended_hold_policy_error": 0}
+{"time": "2026-11-03T13:49:12+00:00", "experiment": "PC", "stage": "run", "status": "start", "folder": "results/step7/nostall/ego-novw-trig_s101_confirm", "n": 12, "synthetic": false}
+{"time": "2026-11-03T13:49:46+00:00", "experiment": "PC", "stage": "run", "status": "end", "folder": "results/step7/nostall/ego-novw-trig_s101_confirm", "n": 12, "harness_error": 0, "policy_error": 0, "extended_hold_policy_error": 0}
+{"time": "2026-11-03T13:49:46+00:00", "experiment": "PC", "stage": "run", "status": "start", "folder": "results/step7/nostall/ego-novw-trig_s102_confirm", "n": 3, "synthetic": false}
+{"time": "2026-11-03T13:50:04+00:00", "experiment": "PC", "stage": "run", "status": "end", "folder": "results/step7/nostall/ego-novw-trig_s102_confirm", "n": 3, "harness_error": 0, "policy_error": 0, "extended_hold_policy_error": 0}
+{"time": "2026-11-03T13:50:04+00:00", "experiment": "PC", "stage": "run", "status": "start", "folder": "results/step7/nostall/ego-novw-trig_s103_confirm", "n": 18, "synthetic": false}
+{"time": "2026-11-03T13:50:50+00:00", "experiment": "PC", "stage": "run", "status": "end", "folder": "results/step7/nostall/ego-novw-trig_s103_confirm", "n": 18, "harness_error": 0, "policy_error": 0, "extended_hold_policy_error": 0}
+{"time": "2026-11-03T13:50:50+00:00", "experiment": "PC", "stage": "run", "status": "start", "folder": "results/step7/nostall/ego-novw-trig_s104_confirm", "n": 32, "synthetic": false}
+{"time": "2026-11-03T13:52:09+00:00", "experiment": "PC", "stage": "run", "status": "end", "folder": "results/step7/nostall/ego-novw-trig_s104_confirm", "n": 32, "harness_error": 0, "policy_error": 0, "extended_hold_policy_error": 0}
+{"time": "2026-11-03T13:52:09+00:00", "experiment": "PC", "stage": "controls", "status": "complete", "frozen_sha256": "ea5730217df041cfdebf8f5fa18e37acd88f214611da0ab79dca02fbe9a3f7fa"}
+{"time": "2026-11-03T13:52:09+00:00", "experiment": "PC", "stage": "hard", "status": "start", "frozen_sha256": "ea5730217df041cfdebf8f5fa18e37acd88f214611da0ab79dca02fbe9a3f7fa"}
+{"time": "2026-11-03T13:52:09+00:00", "experiment": "PC", "stage": "run", "status": "start", "folder": "results/ego-novw-trig-pd_s0_hard", "n": 200, "synthetic": false}
+{"time": "2026-11-03T13:57:22+00:00", "experiment": "PC", "stage": "run", "status": "end", "folder": "results/ego-novw-trig-pd_s0_hard", "n": 200, "harness_error": 0, "policy_error": 0, "extended_hold_policy_error": 0}
+{"time": "2026-11-03T13:57:22+00:00", "experiment": "PC", "stage": "run", "status": "start", "folder": "results/ego-novw-trig-pd_s1_hard", "n": 200, "synthetic": false}
+{"time": "2026-11-03T14:02:25+00:00", "experiment": "PC", "stage": "run", "status": "end", "folder": "results/ego-novw-trig-pd_s1_hard", "n": 200, "harness_error": 0, "policy_error": 0, "extended_hold_policy_error": 0}
+{"time": "2026-11-03T14:02:25+00:00", "experiment": "PC", "stage": "run", "status": "start", "folder": "results/ego-novw-trig-pd_s2_hard", "n": 200, "synthetic": false}
+{"time": "2026-11-03T14:07:38+00:00", "experiment": "PC", "stage": "run", "status": "end", "folder": "results/ego-novw-trig-pd_s2_hard", "n": 200, "harness_error": 0, "policy_error": 0, "extended_hold_policy_error": 0}
+{"time": "2026-11-03T14:07:38+00:00", "experiment": "PC", "stage": "run", "status": "start", "folder": "results/ego-novw-trig-pd_s3_hard", "n": 200, "synthetic": false}
+{"time": "2026-11-03T14:14:05+00:00", "experiment": "PC", "stage": "run", "status": "end", "folder": "results/ego-novw-trig-pd_s3_hard", "n": 200, "harness_error": 0, "policy_error": 0, "extended_hold_policy_error": 0}
+{"time": "2026-11-03T14:14:05+00:00", "experiment": "PC", "stage": "run", "status": "start", "folder": "results/ego-novw-trig-pd_s4_hard", "n": 200, "synthetic": false}
+{"time": "2026-11-03T14:19:28+00:00", "experiment": "PC", "stage": "run", "status": "end", "folder": "results/ego-novw-trig-pd_s4_hard", "n": 200, "harness_error": 0, "policy_error": 0, "extended_hold_policy_error": 0}
+{"time": "2026-11-03T14:19:28+00:00", "experiment": "PC", "stage": "hard", "status": "complete", "frozen_sha256": "ea5730217df041cfdebf8f5fa18e37acd88f214611da0ab79dca02fbe9a3f7fa"}
+{"time": "2026-11-03T14:19:28+00:00", "experiment": "PC", "stage": "confirm", "status": "start", "frozen_sha256": "ea5730217df041cfdebf8f5fa18e37acd88f214611da0ab79dca02fbe9a3f7fa"}
+{"time": "2026-11-03T14:19:28+00:00", "experiment": "PC", "stage": "confirm", "status": "opened_once", "token": "results/step7/PC_confirm_opened.json"}
+{"time": "2026-11-03T14:19:28+00:00", "experiment": "PC", "stage": "run", "status": "start", "folder": "results/ego-novw-trig-pd_s100_confirm", "n": 300, "synthetic": false}
+{"time": "2026-11-03T14:27:14+00:00", "experiment": "PC", "stage": "run", "status": "end", "folder": "results/ego-novw-trig-pd_s100_confirm", "n": 300, "harness_error": 0, "policy_error": 0, "extended_hold_policy_error": 0}
+{"time": "2026-11-03T14:27:14+00:00", "experiment": "PC", "stage": "run", "status": "start", "folder": "results/ego-novw-trig-pd_s101_confirm", "n": 300, "synthetic": false}
+{"time": "2026-11-03T14:36:16+00:00", "experiment": "PC", "stage": "run", "status": "end", "folder": "results/ego-novw-trig-pd_s101_confirm", "n": 300, "harness_error": 0, "policy_error": 0, "extended_hold_policy_error": 0}
+{"time": "2026-11-03T14:36:16+00:00", "experiment": "PC", "stage": "run", "status": "start", "folder": "results/ego-novw-trig-pd_s102_confirm", "n": 300, "synthetic": false}
+{"time": "2026-11-03T14:45:02+00:00", "experiment": "PC", "stage": "run", "status": "end", "folder": "results/ego-novw-trig-pd_s102_confirm", "n": 300, "harness_error": 0, "policy_error": 0, "extended_hold_policy_error": 0}
+{"time": "2026-11-03T14:45:02+00:00", "experiment": "PC", "stage": "run", "status": "start", "folder": "results/ego-novw-trig-pd_s103_confirm", "n": 300, "synthetic": false}
+{"time": "2026-11-03T14:54:32+00:00", "experiment": "PC", "stage": "run", "status": "end", "folder": "results/ego-novw-trig-pd_s103_confirm", "n": 300, "harness_error": 0, "policy_error": 0, "extended_hold_policy_error": 0}
+{"time": "2026-11-03T14:54:32+00:00", "experiment": "PC", "stage": "run", "status": "start", "folder": "results/ego-novw-trig-pd_s104_confirm", "n": 300, "synthetic": false}
+{"time": "2026-11-03T15:02:23+00:00", "experiment": "PC", "stage": "run", "status": "end", "folder": "results/ego-novw-trig-pd_s104_confirm", "n": 300, "harness_error": 0, "policy_error": 0, "extended_hold_policy_error": 0}
+{"time": "2026-11-03T15:02:23+00:00", "experiment": "PC", "stage": "confirm", "status": "complete", "frozen_sha256": "ea5730217df041cfdebf8f5fa18e37acd88f214611da0ab79dca02fbe9a3f7fa"}
+{"time": "2026-11-03T15:02:23+00:00", "experiment": "PC", "stage": "analyze", "status": "start", "frozen_sha256": "ea5730217df041cfdebf8f5fa18e37acd88f214611da0ab79dca02fbe9a3f7fa"}
+{"time": "2026-11-03T15:02:26+00:00", "experiment": "PC", "stage": "analyze", "status": "complete", "frozen_sha256": "ea5730217df041cfdebf8f5fa18e37acd88f214611da0ab79dca02fbe9a3f7fa"}

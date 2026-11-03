@@ -1,0 +1,12 @@
+{
+  "time": "2026-11-03T02:32:25.165102+00:00",
+  "experiment": "P",
+  "stage": "chain",
+  "status": "complete",
+  "verdict": "KEEP C3",
+  "stopped_by_gate": true,
+  "stopped_after": "dev",
+  "reason": "DEV 条件(1)或(2)未满足，HARD/CONFIRM未打开",
+  "mechanisms_sha256": "866fcc66657d0f58f265044e80e55e92d3033a51cbcaadd401382bc432e83eab",
+  "software_smoke": false
+}

@@ -1,0 +1,33 @@
+{"time": "2026-11-02T18:44:38.557633+00:00", "experiment": "G", "stage": "cache", "status": "start"}
+{"time": "2026-11-02T18:44:50.973253+00:00", "experiment": "G", "stage": "cache", "status": "end"}
+{"time": "2026-11-02T18:44:50.976218+00:00", "experiment": "G", "stage": "pilot", "status": "start"}
+{"time": "2026-11-02T18:44:50.978334+00:00", "experiment": "G", "stage": "train", "status": "start", "seed": 0, "out": "results/step6/calibration/chunk_d9_s0.npz", "adaptive_concurrency": 1, "available_mib": 22264.0859375}
+{"time": "2026-11-02T18:52:20.112082+00:00", "experiment": "G", "stage": "train", "status": "end", "seed": 0, "peak_rss_mib": 5557.234375, "train_s": 442.3844654560089, "epochs": 16}
+{"time": "2026-11-02T18:52:20.113287+00:00", "experiment": "G", "stage": "train", "status": "start", "seed": 1, "out": "results/step6/calibration/chunk_d9_s1.npz", "adaptive_concurrency": 3, "available_mib": 22076.609375}
+{"time": "2026-11-02T19:00:50.296835+00:00", "experiment": "G", "stage": "train", "status": "end", "seed": 1, "peak_rss_mib": 5557.3828125, "train_s": 504.40091466903687, "epochs": 17}
+{"time": "2026-11-02T19:00:50.297638+00:00", "experiment": "G", "stage": "run", "status": "start", "folder": "results/step6/pilot/chunk_d9_s0_pilot", "n": 100}
+{"time": "2026-11-02T19:01:13.100991+00:00", "experiment": "G", "stage": "run", "status": "end", "folder": "results/step6/pilot/chunk_d9_s0_pilot", "n": 100, "harness_error": 0, "policy_error": 0, "extended_hold_policy_error": 0}
+{"time": "2026-11-02T19:01:13.103486+00:00", "experiment": "G", "stage": "run", "status": "start", "folder": "results/step6/pilot/chunk_d9_s1_pilot", "n": 100}
+{"time": "2026-11-02T19:01:34.630080+00:00", "experiment": "G", "stage": "run", "status": "end", "folder": "results/step6/pilot/chunk_d9_s1_pilot", "n": 100, "harness_error": 0, "policy_error": 0, "extended_hold_policy_error": 0}
+{"time": "2026-11-02T19:01:34.632654+00:00", "experiment": "G", "stage": "train", "status": "start", "seed": 0, "out": "results/step6/calibration/chunk_d27_s0.npz", "adaptive_concurrency": 1, "available_mib": 21565.5703125}
+{"time": "2026-11-02T19:06:00.709413+00:00", "experiment": "G", "stage": "train", "status": "end", "seed": 0, "peak_rss_mib": 5557.33203125, "train_s": 261.4771065711975, "epochs": 9}
+{"time": "2026-11-02T19:06:00.710495+00:00", "experiment": "G", "stage": "train", "status": "start", "seed": 1, "out": "results/step6/calibration/chunk_d27_s1.npz", "adaptive_concurrency": 3, "available_mib": 22333.0078125}
+{"time": "2026-11-02T19:13:14.865451+00:00", "experiment": "G", "stage": "train", "status": "end", "seed": 1, "peak_rss_mib": 5557.05859375, "train_s": 428.49581027030945, "epochs": 15}
+{"time": "2026-11-02T19:13:14.867066+00:00", "experiment": "G", "stage": "run", "status": "start", "folder": "results/step6/pilot/chunk_d27_s0_pilot", "n": 100}
+{"time": "2026-11-02T19:13:46.577968+00:00", "experiment": "G", "stage": "run", "status": "end", "folder": "results/step6/pilot/chunk_d27_s0_pilot", "n": 100, "harness_error": 0, "policy_error": 0, "extended_hold_policy_error": 0}
+{"time": "2026-11-02T19:13:46.580182+00:00", "experiment": "G", "stage": "run", "status": "start", "folder": "results/step6/pilot/chunk_d27_s1_pilot", "n": 100}
+{"time": "2026-11-02T19:14:19.136256+00:00", "experiment": "G", "stage": "run", "status": "end", "folder": "results/step6/pilot/chunk_d27_s1_pilot", "n": 100, "harness_error": 0, "policy_error": 0, "extended_hold_policy_error": 0}
+{"time": "2026-11-02T19:14:19.138675+00:00", "experiment": "G", "stage": "train", "status": "start", "seed": 0, "out": "results/step6/calibration/chunk_d81_s0.npz", "adaptive_concurrency": 1, "available_mib": 21550.95703125}
+{"time": "2026-11-02T19:20:26.248023+00:00", "experiment": "G", "stage": "train", "status": "end", "seed": 0, "peak_rss_mib": 5557.30859375, "train_s": 360.9871332645416, "epochs": 10}
+{"time": "2026-11-02T19:20:26.249253+00:00", "experiment": "G", "stage": "train", "status": "start", "seed": 1, "out": "results/step6/calibration/chunk_d81_s1.npz", "adaptive_concurrency": 3, "available_mib": 22439.90234375}
+{"time": "2026-11-02T19:32:54.506382+00:00", "experiment": "G", "stage": "train", "status": "end", "seed": 1, "peak_rss_mib": 5557.7578125, "train_s": 742.104038476944, "epochs": 17}
+{"time": "2026-11-02T19:32:54.507794+00:00", "experiment": "G", "stage": "run", "status": "start", "folder": "results/step6/pilot/chunk_d81_s0_pilot", "n": 100}
+{"time": "2026-11-02T19:34:05.916420+00:00", "experiment": "G", "stage": "run", "status": "end", "folder": "results/step6/pilot/chunk_d81_s0_pilot", "n": 100, "harness_error": 0, "policy_error": 0, "extended_hold_policy_error": 0}
+{"time": "2026-11-02T19:34:05.918594+00:00", "experiment": "G", "stage": "run", "status": "start", "folder": "results/step6/pilot/chunk_d81_s1_pilot", "n": 100}
+{"time": "2026-11-02T19:37:18.972433+00:00", "experiment": "G", "stage": "run", "status": "end", "folder": "results/step6/pilot/chunk_d81_s1_pilot", "n": 100, "harness_error": 0, "policy_error": 0, "extended_hold_policy_error": 0}
+{"time": "2026-11-02T19:37:18.974617+00:00", "experiment": "G", "stage": "run", "status": "start", "folder": "results/ego-novw-trig_s0_pilot", "n": 100}
+{"time": "2026-11-02T19:40:07.001319+00:00", "experiment": "G", "stage": "run", "status": "end", "folder": "results/ego-novw-trig_s0_pilot", "n": 100, "harness_error": 0, "policy_error": 0, "extended_hold_policy_error": 0}
+{"time": "2026-11-02T19:40:07.003565+00:00", "experiment": "G", "stage": "run", "status": "start", "folder": "results/ego-novw-trig_s1_pilot", "n": 100}
+{"time": "2026-11-02T19:43:22.602948+00:00", "experiment": "G", "stage": "run", "status": "end", "folder": "results/ego-novw-trig_s1_pilot", "n": 100, "harness_error": 0, "policy_error": 0, "extended_hold_policy_error": 0}
+{"time": "2026-11-02T19:43:23.477262+00:00", "experiment": "G", "stage": "pilot", "status": "end"}
+{"time": "2026-11-02T19:43:23.477447+00:00", "experiment": "G", "stage": "pilot", "status": "stopped", "reason": "在 pilot 上三个块长都明显变差", "verdict": "KEEP C3"}

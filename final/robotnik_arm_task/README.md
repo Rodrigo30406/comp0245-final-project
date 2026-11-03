@@ -95,3 +95,94 @@ are bit-identical to the original model (`backward_compatibility.json`).
 Current execution status (amendment 2): the chain was found terminated at F2 at 04:14:25 UTC (exit code 143; exact termination time and cause unknown), and documented at 04:15:28 UTC. F0 and the pilot passed; F2 completed 240/400 episodes. Seed 3 has 34 partial rows and no summary, so resume will delete and rerun that incomplete directory. F3-F5 and F_mechanisms have not started; HARD/CONFIRM remain unopened. The exact error and resume commands are recorded in `results/step5/chainF_blocked.json` and the Chinese report. Later stages have not been run past this blocker.
 
 Full amendment-2 tests: 177 tests passed, with 2 existing optional slow tests skipped. Final integrity checks cover 109 implementation/input files and 380 existing result files. See [the Chinese audit report](results/step5/CODEX_REPORT_F.md), `resume_final_integrity_amendment2.json`, and `chainF.log`; earlier session history is preserved.
+
+第 6 步：实验 G（action chunking）与 P（关节参考输出）
+-------------------------------------------------------
+
+方案见 `STEP6_PLAN_PROMPT.md`。第一次执行因 P2(b) 失败按规则停止，证据保留；
+本轮依据冻结前的“修订 1”继续实现与验证。最终测试、向后兼容证据、冻结、短链冒烟的
+实际状态和时间以中文报告 `results/step6/REPORT_GP.md` 为准。本说明描述代码接口，
+不将尚未运行的正式训练、pilot、DEV、HARD、CONFIRM 写成实验结果。
+
+新增代码：
+
+- `policies/pd_layer.py`：复用专家同一个 `ArmControllerParams`、PD 律与 Pinocchio
+  重力补偿。按修订 1，固定层直接使用预测的 `e = q_des - q` 和 `qd_des`，不再对参考做
+  lead 或关节限位截断，仅保留最终 `±max_torque` 力矩截断；专家 reach 分支的参考截断
+  已包含在录制标签中。
+- `results/step6/gp_training.py`：90 维动作块与 16 维关节参考的侧缓存、manifest、
+  训练、峰值内存记录和离线诊断。G 早停使用全部 1 kHz 验证行的第 0 段；P 使用
+  机械臂各维 `1/sqrt(2)` 权重，并以部署使用的固定层计算离线力矩。
+- `gp_common.py`、`gp_mechanisms.py`、`G_mechanisms.py`、`P_mechanisms.py`
+  （均在 `results/step6/`）：冻结核查、C3 stalled 对照替换、两层 bootstrap/Welch、
+  Holm 描述量和 §6 的逐级门槛。
+- `step6_pipeline.py`、`run_expG.sh`、`run_expP.sh`：缓存、pilot、G 的校准模型复用、
+  训练、meta 检查、离线分析、DEV/HARD/CONFIRM 和图表的续跑链；`freeze_gp.py`
+  写入并记录首次冻结。
+- `gp_figures.py`：G pilot 曲线，DEV 的 C3/G/P success、失败类和 policy_ms 表，
+  复用第 5 步定义的容差曲线，P 离线力矩 RMSE/参考 nRMSE 表，G reach 力矩平滑度。
+  平滑度从共同 harness 检测的 `arm_extend_time` 开始，统计间隔 10 ms 的相邻存储点；
+  缺失对应轨迹时拒绝静默替代。图表只读已完成结果，不重建评估参考或读取封存数据。
+- `gp_smoke.py`：明确标注的软件合成 rollout/轨迹，用真实统计脚本检查门槛与自动停止。
+  合成结果和少量真实闭环均隔离在 `results/step6/smoke/`，不参与正式判定。
+- `tests/test_chunk.py`、`tests/test_pd_layer.py`、`tests/test_gp_figures.py` 及流水线测试：
+  G4、修订后的 P2、描述性指标和门槛/续跑检查；以报告中的最终 failfast 运行记录为验收证据。
+
+共享文件只添加默认关闭的入口：`train_policy.py` 登记 `ego-novw-trig-chunk`（G）、
+`ego-novw-trig-pd`（P），新增 `--chunk-k`、`--chunk-delta`、`--side-cache` 和侧缓存
+命令；旧模型仍进入原训练路径。`bc_features.py` 根据显式 meta 输出名称保存和读取新维数；
+旧 meta 使用原来的 9 维名称。`policies/bc_policy.py` 新增 ChunkPolicy、PDPolicy 和
+按 `output_representation` 选择的工厂；旧模型仍创建 BCPolicy。评估协议常量未改。
+§1.2 的证据要求是最终版本全部 tests 通过、C3 seed 0 配方重训与原模型逐位相同，以及
+k=1 训练矩阵 SHA256 与 C3 相同；重训产物只写入 `results/step6/smoke/`。
+
+脚本第一个参数是阶段（默认 `all`），可用阶段为 `cache`、`pilot`、`promote`、`train`、
+`models`、`offline`、`dev`、`hard`、`confirm`、`figures`。例如，单跑模型检查是
+`bash results/step6/run_expG.sh models`。每阶段核对冻结记录与方案 SHA256；已完成的阶段
+核对实现哈希后跳过。完整运行经校验后复用；没有 `summary.txt` 的中断 rollout 文件夹
+删除重跑。门槛失败会写明停止位置与原因，并保持后续真实评估集未打开。CONFIRM 必须
+通过 HARD 门槛，由链在一次性开启阶段传入 `--allow-confirm`；直接单跑该阶段同样受检查。
+
+`WORKERS` 控制仿真进程（正式默认 22）；`JOBS` 控制训练并行请求（默认 1）。训练先运行
+一个模型记录 peak RSS，随后按 `(可用内存 - 2 GiB) / peak RSS` 调度，最多 5 个进程；
+任一进程超过 6 GiB 则停止。建议两条正式链顺序运行，`WORKERS=22 JOBS=1`，先保守保留
+内存余量；Claude 可按实际峰值提高 JOBS，调度仍受上述上限约束。两条链同时运行时每条
+用 `WORKERS=11`，并为两条链合计的训练内存留余量。
+
+冻结与验收之后，由 Claude 运行正式长链：
+
+```bash
+WORKERS=22 JOBS=1 bash results/step6/run_expG.sh all >> results/step6/chainG.log 2>&1
+WORKERS=22 JOBS=1 bash results/step6/run_expP.sh all >> results/step6/chainP.log 2>&1
+```
+
+执行者只运行预计 10 分钟以内的验证或短链。例如，以下接口使用 2 个训练 episode、
+1 个验证 episode、1 个 epoch、2 个真实 pilot 闭环 episode，其余门槛阶段使用合成结果；
+G、P 复用同一个独立 smoke 根目录，便于生成三者图表：
+
+```bash
+WORKERS=2 JOBS=1 bash results/step6/run_expG.sh all \
+  --smoke-root results/step6/smoke/chain_example --smoke-epochs 1
+WORKERS=2 JOBS=1 bash results/step6/run_expP.sh all \
+  --smoke-root results/step6/smoke/chain_example --smoke-epochs 1
+```
+
+用另一个 smoke 根目录及 `--smoke-case dev_fail`、`dev_risk_fail`、`hard_fail`、
+`confirm_fail`、`pilot_g_stop` 或 `pilot_p_stop` 检查相应自动停止分支。软件冒烟不打开
+真实 DEV/HARD/CONFIRM；所有路径均位于指定 smoke 根目录。不要把 smoke 参数用于正式运行。
+
+图表也可单独生成（Python 仍使用指定 pixi manifest）：
+
+```bash
+pixi run --manifest-path /home/w/comp0245/RoboEnv/pixi.toml python \
+  results/step6/gp_figures.py --root . --output results/step6 --experiment both
+```
+
+`--parts pilot,dev,tolerance,offline,smoothness` 选择图表，`--seeds 0,1 --n-boot 200`
+用于小规模软件冒烟，`--require-complete` 在所需输入缺失时失败。第一次链结束时，未完成
+另一实验的部分记录为 skipped；第二条链完成后，共同 DEV 表和容差图加入所有已完成的模型。
+正式产物包括 `G_pilot.{txt,json}`、`fig_G_pilot.{png,pdf}`、`DEV_comparison_table.{txt,json}`、
+`fig_tolerance_GP.{png,pdf}`、`tolerance_curve_GP.{txt,json}`、`P_offline_table.{txt,json}`、
+`G_smoothness.{txt,json}`、`G/P_model_checks.json`、`G/P_MM_compare_<set>.{txt,json}`、
+`G/P_mechanisms.{txt,json}`、`chainG/P_status.json` 和阶段事件日志。`data/test` 始终封存；
+正式 G/P 缓存、模型和评估结果由 Claude 接续产生。

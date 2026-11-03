@@ -1,0 +1,40 @@
+{
+  "root": "/home/w/comp0245/LAB_SESSION_COMP_0245_2026_PUBLIC/.claude/worktrees/eval-protocol/final/robotnik_arm_task",
+  "output": "/home/w/comp0245/LAB_SESSION_COMP_0245_2026_PUBLIC/.claude/worktrees/eval-protocol/final/robotnik_arm_task/results/step6",
+  "experiment": "both",
+  "seeds": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9
+  ],
+  "descriptive_only": true,
+  "software_smoke": false,
+  "parts": {
+    "pilot": {
+      "status": "complete",
+      "input": "/home/w/comp0245/LAB_SESSION_COMP_0245_2026_PUBLIC/.claude/worktrees/eval-protocol/final/robotnik_arm_task/results/step6/G_pilot.json",
+      "synthetic": false,
+      "delta_star": 9,
+      "continue": false,
+      "horizon_ms": [
+        0,
+        81,
+        243,
+        729
+      ],
+      "success_mean": [
+        0.605,
+        0.0,
+        0.0,
+        0.0
+      ]
+    }
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "time": "2026-11-02T19:43:23.477447+00:00",
+  "experiment": "G",
+  "stage": "pilot",
+  "status": "stopped",
+  "reason": "在 pilot 上三个块长都明显变差",
+  "verdict": "KEEP C3"
+}

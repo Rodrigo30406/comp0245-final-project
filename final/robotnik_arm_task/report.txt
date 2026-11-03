@@ -1571,6 +1571,212 @@ F_MM_compare_dev.*、F_data.txt、tolerance_curve.*、fig_tolerance.*；执行�
    dag1 在第 1 个 epoch 就被早停选中，后续 epoch 的验证损失更高，所以 dag1 是训练得很短的模型，"更长训练是否改变结论"没有检验；
    第 4 条是事后分析，只用一个 seed 的模型。
 
+[Methodology] 第 6 步预注册：实验 G（action chunking）与 P（关节参考输出）
+（2026-11-02 写下，在 G、P 的任何 pilot / DEV / HARD / CONFIRM 运行之前；冻结记录 results/step6/prereg_GP_frozen.txt）
+------------------------------------------------------------------------------------------------------------------------
+## 6. 预注册（冻结时把本节原文复制进 report.txt）
+
+### 共同
+- 统计单位 episode；两层 bootstrap `paired_diff` 与按 seed 的 Welch。G 与 P 同时对同一个对照做比较，所以条件 (1) 与镜像
+  条件用 97.5% CI（Bonferroni，2 个比较）；其他 CI 为 95%。次要量在每个实验内做 Holm 校正，描述性。
+- 判定（每个实验分别，主指标 success）：
+  1. DEV：Δsuccess 的两个 97.5% CI 下界都 > 0。
+  2. DEV：crash + left_or_overshot 的增加 ≤ +3 pp（点估计）。
+  3. HARD：Δsuccess 点估计 > 0。
+  4. CONFIRM：Δsuccess 点估计 > 0 且 bootstrap 95% 下界 > 0。
+  - (1)-(4) 全部满足 -> 采纳。(1) 或 (2) 不满足 -> 该实验停止，HARD、CONFIRM 不为它打开，KEEP C3。
+    (3) 或 (4) 不满足 -> KEEP C3，报告 DEV 与该集的差别。
+  - 镜像：DEV 上两个 97.5% CI 上界都 < 0 -> 报告"该改动使 success 变差"。
+  - G、P 都被采纳时：DEV 上 G 对 P 的配对差（seed 平均，两层 bootstrap 95%）不含 0 -> 主模型取较高者；含 0 -> 主模型取 G
+    （G 不依赖"固定 PD 输出层是否符合作业要求"），P 作为另一个被采纳的变体报告。G + P 的组合不检验（时间不够，写进局限）。
+- 次要量（Holm，描述性）：reach_2cm、reach_5cm、held_10s、arm_extended_toward、低处（z < 0.45 m）success、policy_ms。
+
+### 实验 G（action chunking + temporal ensembling）
+- 问题：一次预测未来 10 个动作、执行时对重叠的预测加权平均，能否提高 success？
+- 唯一变量：输出从当前动作变成 10 段的动作块，部署加 temporal ensembling；块的间隔 Δ 按 G5 在 pilot 上选定。混杂：当前动作在
+  损失中的份额降为 1/10；chunking 与 ensembling 不分开检验。
+- 主假设 H-G：块预测与平均让底盘和机械臂的指令在时间上一致，减少闭环中的抖动和误差累积，所以底盘层面的失败减少。
+- 机制预测（DEV，G 减 C3）：
+  - MG1：circling 减少（点估计 < 0）。
+  - MG2：held_10s 增加（点估计 > 0）。
+  - MG3（来自"隐藏积分器"的诊断，预测不变）：extended_not_reached 的两个 95% CI 都在 ±7 pp 之内。
+  - MG4：reach 阶段力矩的相邻差变小（点估计，描述性）。
+- 竞争假设：
+  - CG1 延迟：最旧的预测权重最大，反应变慢，过冲与 circling 增加；pilot 上大的 Δ 变差。
+  - CG2 无效：相邻观测的预测误差高度相关，平均几乎不减小误差；success 与失败类都不变。
+  - CG3 当前动作变差：j = 0 段的验证损失高于 C3（同一个量，可直接比），精度变差，extended_not_reached 增加。
+  - CG4 积分器诊断不对：extended_not_reached 明显减少（MG3 不成立）。这会否定 Discussion 中"最后 1-2 cm 来自隐藏状态"的说法。
+- Δ 的选择规则与停止规则：G5（冻结时连同本节一起冻结）。
+
+### 实验 P（输出关节参考 + 固定 PD）
+- 问题：让模型输出专家的关节参考（q_des - q、qd_des），由专家的 PD + 重力补偿换成力矩，能否提高 success？
+- 唯一变量：机械臂的输出表示（力矩 -> 参考 + 固定输出层）；底盘输出、特征、数据、K 都不变。混杂：输出维数 9 -> 16
+  （用 1/√2 的权重保持底盘 / 机械臂的损失占比）。
+- 主假设 H-P：固定层给出精确的刚度 kp、阻尼 kd 与重力补偿，参考误差 δe 只造成约 δe 的位置误差；C3 在 target 附近的有效刚度
+  是学出来的、未知的。所以最后几厘米更准，侧翻更少。
+- 机制预测（DEV，P 减 C3）：
+  - MP1：extended_not_reached 减少（两个 95% CI 上界都 < 0）。
+  - MP2：crash 减少（点估计 < 0）。
+  - MP3：circling 不变（两个 95% CI 都在 ±7 pp 之内；底盘输出没变）。
+  - MP4：离线 reach_hold 的力矩 RMSE 低于 C3（10 个 seed 的中位数，描述性）。
+- 竞争假设：
+  - CP1 放大：e 的误差经 kp = 100 放大（0.01 rad = 1 N·m），而 PD 部分本身的方差比力矩大（Discussion 第 2 条），离线力矩 RMSE
+    不低于 C3，success 不升。
+  - CP2 积分器仍然看不到：e 的"领先"部分依赖历史，机械臂仍停在离 target 1-2 cm 处，extended_not_reached 不变。
+  - CP3 触发处的跳变：专家开始伸臂时关节 6 的参考被限位截断从 1.0 抬到约 1.18 rad（e 跳变约 0.18 rad，约 18 N·m），
+    这个跳变取决于锁存的 reach 状态；学习者若把它学平，伸臂的起始会变化。看 arm_extended_toward 与 parked_no_arm。
+
+### G5 Δ 的校准（pilot，data/pilot，100 个 episode；不是 DEV / HARD / CONFIRM）
+- 训练 Δ = 9、27、81 各 seed 0、1（6 个模型）；在 data/pilot 上跑完整模型（MM，`--no-early-stop`）。同时在 pilot 上跑
+  C3 s0、s1 作为参照（如果 pilot 上还没有 C3 的 MM 运行）。
+- 规则（冻结在 §6）：Δ* = pilot success（2 个 seed 平均）最高的 Δ；与最高值相差 ≤ 5 pp 的 Δ 中取最小的。
+  停止规则：若 success(Δ*) < C3 pilot success - 10 pp，G 停止，不跑 DEV，报告"在 pilot 上三个块长都明显变差"。
+- 选定 Δ* 后，seed 0、1 的校准模型直接作为正式模型（必须与用相同参数重训的结果逐位相同，抽查 seed 0）；再训练 seed 2-9 与
+  100-104。
+- 输出 `results/step6/G_pilot.txt/.json`、`fig_G_pilot.{png,pdf}`（pilot success 对块时长，C3 画在 0 ms）。
+
+- 修订 1（2026-11-02，冻结之前；Claude 在执行者的 P2(b) 失败后写下，用户事先授权"直接跑、完成任务优先"，事后告知）：
+  原方案要求固定层总是做 ±0.15 的 lead 截断和关节限位截断。P2(b) 在 train episode 4 上失败（最大差 18.4 N·m）：机械臂初始
+  关节 6 为 1.0 rad，低于下限 1.134 + margin 0.05，专家在导航分支直接用 q_hold、不截断，固定层却把参考抬到 1.184 rad；
+  在 reach 分支，限位截断也让 |e| 超过 0.15（10 个 episode 中 0.6% 的步）。Claude 的复核（只读 data/train 的 10 个 P2 episode）：
+  去掉参考截断、只保留最后的 ±30 N·m 力矩截断，重建力矩与录制值的最大差为 1.9e-5 N·m（float32 量化）。改动只涉及固定层
+  的定义，在任何 G/P 训练或闭环运行之前；P 的问题、变量与判定规则不变；竞争假设 CP3 相应改写。第一次失败的证据文件保留。
+
+[Results] 第 6 步：实验 G（action chunking + temporal ensembling）结果（2026-11-03，按冻结的预注册运行；results/step6/G_pilot.txt/.json、
+fig_G_pilot.*；事后诊断 results/step6/posthoc/）
+------------------------------------------------------------------------------------------------------------------------
+1) 执行与审核：Codex 实现、验证与冻结（results/step6/REPORT_GP.md；冻结前的修订 1 只涉及 P）。Claude 的审核：与运行前的 sha256 快照
+   （/home/w/comp0245/codex_audit/pre_codex_step6_sha256.txt）相比，已有文件只有 7 个预期的变化（三个共享代码文件、README、.gitignore、
+   report.txt 只多了冻结节、方案文件的修订 1），没有文件缺失；冻结节与方案 §6、G5、修订 1 逐字一致；完整回归 208 项通过；C3 seed 0
+   用新代码重训逐位相同；TE 的对齐与权重、块标签、门槛与 Δ 的选择规则逐项核对。正式链 11-02 18:44 开始。
+2) G5 校准（data/pilot，100 个 episode，seed 0、1，MM，--no-early-stop）：Δ = 9 / 27 / 81 的 success 每个 seed 都是 0%；C3 为 66% / 55%
+   （平均 60.5%）。按规则 Δ* = 9，success(Δ*) = 0 < 60.5% - 10 pp，停止规则成立：G 停止，DEV、HARD、CONFIRM 都没有为 G 打开，
+   结论 KEEP C3（"在 pilot 上三个块长都明显变差"）。
+3) 失败形态（描述性）：6 个模型的 600 个 pilot episode 全部以 tipped 结束；Δ = 9 seed 0 的中位时长 1.47 s（C3 14.0 s），力矩饱和的步的
+   比例中位 54%（C3 0.16%），轮速指令最大值中位 193 rad/s（C3 3.4）；Δ = 81 中位时长 9.6 s。
+4) 排除实现错误（Claude 审核时，事后，开环，只读 data/train 的 3 个验证 episode）：j = 0 段的输出标准化参数与 C3 相同；第 j 段与
+   t + jΔ 的标签对齐（力矩 RMSE 0.39-1.35 N·m，随 j 增大；故意反向对齐时为 1.3-2.0 N·m）；j = 0 段的验证损失 0.073（C3 0.060，
+   竞争假设 CG3 的方向）；按 ACT 加权后执行的动作，力矩 RMSE 是第 0 段的 1.4-1.7 倍（最旧、最远的预测权重最大）。
+5) 事后闭环诊断（描述性，不改变判定；results/step6/posthoc/chunk_variants.py；Δ = 9 seed 0 的同一个模型，pilot 的前 20 个 episode）：
+   部署方式                              success  tipped  力矩饱和（中位）
+   ACT 加权（最旧的预测权重最大）          0/20    20/20   0.549
+   只执行 j = 0（不做 ensembling）         9/20     0/20   0.003
+   权重反过来（最新的预测权重最大）       12/20     0/20   0.000
+   C3（同样 20 个 episode）               16/20     1/20   0.002
+   读法：同一个块模型，换掉 ACT 的加权就不再侧翻，所以 G 的失败来自 ensembling 的有效延迟（竞争假设 CG1），不是块预测本身。ACT 的
+   动作是 50 Hz 的关节位置目标，由底层 PD 实时执行；这里的动作是 1 kHz 的力矩，学到的策略里隐含的阻尼（约 -kd qd）必须对当前状态
+   立即响应，平均几十毫秒前的预测相当于在速度反馈里加了延迟，于是振荡、饱和、侧翻。两个不侧翻的变体在这 20 个 episode 上也低于
+   C3（9、12 对 16；n = 20，只作描述），与 j = 0 段验证损失较高（CG3）一致；没有证据表明块预测本身对 success 有帮助。
+6) 局限：G 停在 pilot（2 个 seed、100 个 episode），没有 DEV 证据；事后诊断只有 1 个模型、20 个 episode；"只执行 j = 0"和"最新权重
+   最大"不是预注册的处理，不能据此采纳。块的长度、k 与 m 没有更细的搜索。
+7) 用于报告：ACT 的 temporal ensembling 假设动作是由底层控制器跟踪的目标；直接用于 1 kHz 力矩输出会破坏阻尼回路。这是不采用
+   chunking 的、有证据的理由，也说明 ACT 中 chunking 与"位置目标 + 底层 PD"的动作空间是配套的（与实验 P 的动机相同）。
+
+[Results] 第 6 步：实验 P（输出关节参考 + 固定 PD）结果（2026-11-03，按冻结的预注册与修订 1 运行；results/step6/P_mechanisms.txt/.json、
+P_MM_compare_dev.*、P_offline_table.*、tolerance_curve_GP.*、fig_tolerance_GP.*、P_pilot.*）
+------------------------------------------------------------------------------------------------------------------------
+1) 运行：P 链 11-02 18:44 之后开始（G 停止之后），11-02 21:47 应用户要求暂停（seed 5 的 DEV 运行未完成），11-03 01:44 续跑（冻结
+   sha256 核对通过；seed 0-4 跳过，未完成的 seed 5 文件夹由脚本删除后重跑），02:30 DEV 完成。冒烟（data/pilot，seed 0）通过
+   （没有 policy_error，success 与侧翻在门槛内，见 P_pilot.txt）。最后的图表阶段因缺少 C3 seed 5-9 的离线文件中断：这 5 个模型是
+   实验 D 的对照组后来才训练的，从未算过离线指标。Claude 用已有的 `train_policy.py offline` 补算（新文件
+   trained/ego-novw-trig_s5-9.offline.json；模型文件 sha256 不变），然后续跑完成。
+2) 审核（Claude）：DEV success 用每个运行的 rollouts.csv 独立重算：P 70.933%、C3 62.133%（C3 对照行与 D、F 相同），与 P_mechanisms
+   一致；P 的 10 个运行各 300 个 episode、--no-early-stop、模型路径正确、停止原因只有 reached / timeout / tipped。每个 seed：
+   P 82.7 / 77.7 / 77.7 / 49.3 / 68.3 / 77.0 / 75.3 / 72.7 / 64.7 / 64.0%；C3 70.0 / 53.0 / 63.7 / 60.0 / 57.3 / 55.7 / 63.0 / 76.3 / 65.0 / 57.3%。
+3) 判定（DEV，P 减 C3）：
+   - success +8.8 pp，bootstrap 97.5% [-0.3, +17.1]，Welch 97.5% [-0.6, +18.2]：条件 (1) 不满足（两个下界都略低于 0）。
+   - crash + left_or_overshot +2.2 pp（≤ +3 pp）：条件 (2) 满足。镜像条件不成立。
+   - 结论：KEEP C3。按规则停止，HARD、CONFIRM 没有为 P 打开。
+4) 机制预测：
+   - MP1 不成立：extended_not_reached -2.5 pp [-8.3, +3.5]（95% bootstrap，下同）。
+   - MP2 不成立：crash +1.0 pp [-1.5, +3.6]。
+   - MP3 不成立，而且方向与预测相反：circling 不是不变，而是减少了 -7.3 pp [-12.8, -1.9]。
+   - MP4 成立（描述性）：离线 reach_hold 力矩 RMSE（7 个关节的合并 RMS，10 个 seed 的均值 / 中位）C3 0.397 / 0.361，P 0.336 / 0.340 N·m；
+     z < 0.45 m 时 0.643 → 0.498。各段的离线 RMSE 都是 P 略低，所以竞争假设 CP1（kp 放大误差）没有得到支持。
+     注意这里是"每个关节"的 RMS；[Discussion] 中的 2.08 N·m 是 7 个关节的范数（约为 √7 倍），两者一致。
+5) 次要量（Holm，描述性）：reach_2cm +7.6 pp [+2.9, +12.3]、低处（z < 0.45 m）success 20.6% → 43.9%，+23.3 pp [+12.3, +34.6]，两者 Holm
+   显著；reach_5cm +3.1 pp [-0.0, +6.3]、held_10s +8.0 pp [-3.7, +19.6]、arm_extended_toward 0.0 pp，都不显著；policy_ms 0.143 → 0.213 ms
+   （+0.07 ms，固定层的 pinocchio 重力计算）。
+   容差曲线（DEV，seed 平均）：τ = 5 / 7.5 / 10 / 15 / 20 / 50 mm 时，C3 为 23.6 / 43.2 / 62.1 / 74.3 / 80.6 / 91.9%，P 为
+   30.7 / 52.0 / 70.9 / 82.7 / 88.3 / 94.9%。P 的曲线在 5-20 mm 整体上移约 7-9 pp。
+6) 事后、描述性（不改变判定）：
+   - DEV success 差值的 p：两层 bootstrap 0.030，Welch 0.034（双侧）。按 D、F 用过的 95% 标准，下界大于 0（Welch 95% 约 [+0.8, +16.9]，
+     用四舍五入后的每个 seed 值算）；按冻结的 Bonferroni 97.5% 标准，下界不大于 0。97.5% 的理由是"G、P 同时与 C3 比较"，而 G 实际
+     停在 pilot，没有做 DEV 比较。但这个阈值是事先冻结的，事后不改，判定仍是 KEEP C3。
+   - 收益主要来自更少的 circling（-7.3 pp）和低处 target（+23 pp），而不是预测的 extended_not_reached。P 的底盘输出与 C3 相同，
+     circling 减少的原因没有检验。一个可能是共享隐藏层：机械臂的输出表示改变后，底盘输出也随之改变。这只是猜测。
+   - P 的 seed 3 只有 49.3%，seed 间标准差约 9.4 pp（C3 约 6.9 pp）。
+7) 局限：只有 DEV 的证据（HARD、CONFIRM 没有打开）。固定输出层复用了专家的 PD 律与 pinocchio 重力补偿，是否符合作业对
+   "回归器输出力矩"的要求待向助教确认。输出维数（9 → 16）与权重（1/√2）同时改变。
+8) 用于报告：P 是第 3-6 步中唯一点估计为正且接近判定阈值的改动（+8.8 pp，p ≈ 0.03），没有达到预注册的 Bonferroni 标准。收益主要
+   在低处 target 与 circling，最后 1-2 cm 的 extended_not_reached 没有确定的改善。这与 [Discussion] 的诊断一致：换输出表示改善了
+   重力/刚度相关的精度（低 z、reach_hold 离线误差），但没有消除隐藏积分器带来的近处差距。
+
+[Methodology] 第 7 步预注册：实验 PC（P 在 HARD 与 CONFIRM 上的确认）（2026-11-03 写下，在 P 的任何 HARD / CONFIRM 运行之前；冻结记录 results/step7/prereg_PC_frozen.txt）
+
+## 3. 实验 PC 预注册（冻结时把本节原文复制进 report.txt）
+
+- 问题：实验 P 在 DEV 上的优势（+8.8 pp）能否在从未为 P 打开过的 HARD 与 CONFIRM 上重现？
+- 性质：这是看过 P 的 DEV 结果之后设计的新实验，假设来自 DEV；检验只用 P 没有看过的集合。它不改变第 6 步的判定（KEEP C3，
+  按冻结规则得出）；报告时 DEV 与本实验一起呈现。
+- 比较：HARD：P s0-4 对 C3 s0-4（200 个 episode）；CONFIRM：P s100-104 对 C3 s100-104（300 个 episode）。C3 的 stalled 行换成
+  不早停的重跑行（与 D、F、第 6 步相同）。模型都是第 6 步已训练好的，不重训。
+- 主指标 success；统计单位 episode；配对（同一集内同一个 episode）。
+- 判定（95%，只有这一个比较，不做多重校正）：
+  1. 合并（HARD + CONFIRM，按 episode 数加权）的 Δsuccess：两层 bootstrap 与 Welch 的 95% 下界都 > 0。
+  2. 一致性：HARD 与 CONFIRM 各自的 Δsuccess 点估计都 > 0。
+  3. 风险：合并的 crash + left_or_overshot 增加 ≤ +3 pp（点估计）。
+  - (1)-(3) 全部满足 -> "P 在留出集上得到确认"。否则 -> "没有得到确认"，KEEP C3。
+  - 镜像：合并的两个 95% 上界都 < 0 -> 报告"P 在留出集上更差"。
+- 确认之后的主模型：只有在助教确认"固定 PD 输出层"符合作业要求时，P 才成为主模型；否则 C3 仍是主模型，P 作为留出集确认过的
+  另一种动作表示报告。没有得到确认时，主模型是 C3。
+- 描述性的预期（来自 DEV，不参与判定）：低处（z < 0.45 m）success 增加、circling 减少、reach_2cm 增加（合并的点估计方向）；
+  extended_not_reached 没有确定的变化。每个集与合并的数字都报告（95% CI），并给出 reach_5cm、held_10s、arm_extended_toward、
+  crash、policy_ms。
+- 功效与局限（事先写明）：合并后 10 对 10 个 seed，与 DEV 相同；HARD 的分布与 DEV 不同（更难），合并假定两个集上的效应可以平均；
+  这是对同一个改动的第二次检验（DEV 一次、本实验一次），解读时两者一起看。
+
+[Results] 第 7 步：实验 PC 结果（2026-11-03，按冻结的预注册运行；results/step7/PC_mechanisms.txt/.json、PC_compare_hard.*、PC_compare_confirm.*；
+执行记录 results/step7/REPORT_PC.md）
+------------------------------------------------------------------------------------------------------------------------
+0) 执行与审核：Codex 实现与冻结（13:38 UTC，results/step7/prereg_PC_frozen.txt，冻结记录 sha256 ea5730…）。冻结之后有一处实现修正
+   （amend1：描述性的 compare_arms 不接受 SeedSequence 作为种子，改成由它确定生成的整数；判定函数、合并公式、阈值都没有变；修正前后
+   的源码备份与 sha256 都有记录）。偏离：方案 §2.3 要求冻结时把 §3 复制进 report.txt，但 §1.2 又禁止修改已有文件（方案自相矛盾，
+   Claude 写的）；Codex 把要插入的节存为 report_PC_section.txt 与完整副本 report_PC_frozen.txt，链的冻结检查要求 report.txt 在运行
+   期间逐字节不变。所以上面的预注册节是链跑完之后由 Claude 原样插入的（与 report_PC_section.txt 逐字相同）。冻结时间早于 P 的任何
+   HARD / CONFIRM 运行。链 13:45 开始，15:02 结束：先用 --no-early-stop 重跑 C3 的 stalled episode（HARD 61 个、CONFIRM 71 个，
+   输出 results/step7/nostall/），再跑 P s0-4 HARD、P s100-104 CONFIRM。
+   Claude 的审核：(a) 用 rollouts.csv 独立重算 success（stalled 行替换后），HARD Δ +5.50、CONFIRM +0.67、合并 +2.60 pp，与
+   PC_mechanisms 一致；(b) P 的 10 个运行都完整（200 / 300 个 episode、--no-early-stop、模型路径正确、停止原因只有 reached / timeout /
+   tipped）；(c) 与运行前的 sha256 快照（/home/w/comp0245/codex_audit/pre_codex_step7_sha256.txt，64213 个文件）相比，已有文件没有
+   任何变化；(d) 没有打开 data/test；判定函数与 §3 逐条一致。
+1) 判定（P 减 C3，95%）：
+   集合            C3       P        Δ success   bootstrap 95%     Welch 95%
+   HARD（200）     57.2%    62.7%    +5.5 pp     [-7.7, +16.4]     [-11.0, +22.0]
+   CONFIRM（300）  64.5%    65.2%    +0.7 pp     [-11.9, +12.5]    [-15.0, +16.4]
+   合并（500）     61.6%    64.2%    +2.6 pp     [-6.4, +11.1]     [-7.8, +13.0]
+   (1) 不满足（两个下界都 < 0）；(2) 满足（两个集的点估计都 > 0）；(3) 满足（合并的 crash + left_or_overshot +2.88 pp ≤ +3 pp）。
+   结论：没有得到确认，KEEP C3。镜像条件不成立。主模型仍是 C3。
+2) 每个 seed 的 success：HARD P 71.0 / 68.5 / 70.5 / 39.0 / 64.5%，C3 66.0 / 52.5 / 55.5 / 56.0 / 56.0%；CONFIRM P 76.7 / 58.7 / 64.3 / 48.3 /
+   78.0%，C3 60.0 / 62.0 / 78.3 / 61.7 / 60.7%。P 的 seed 3 在 DEV（49.3%）和 HARD（39.0%）上都最低（同一个模型）；P 的 seed 间
+   差异大于 C3。
+3) 描述性的预期（来自 DEV，不参与判定）：
+   - circling 减少：重现了。合并 -7.6 pp [-13.3, -2.0]（HARD -7.9、CONFIRM -7.5；DEV -7.3）。
+   - reach_2cm 增加：只在 HARD 上（+9.2 pp [+2.3, +15.6]），CONFIRM +0.3，合并 +3.9 [-1.0, +8.6]。
+   - 低处（z < 0.45 m）success 增加：没有重现。HARD +20.0 pp [+7.7, +32.7]，CONFIRM -8.0 [-22.4, +5.9]，合并 +3.5 [-6.5, +13.2]
+     （DEV 为 +23.3）。低处的 circling 合并 -18.0 pp [-29.5, -6.8]，但 CONFIRM 上低处 extended_not_reached +16.3 pp，抵消了。
+   - extended_not_reached：合并 +0.7 pp [-6.0, +7.4]，没有改善（与 DEV 一样）。
+   - 其他：crash +1.4、left_or_overshot +1.5、held_10s -0.1、arm_extended_toward -1.4 pp（合并，都不显著）；policy_ms +0.065 ms。
+4) 读法：P 的 success 优势从 DEV 的 +8.8 pp 缩小到留出集上的 +2.6 pp（CI 包含 0）。一个可能的原因是选择效应：第 7 步正是因为
+   DEV 上"差一点"才做的，DEV 的点估计偏高的可能性本来就大；另一个原因是 P 的 seed 间差异大（5 个 seed 的集合上 CI 半宽约
+   9-14 pp）。三个集合上一致的只有一件事：circling 少约 7-8 pp。换成"参考 + 固定 PD"的输出表示改变了底盘层面的失败（原因没有
+   检验），但最后 1-2 cm 的失败没有改善。这与 [Discussion] 的诊断一致：近处的差距来自看不到的积分状态，换输出表示也没有消除它。
+5) 局限：每个集只有 5 个 seed；合并假定两个集的效应可以平均（HARD 与 CONFIRM 的点估计相差约 5 pp）；本实验是对同一改动的第二次
+   检验，DEV 与本实验要一起看；固定 PD 输出层是否符合作业要求仍未确认（结论是 KEEP C3，所以不影响主模型）。
+6) 用于报告：第 6-7 步合起来的结论：ACT 的两点移植都没有带来确定的改善。(a) temporal ensembling 在 1 kHz 力矩输出下破坏阻尼回路
+   （G：pilot 0%，事后诊断定位到加权延迟）；(b) 位置参考 + 固定 PD（P）在 DEV 上 +8.8 pp（p 约 0.03，未达 Bonferroni），在留出集上
+   +2.6 pp（未确认），稳定的效应只有 circling 减少。主模型保持 C3。
+
 [References] 参考文献（已核对出处）
 --------------------------------
 - P. de Haan, D. Jayaraman, S. Levine, "Causal Confusion in Imitation Learning", NeurIPS 2019. arXiv:1905.11979.
@@ -1597,6 +1803,14 @@ F_MM_compare_dev.*、F_data.txt、tolerance_curve.*、fig_tolerance.*；执行�
   * 内容：示范时向专家的控制注入噪声，使数据覆盖学习者的误差会把它带到的状态；噪声大小按训练出的策略的误差来设定；
     离策略，不需要在学习者的轨迹上询问专家。
   * 用在：[Methodology] 数据采集设计（带噪 episode 的思路）；实验 C3 的局限（C3 对机械臂 qd 的抖动只在输入上，不改变专家轨迹）。
+
+- T. Z. Zhao, V. Kumar, S. Levine, C. Finn, "Learning Fine-Grained Bimanual Manipulation with Low-Cost Hardware", Robotics: Science and
+  Systems XIX (RSS 2023), paper 16. arXiv:2304.13705.（2026-11-03 核对：arXiv 摘要页与 roboticsproceedings.org/rss19/p016）
+  * 内容：ACT（Action Chunking with Transformers）。策略一次预测未来 k 个动作（action chunking），执行时每步查询、对指向同一时刻的
+    重叠预测做指数加权平均（temporal ensembling，最旧的预测权重最大）；用 CVAE 处理人类示范的多模态；动作是关节位置目标，由底层
+    PD 执行（50 Hz）。
+  * 用在：第 6 步实验 G（chunking + temporal ensembling）与 P（位置参考 + 固定 PD）的动机；G 的失败（1 kHz 力矩输出下加权平均引入
+    延迟）与 P 的结果；不采用 CVAE（专家是确定性脚本）与 transformer 的理由。
 
 [TODO] 待确定
 ------------

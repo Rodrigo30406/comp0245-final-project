@@ -1,0 +1,82 @@
+完整描述性比较；判定仅见 PC_mechanisms.txt 的 STEP7 §3 条件。
+通用完整比较使用该集 SeedSequence 派生的整数 seed 673228719，以兼容 strata_analysis。
+通用完整比较 CI 与下附 PC 自定义统计使用不同 bootstrap 抽样；主判定使用 PC 自定义统计。
+== Step 7 descriptive comparison: P (B) vs C3 (A), 300 common episodes, seeds A 5, B 5 ==
+Differences are B - A (seed-mean over training seeds; two-level bootstrap: seeds resampled within each arm, one shared episode resample; 10000 draws, rng seed 673228719; percentile 95% CI). Calibrated companion: Welch t on the per-seed rates (one-sample t when an arm is a single run), 95% CI.
+Per-seed success (Wilson 95%):
+  C3: 100: 180/300 60.0 [54.4, 65.4]; 101: 186/300 62.0 [56.4, 67.3]; 102: 235/300 78.3 [73.3, 82.6]; 103: 185/300 61.7 [56.1, 67.0]; 104: 182/300 60.7 [55.0, 66.0]
+  P: 100: 230/300 76.7 [71.6, 81.1]; 101: 176/300 58.7 [53.0, 64.1]; 102: 193/300 64.3 [58.8, 69.5]; 103: 145/300 48.3 [42.7, 54.0]; 104: 234/300 78.0 [73.0, 82.3]
+Seed-mean success: C3 64.5 [58.0, 72.3]%, P 65.2 [54.5, 75.4]%; expert 98.0% on the same episodes
+Paired difference B - A: bootstrap +0.7 [-11.7, +12.3] pp, p 0.91; Welch t (per-seed rates) +0.7 [-15.0, +16.4] pp, df 6.7, p 0.92
+Seed x seed (all pairs; seeds of different arms are not paired): success difference B - A in pp, exact McNemar p (descriptive) [n A fails & B succeeds / n A succeeds & B fails]:
+  A \ B                    100                   101                   102                   103                   104
+  100    +16.7 p 1.6e-07 [71/21]  -1.3 p    0.77 [50/54]  +4.3 p    0.25 [60/47] -11.7 p  0.0019 [43/78] +18.0 p 3.2e-09 [70/16]
+  101    +14.7 p 1.6e-06 [64/20]  -3.3 p    0.38 [47/57]  +2.3 p    0.57 [60/53] -13.7 p 2.4e-04 [40/81] +16.0 p 3.9e-07 [69/21]
+  102     -1.7 p    0.61 [28/33] -19.7 p 4.1e-09 [22/81] -14.0 p 2.0e-06 [18/60] -30.0 p 3.6e-18 [14/104]  -0.3 p       1 [29/30]
+  103    +15.0 p 2.3e-05 [78/33]  -3.0 p    0.44 [50/59]  +2.7 p    0.51 [60/52] -13.3 p 2.6e-04 [38/78] +16.3 p 3.0e-06 [79/30]
+  104    +16.0 p 4.5e-09 [59/11]  -2.0 p    0.65 [56/62]  +3.7 p    0.29 [50/39] -12.3 p 9.8e-04 [42/79] +17.3 p 1.0e-09 [64/12]
+  all 25 seed-pair differences: min -30.0, median -0.3, max +18.0 pp; 12 > 0, 13 < 0
+Failure classes, seed-mean share of the episodes (A, B, B - A with CI):
+  success                A  64.5%  B  65.2%  B - A +0.7 [-11.7, +12.3] pp
+  crash                  A   1.4%  B   2.3%  B - A +0.9 [-1.8, +3.3] pp
+  circling               A  14.4%  B   6.9%  B - A -7.5 [-15.1, -0.2] pp
+  left_or_overshot       A   1.7%  B   3.5%  B - A +1.8 [-0.1, +4.0] pp
+  parked_no_arm          A   0.1%  B   0.0%  B - A -0.1 [-0.4, +0.0] pp
+  extended_not_reached   A  15.9%  B  17.2%  B - A +1.3 [-7.7, +10.5] pp
+  approached_other       A   2.1%  B   4.9%  B - A +2.8 [-0.1, +6.2] pp
+  flag no_motion_near_ring (failure starting within 0.15 m of the ring, base did not move; never no_start): A 0.0%  B 0.0%
+  failures on short-reach episodes (26 of 300 episodes with the expert's hold posture at parking < 0.07 m from the target: parked_no_arm cannot fire): A 1.5%  B 1.7% of the episodes; seed x episode counts A {'circling': 14, 'extended_not_reached': 6, 'approached_other': 2}, B {'circling': 10, 'extended_not_reached': 15}
+Merged classes, seed-mean share (A, B, B - A): arrive_stay 26.5 / 26.8 / +0.3; arrive_leave 38.0 / 38.4 / +0.4; base_ok_ee_not 18.0 / 22.1 / +4.1; base_not 16.1 / 10.4 / -5.7; crash 1.4 / 2.3 / +0.9
+d0 strata (Holm over the 4 strata with n >= 30, reject at p_adj <= 0.05; the strata with fewer episodes are descriptive, without Holm):
+  M0             n  19 (descriptive) A  61.1%  B  65.3%  B - A +4.2 [-16.8, +26.3] pp, p 0.72, no Holm
+  M1             n  41               A  43.4%  B  48.8%  B - A +5.4 [-15.1, +24.9] pp, p 0.62, Holm 1
+  M2 0.08-0.5    n  46               A  63.5%  B  65.2%  B - A +1.7 [-16.5, +19.1] pp, p 0.84, Holm 1
+  M2 0.5-1.0     n  55               A  75.6%  B  69.5%  B - A -6.2 [-21.1, +8.7] pp, p 0.42, Holm 1
+  M2 >= 1.0      n 139               A  67.2%  B  68.3%  B - A +1.2 [-12.5, +13.5] pp, p 0.85, Holm 1
+  boundary 0.08-0.15 (descriptive, overlaps the strata): n 14, A 55.7%, B 67.1%, B - A +11.4 [-11.4, +34.3] pp
+Secondary metrics (seed-mean share; B - A paired: two-level bootstrap and Welch t; descriptive only; expert = the expert run's rate on the same episodes, the reference):
+  reach_2cm           A 81.7 [76.7, 86.9]%  B 82.1 [76.6, 87.1]%  B - A +0.3 [-6.1, +6.5] pp, p 0.91; Welch +0.3 [-7.3, +8.0] pp, p 0.92
+                      expert 98.0%; per seed A 79/82/90/80/78, B 86/83/77/76/88; worst stratum CI upper bound: n >= 30 M2 0.5-1.0 +3.6 pp, all M2 0.5-1.0 +3.6 pp
+  reach_5cm           A 92.9 [89.7, 95.7]%  B 91.7 [87.1, 95.5]%  B - A -1.1 [-6.0, +3.4] pp, p 0.64; Welch -1.1 [-7.0, +4.7] pp, p 0.66
+                      expert 98.0%; per seed A 95/92/97/91/90, B 96/94/85/88/94; worst stratum CI upper bound: n >= 30 M2 0.5-1.0 +3.6 pp, all M2 0.5-1.0 +3.6 pp
+  parked              A 83.4 [79.5, 87.3]%  B 91.2 [84.1, 97.3]%  B - A +7.8 [+0.3, +14.7] pp, p 0.042; Welch +7.8 [-2.0, +17.6] pp, p 0.096
+                      expert 97.7%; per seed A 87/82/83/79/85, B 98/95/81/85/97; worst stratum CI upper bound: n >= 30 M2 0.5-1.0 +8.0 pp, all M2 0.5-1.0 +8.0 pp
+  arm_extended        A 84.9 [80.6, 88.7]%  B 82.1 [77.4, 86.5]%  B - A -2.7 [-6.5, +1.3] pp, p 0.16; Welch -2.7 [-6.8, +1.4] pp, p 0.16
+                      expert 84.3%; per seed A 81/87/84/86/86, B 82/81/87/79/80; worst stratum CI upper bound: n >= 30 M2 >= 1.0 +1.6 pp, all M2 >= 1.0 +1.6 pp
+  arm_extended_toward A 84.3 [80.1, 88.2]%  B 81.5 [76.9, 85.7]%  B - A -2.8 [-6.2, +0.7] pp, p 0.11; Welch -2.8 [-6.2, +0.6] pp, p 0.094
+                      expert 84.3%; per seed A 81/87/84/84/86, B 82/81/85/79/80; worst stratum CI upper bound: n >= 30 M2 0.5-1.0 +0.7 pp, all M2 0.5-1.0 +0.7 pp
+  held_10s            A 26.5 [18.1, 37.2]%  B 26.8 [15.1, 39.6]%  B - A +0.3 [-14.8, +15.5] pp, p 0.98; Welch +0.3 [-19.6, +20.1] pp, p 0.98
+                      expert 97.3%; per seed A 22/20/46/28/17, B 46/14/18/16/40; worst stratum CI upper bound: n >= 30 M2 0.5-1.0 +16.0 pp, all M2 0.5-1.0 +16.0 pp
+  stable_5cm          A 91.4 [87.3, 95.0]%  B 90.8 [85.7, 95.0]%  B - A -0.6 [-6.2, +4.7] pp, p 0.82; Welch -0.6 [-7.4, +6.2] pp, p 0.84
+                      expert 98.0%; per seed A 94/91/96/87/88, B 96/94/84/87/93; worst stratum CI upper bound: n >= 30 M2 0.5-1.0 +4.0 pp, all M2 0.5-1.0 +4.0 pp
+  Holm over the available secondary metrics (bootstrap p | max(bootstrap p, Welch p)): reach_2cm 1 | 1, reach_5cm 1 | 1, parked 0.29 | 0.67, arm_extended 0.8 | 0.8, arm_extended_toward 0.64 | 0.67, held_10s 1 | 1, stable_5cm 1 | 1
+
+PC 自定义统计（主判定来源）：
+
+CONFIRM
+ego-novw-trig_s100_confirm: replaced 6 stalled rows from results/step7/nostall/ego-novw-trig_s100_confirm
+ego-novw-trig_s101_confirm: replaced 12 stalled rows from results/step7/nostall/ego-novw-trig_s101_confirm
+ego-novw-trig_s102_confirm: replaced 3 stalled rows from results/step7/nostall/ego-novw-trig_s102_confirm
+ego-novw-trig_s103_confirm: replaced 18 stalled rows from results/step7/nostall/ego-novw-trig_s103_confirm
+ego-novw-trig_s104_confirm: replaced 32 stalled rows from results/step7/nostall/ego-novw-trig_s104_confirm
+success: C3 64.533333%, P 65.200000%; Δ +0.666667 pp; bootstrap 95% [-11.866667, +12.466667], Welch 95% [-15.022005, +16.355339] pp
+reach_2cm: C3 81.733333%, P 82.066667%; Δ +0.333333 pp; bootstrap 95% [-6.400000, +6.666667], Welch 95% [-7.285202, +7.951868] pp
+reach_5cm: C3 92.866667%, P 91.733333%; Δ -1.133333 pp; bootstrap 95% [-6.066667, +3.533333], Welch 95% [-6.976330, +4.709663] pp
+held_10s: C3 26.533333%, P 26.800000%; Δ +0.266667 pp; bootstrap 95% [-14.800000, +15.533333], Welch 95% [-19.598799, +20.132133] pp
+arm_extended_toward: C3 84.266667%, P 81.466667%; Δ -2.800000 pp; bootstrap 95% [-6.200000, +0.666667], Welch 95% [-6.197251, +0.597251] pp
+crash: C3 1.400000%, P 2.333333%; Δ +0.933333 pp; bootstrap 95% [-1.800000, +3.266667], Welch 95% [-2.115843, +3.982510] pp
+no_start: C3 0.000000%, P 0.000000%; Δ +0.000000 pp; bootstrap 95% [+0.000000, +0.000000], Welch 95% [+0.000000, +0.000000] pp
+runaway: C3 0.000000%, P 0.000000%; Δ +0.000000 pp; bootstrap 95% [+0.000000, +0.000000], Welch 95% [+0.000000, +0.000000] pp
+no_progress: C3 0.000000%, P 0.000000%; Δ +0.000000 pp; bootstrap 95% [+0.000000, +0.000000], Welch 95% [+0.000000, +0.000000] pp
+never_other: C3 0.000000%, P 0.000000%; Δ +0.000000 pp; bootstrap 95% [+0.000000, +0.000000], Welch 95% [+0.000000, +0.000000] pp
+circling: C3 14.400000%, P 6.933333%; Δ -7.466667 pp; bootstrap 95% [-15.133333, +0.066667], Welch 95% [-17.130709, +2.197376] pp
+left_or_overshot: C3 1.666667%, P 3.466667%; Δ +1.800000 pp; bootstrap 95% [-0.200000, +3.933333], Welch 95% [-0.140797, +3.740797] pp
+parked_no_arm: C3 0.066667%, P 0.000000%; Δ -0.066667 pp; bootstrap 95% [-0.400000, +0.000000], Welch 95% [-0.251763, +0.118430] pp
+extended_not_reached: C3 15.866667%, P 17.200000%; Δ +1.333333 pp; bootstrap 95% [-7.800000, +10.468333], Welch 95% [-9.794626, +12.461293] pp
+approached_other: C3 2.066667%, P 4.866667%; Δ +2.800000 pp; bootstrap 95% [-0.200000, +6.200000], Welch 95% [-1.110320, +6.710320] pp
+risk: C3 3.066667%, P 5.800000%; Δ +2.733333 pp; bootstrap 95% [-1.000000, +6.266667], Welch 95% [-1.455877, +6.922544] pp
+policy_ms: C3 0.128115ms, P 0.192814ms; Δ +0.064699 ms; bootstrap 95% [+0.060894, +0.068440], Welch 95% [+0.061052, +0.068345] ms
+low_z success: C3 32.000000%, P 24.000000%; Δ -8.000000 pp; bootstrap 95% [-22.400000, +5.866667], Welch 95% [-26.074485, +10.074485] pp
+low_z circling: C3 34.133333%, P 10.400000%; Δ -23.733333 pp; bootstrap 95% [-39.733333, -8.800000], Welch 95% [-44.323219, -3.143448] pp
+low_z reach_2cm: C3 53.066667%, P 48.800000%; Δ -4.266667 pp; bootstrap 95% [-22.666667, +14.666667], Welch 95% [-27.072970, +18.539636] pp
+low_z extended_not_reached: C3 17.866667%, P 34.133333%; Δ +16.266667 pp; bootstrap 95% [-0.273333, +32.266667], Welch 95% [-2.476273, +35.009607] pp

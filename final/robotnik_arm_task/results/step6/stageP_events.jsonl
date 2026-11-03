@@ -1,0 +1,92 @@
+{"time": "2026-11-02T19:43:24.155223+00:00", "experiment": "P", "stage": "cache", "status": "start"}
+{"time": "2026-11-02T19:43:28.037645+00:00", "experiment": "P", "stage": "cache", "status": "end"}
+{"time": "2026-11-02T19:43:28.038736+00:00", "experiment": "P", "stage": "pilot", "status": "start"}
+{"time": "2026-11-02T19:43:28.043369+00:00", "experiment": "P", "stage": "train", "status": "start", "seed": 0, "out": "trained/ego-novw-trig-pd_s0.npz", "adaptive_concurrency": 1, "available_mib": 21443.7890625}
+{"time": "2026-11-02T20:04:14.432418+00:00", "experiment": "P", "stage": "train", "status": "end", "seed": 0, "peak_rss_mib": 2909.33203125, "train_s": 1243.7589075565338, "epochs": 33}
+{"time": "2026-11-02T20:04:14.433856+00:00", "experiment": "P", "stage": "run", "status": "start", "folder": "results/step6/pilot/ego-novw-trig-pd_s0_pilot", "n": 100}
+{"time": "2026-11-02T20:07:00.392237+00:00", "experiment": "P", "stage": "run", "status": "end", "folder": "results/step6/pilot/ego-novw-trig-pd_s0_pilot", "n": 100, "harness_error": 0, "policy_error": 0, "extended_hold_policy_error": 0}
+{"time": "2026-11-02T20:07:00.394761+00:00", "experiment": "P", "stage": "pilot", "status": "end"}
+{"time": "2026-11-02T20:07:00.395869+00:00", "experiment": "P", "stage": "promote", "status": "start"}
+{"time": "2026-11-02T20:07:00.396061+00:00", "experiment": "P", "stage": "promote", "status": "end"}
+{"time": "2026-11-02T20:07:00.397499+00:00", "experiment": "P", "stage": "train", "status": "start"}
+{"time": "2026-11-02T20:07:00.398296+00:00", "experiment": "P", "stage": "train", "status": "start", "seed": 1, "out": "trained/ego-novw-trig-pd_s1.npz", "adaptive_concurrency": 1, "available_mib": 22143.6484375}
+{"time": "2026-11-02T20:12:19.492521+00:00", "experiment": "P", "stage": "train", "status": "end", "seed": 1, "peak_rss_mib": 2909.1796875, "train_s": 316.2575423717499, "epochs": 19}
+{"time": "2026-11-02T20:12:19.493849+00:00", "experiment": "P", "stage": "train", "status": "start", "seed": 2, "out": "trained/ego-novw-trig-pd_s2.npz", "adaptive_concurrency": 5, "available_mib": 22346.54296875}
+{"time": "2026-11-02T20:12:19.494917+00:00", "experiment": "P", "stage": "train", "status": "start", "seed": 3, "out": "trained/ego-novw-trig-pd_s3.npz", "adaptive_concurrency": 5, "available_mib": 22346.54296875}
+{"time": "2026-11-02T20:12:19.495665+00:00", "experiment": "P", "stage": "train", "status": "start", "seed": 4, "out": "trained/ego-novw-trig-pd_s4.npz", "adaptive_concurrency": 5, "available_mib": 22346.54296875}
+{"time": "2026-11-02T20:12:19.496416+00:00", "experiment": "P", "stage": "train", "status": "start", "seed": 5, "out": "trained/ego-novw-trig-pd_s5.npz", "adaptive_concurrency": 5, "available_mib": 22346.54296875}
+{"time": "2026-11-02T20:12:19.497304+00:00", "experiment": "P", "stage": "train", "status": "start", "seed": 6, "out": "trained/ego-novw-trig-pd_s6.npz", "adaptive_concurrency": 5, "available_mib": 22345.8046875}
+{"time": "2026-11-02T20:20:42.748251+00:00", "experiment": "P", "stage": "train", "status": "end", "seed": 3, "peak_rss_mib": 2909.40625, "train_s": 498.59611225128174, "epochs": 10}
+{"time": "2026-11-02T20:20:42.750100+00:00", "experiment": "P", "stage": "train", "status": "start", "seed": 7, "out": "trained/ego-novw-trig-pd_s7.npz", "adaptive_concurrency": 5, "available_mib": 16666.8828125}
+{"time": "2026-11-02T20:24:22.852178+00:00", "experiment": "P", "stage": "train", "status": "end", "seed": 4, "peak_rss_mib": 2908.87890625, "train_s": 718.1397922039032, "epochs": 20}
+{"time": "2026-11-02T20:24:22.853175+00:00", "experiment": "P", "stage": "train", "status": "start", "seed": 8, "out": "trained/ego-novw-trig-pd_s8.npz", "adaptive_concurrency": 5, "available_mib": 16689.30859375}
+{"time": "2026-11-02T20:25:51.896429+00:00", "experiment": "P", "stage": "train", "status": "end", "seed": 6, "peak_rss_mib": 2908.734375, "train_s": 806.9142019748688, "epochs": 32}
+{"time": "2026-11-02T20:25:51.897403+00:00", "experiment": "P", "stage": "train", "status": "start", "seed": 9, "out": "trained/ego-novw-trig-pd_s9.npz", "adaptive_concurrency": 5, "available_mib": 16717.140625}
+{"time": "2026-11-02T20:31:47.060155+00:00", "experiment": "P", "stage": "train", "status": "end", "seed": 5, "peak_rss_mib": 2909.28125, "train_s": 1162.9434235095978, "epochs": 34}
+{"time": "2026-11-02T20:31:47.061248+00:00", "experiment": "P", "stage": "train", "status": "start", "seed": 100, "out": "trained/ego-novw-trig-pd_s100.npz", "adaptive_concurrency": 5, "available_mib": 16694.76171875}
+{"time": "2026-11-02T20:34:32.135853+00:00", "experiment": "P", "stage": "train", "status": "end", "seed": 9, "peak_rss_mib": 2909.2578125, "train_s": 516.6215879917145, "epochs": 21}
+{"time": "2026-11-02T20:34:32.137040+00:00", "experiment": "P", "stage": "train", "status": "start", "seed": 101, "out": "trained/ego-novw-trig-pd_s101.npz", "adaptive_concurrency": 5, "available_mib": 16659.01953125}
+{"time": "2026-11-02T20:37:19.230283+00:00", "experiment": "P", "stage": "train", "status": "end", "seed": 8, "peak_rss_mib": 2909.30078125, "train_s": 773.13507604599, "epochs": 15}
+{"time": "2026-11-02T20:37:19.231301+00:00", "experiment": "P", "stage": "train", "status": "start", "seed": 102, "out": "trained/ego-novw-trig-pd_s102.npz", "adaptive_concurrency": 5, "available_mib": 16695.0078125}
+{"time": "2026-11-02T20:42:05.380877+00:00", "experiment": "P", "stage": "train", "status": "end", "seed": 100, "peak_rss_mib": 2909.59765625, "train_s": 614.7444586753845, "epochs": 25}
+{"time": "2026-11-02T20:42:05.381876+00:00", "experiment": "P", "stage": "train", "status": "start", "seed": 103, "out": "trained/ego-novw-trig-pd_s103.npz", "adaptive_concurrency": 5, "available_mib": 16680.49609375}
+{"time": "2026-11-02T20:42:31.398158+00:00", "experiment": "P", "stage": "train", "status": "end", "seed": 7, "peak_rss_mib": 2909.78125, "train_s": 1304.864952802658, "epochs": 29}
+{"time": "2026-11-02T20:42:31.400887+00:00", "experiment": "P", "stage": "train", "status": "start", "seed": 104, "out": "trained/ego-novw-trig-pd_s104.npz", "adaptive_concurrency": 5, "available_mib": 16633.296875}
+{"time": "2026-11-02T20:46:39.508249+00:00", "experiment": "P", "stage": "train", "status": "end", "seed": 101, "peak_rss_mib": 2909.28515625, "train_s": 723.4932842254639, "epochs": 28}
+{"time": "2026-11-02T20:47:27.526906+00:00", "experiment": "P", "stage": "train", "status": "end", "seed": 102, "peak_rss_mib": 2909.76171875, "train_s": 604.3182518482208, "epochs": 19}
+{"time": "2026-11-02T20:50:41.593223+00:00", "experiment": "P", "stage": "train", "status": "end", "seed": 103, "peak_rss_mib": 2909.6171875, "train_s": 513.185115814209, "epochs": 16}
+{"time": "2026-11-02T20:51:32.609927+00:00", "experiment": "P", "stage": "train", "status": "end", "seed": 104, "peak_rss_mib": 2909.91015625, "train_s": 537.6379354000092, "epochs": 25}
+{"time": "2026-11-02T20:52:43.631059+00:00", "experiment": "P", "stage": "train", "status": "end", "seed": 2, "peak_rss_mib": 2909.43359375, "train_s": 2418.786388158798, "epochs": 53}
+{"time": "2026-11-02T20:52:43.631641+00:00", "experiment": "P", "stage": "train", "status": "end"}
+{"time": "2026-11-02T20:52:43.633861+00:00", "experiment": "P", "stage": "models", "status": "start"}
+{"time": "2026-11-02T20:52:43.654491+00:00", "experiment": "P", "stage": "models", "status": "end"}
+{"time": "2026-11-02T20:52:43.655482+00:00", "experiment": "P", "stage": "offline", "status": "start"}
+{"time": "2026-11-02T20:59:48.564665+00:00", "experiment": "P", "stage": "offline", "status": "end"}
+{"time": "2026-11-02T20:59:48.565660+00:00", "experiment": "P", "stage": "dev", "status": "start"}
+{"time": "2026-11-02T20:59:48.632763+00:00", "experiment": "P", "stage": "run", "status": "start", "folder": "results/ego-novw-trig-pd_s0_dev", "n": 300}
+{"time": "2026-11-02T21:07:44.329685+00:00", "experiment": "P", "stage": "run", "status": "end", "folder": "results/ego-novw-trig-pd_s0_dev", "n": 300, "harness_error": 0, "policy_error": 0, "extended_hold_policy_error": 0}
+{"time": "2026-11-02T21:07:44.330454+00:00", "experiment": "P", "stage": "run", "status": "start", "folder": "results/ego-novw-trig-pd_s1_dev", "n": 300}
+{"time": "2026-11-02T21:16:00.899504+00:00", "experiment": "P", "stage": "run", "status": "end", "folder": "results/ego-novw-trig-pd_s1_dev", "n": 300, "harness_error": 0, "policy_error": 0, "extended_hold_policy_error": 0}
+{"time": "2026-11-02T21:16:00.900252+00:00", "experiment": "P", "stage": "run", "status": "start", "folder": "results/ego-novw-trig-pd_s2_dev", "n": 300}
+{"time": "2026-11-02T21:24:07.180462+00:00", "experiment": "P", "stage": "run", "status": "end", "folder": "results/ego-novw-trig-pd_s2_dev", "n": 300, "harness_error": 0, "policy_error": 0, "extended_hold_policy_error": 0}
+{"time": "2026-11-02T21:24:07.181222+00:00", "experiment": "P", "stage": "run", "status": "start", "folder": "results/ego-novw-trig-pd_s3_dev", "n": 300}
+{"time": "2026-11-02T21:34:13.529299+00:00", "experiment": "P", "stage": "run", "status": "end", "folder": "results/ego-novw-trig-pd_s3_dev", "n": 300, "harness_error": 0, "policy_error": 0, "extended_hold_policy_error": 0}
+{"time": "2026-11-02T21:34:13.530461+00:00", "experiment": "P", "stage": "run", "status": "start", "folder": "results/ego-novw-trig-pd_s4_dev", "n": 300}
+{"time": "2026-11-02T21:42:43.822562+00:00", "experiment": "P", "stage": "run", "status": "end", "folder": "results/ego-novw-trig-pd_s4_dev", "n": 300, "harness_error": 0, "policy_error": 0, "extended_hold_policy_error": 0}
+{"time": "2026-11-02T21:42:43.823288+00:00", "experiment": "P", "stage": "run", "status": "start", "folder": "results/ego-novw-trig-pd_s5_dev", "n": 300}
+{"time": "2026-11-03T01:44:24.041609+00:00", "experiment": "P", "stage": "cache", "status": "skip_complete"}
+{"time": "2026-11-03T01:44:24.042364+00:00", "experiment": "P", "stage": "pilot", "status": "skip_complete"}
+{"time": "2026-11-03T01:44:24.043038+00:00", "experiment": "P", "stage": "promote", "status": "skip_complete"}
+{"time": "2026-11-03T01:44:24.043715+00:00", "experiment": "P", "stage": "train", "status": "skip_complete"}
+{"time": "2026-11-03T01:44:24.044370+00:00", "experiment": "P", "stage": "models", "status": "skip_complete"}
+{"time": "2026-11-03T01:44:24.045043+00:00", "experiment": "P", "stage": "offline", "status": "skip_complete"}
+{"time": "2026-11-03T01:44:24.045691+00:00", "experiment": "P", "stage": "dev", "status": "start"}
+{"time": "2026-11-03T01:44:24.125890+00:00", "experiment": "P", "stage": "run", "status": "skip_complete", "folder": "results/ego-novw-trig-pd_s0_dev", "n": 300, "harness_error": 0, "policy_error": 0, "extended_hold_policy_error": 0}
+{"time": "2026-11-03T01:44:24.133181+00:00", "experiment": "P", "stage": "run", "status": "skip_complete", "folder": "results/ego-novw-trig-pd_s1_dev", "n": 300, "harness_error": 0, "policy_error": 0, "extended_hold_policy_error": 0}
+{"time": "2026-11-03T01:44:24.140409+00:00", "experiment": "P", "stage": "run", "status": "skip_complete", "folder": "results/ego-novw-trig-pd_s2_dev", "n": 300, "harness_error": 0, "policy_error": 0, "extended_hold_policy_error": 0}
+{"time": "2026-11-03T01:44:24.147432+00:00", "experiment": "P", "stage": "run", "status": "skip_complete", "folder": "results/ego-novw-trig-pd_s3_dev", "n": 300, "harness_error": 0, "policy_error": 0, "extended_hold_policy_error": 0}
+{"time": "2026-11-03T01:44:24.154724+00:00", "experiment": "P", "stage": "run", "status": "skip_complete", "folder": "results/ego-novw-trig-pd_s4_dev", "n": 300, "harness_error": 0, "policy_error": 0, "extended_hold_policy_error": 0}
+{"time": "2026-11-03T01:44:24.155378+00:00", "experiment": "P", "stage": "run", "status": "interrupted_directory_deleted", "folder": "results/ego-novw-trig-pd_s5_dev"}
+{"time": "2026-11-03T01:44:24.157154+00:00", "experiment": "P", "stage": "run", "status": "start", "folder": "results/ego-novw-trig-pd_s5_dev", "n": 300}
+{"time": "2026-11-03T01:53:14.611333+00:00", "experiment": "P", "stage": "run", "status": "end", "folder": "results/ego-novw-trig-pd_s5_dev", "n": 300, "harness_error": 0, "policy_error": 0, "extended_hold_policy_error": 0}
+{"time": "2026-11-03T01:53:14.612201+00:00", "experiment": "P", "stage": "run", "status": "start", "folder": "results/ego-novw-trig-pd_s6_dev", "n": 300}
+{"time": "2026-11-03T02:02:47.515556+00:00", "experiment": "P", "stage": "run", "status": "end", "folder": "results/ego-novw-trig-pd_s6_dev", "n": 300, "harness_error": 0, "policy_error": 0, "extended_hold_policy_error": 0}
+{"time": "2026-11-03T02:02:47.516730+00:00", "experiment": "P", "stage": "run", "status": "start", "folder": "results/ego-novw-trig-pd_s7_dev", "n": 300}
+{"time": "2026-11-03T02:11:34.905371+00:00", "experiment": "P", "stage": "run", "status": "end", "folder": "results/ego-novw-trig-pd_s7_dev", "n": 300, "harness_error": 0, "policy_error": 0, "extended_hold_policy_error": 0}
+{"time": "2026-11-03T02:11:34.906095+00:00", "experiment": "P", "stage": "run", "status": "start", "folder": "results/ego-novw-trig-pd_s8_dev", "n": 300}
+{"time": "2026-11-03T02:21:06.904223+00:00", "experiment": "P", "stage": "run", "status": "end", "folder": "results/ego-novw-trig-pd_s8_dev", "n": 300, "harness_error": 0, "policy_error": 0, "extended_hold_policy_error": 0}
+{"time": "2026-11-03T02:21:06.904970+00:00", "experiment": "P", "stage": "run", "status": "start", "folder": "results/ego-novw-trig-pd_s9_dev", "n": 300}
+{"time": "2026-11-03T02:29:56.290421+00:00", "experiment": "P", "stage": "run", "status": "end", "folder": "results/ego-novw-trig-pd_s9_dev", "n": 300, "harness_error": 0, "policy_error": 0, "extended_hold_policy_error": 0}
+{"time": "2026-11-03T02:29:58.578682+00:00", "experiment": "P", "stage": "dev", "status": "end"}
+{"time": "2026-11-03T02:29:58.579791+00:00", "experiment": "P", "stage": "figures", "status": "start"}
+{"time": "2026-11-03T02:30:25.663563+00:00", "experiment": "P", "stage": "figures", "status": "blocked", "error": "CalledProcessError(1, ['/home/w/comp0245/RoboEnv/.pixi/envs/default/bin/python', '/home/w/comp0245/LAB_SESSION_COMP_0245_2026_PUBLIC/.claude/worktrees/eval-protocol/final/robotnik_arm_task/results/step6/gp_figures.py', '--root', '/home/w/comp0245/LAB_SESSION_COMP_0245_2026_PUBLIC/.claude/worktrees/eval-protocol/final/robotnik_arm_task', '--output', '/home/w/comp0245/LAB_SESSION_COMP_0245_2026_PUBLIC/.claude/worktrees/eval-protocol/final/robotnik_arm_task/results/step6', '--experiment', 'P', '--require-complete'])", "traceback": "Traceback (most recent call last):\n  File \"/home/w/comp0245/LAB_SESSION_COMP_0245_2026_PUBLIC/.claude/worktrees/eval-protocol/final/robotnik_arm_task/results/step6/step6_pipeline.py\", line 617, in main\n    stage(e, current, funcs[current])\n    ~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/w/comp0245/LAB_SESSION_COMP_0245_2026_PUBLIC/.claude/worktrees/eval-protocol/final/robotnik_arm_task/results/step6/step6_pipeline.py\", line 543, in stage\n    fn()\n    ~~^^\n  File \"/home/w/comp0245/LAB_SESSION_COMP_0245_2026_PUBLIC/.claude/worktrees/eval-protocol/final/robotnik_arm_task/results/step6/step6_pipeline.py\", line 591, in <lambda>\n    \"figures\": lambda: command([CODE_DIR / \"gp_figures.py\", \"--root\", RUN_ROOT, \"--output\", HERE,\n                       ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n             \"--experiment\", e, \"--require-complete\",\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n             *([\"--seeds\", \"0,1\", \"--n-boot\", \"200\"] if SMOKE_ROOT else [])],\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n             HERE / f\"{e}_figures.log\")}\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/w/comp0245/LAB_SESSION_COMP_0245_2026_PUBLIC/.claude/worktrees/eval-protocol/final/robotnik_arm_task/results/step6/step6_pipeline.py\", line 70, in command\n    subprocess.run([sys.executable, *map(str, args)], cwd=TASK, env=env(),\n    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n                   stdout=f, stderr=subprocess.STDOUT, check=True)\n                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/w/comp0245/RoboEnv/.pixi/envs/default/lib/python3.14/subprocess.py\", line 578, in run\n    raise CalledProcessError(retcode, process.args,\n                             output=stdout, stderr=stderr)\nsubprocess.CalledProcessError: Command '['/home/w/comp0245/RoboEnv/.pixi/envs/default/bin/python', '/home/w/comp0245/LAB_SESSION_COMP_0245_2026_PUBLIC/.claude/worktrees/eval-protocol/final/robotnik_arm_task/results/step6/gp_figures.py', '--root', '/home/w/comp0245/LAB_SESSION_COMP_0245_2026_PUBLIC/.claude/worktrees/eval-protocol/final/robotnik_arm_task', '--output', '/home/w/comp0245/LAB_SESSION_COMP_0245_2026_PUBLIC/.claude/worktrees/eval-protocol/final/robotnik_arm_task/results/step6', '--experiment', 'P', '--require-complete']' returned non-zero exit status 1.\n", "resume": "bash results/step6/run_expP.sh all >> results/step6/chainP.log 2>&1"}
+{"time": "2026-11-03T02:31:57.850528+00:00", "experiment": "P", "stage": "cache", "status": "skip_complete"}
+{"time": "2026-11-03T02:31:57.851283+00:00", "experiment": "P", "stage": "pilot", "status": "skip_complete"}
+{"time": "2026-11-03T02:31:57.851981+00:00", "experiment": "P", "stage": "promote", "status": "skip_complete"}
+{"time": "2026-11-03T02:31:57.852685+00:00", "experiment": "P", "stage": "train", "status": "skip_complete"}
+{"time": "2026-11-03T02:31:57.853423+00:00", "experiment": "P", "stage": "models", "status": "skip_complete"}
+{"time": "2026-11-03T02:31:57.854234+00:00", "experiment": "P", "stage": "offline", "status": "skip_complete"}
+{"time": "2026-11-03T02:31:57.854882+00:00", "experiment": "P", "stage": "dev", "status": "skip_complete"}
+{"time": "2026-11-03T02:31:57.855677+00:00", "experiment": "P", "stage": "figures", "status": "start"}
+{"time": "2026-11-03T02:32:25.164743+00:00", "experiment": "P", "stage": "figures", "status": "end"}
+{"time": "2026-11-03T02:32:25.165102+00:00", "experiment": "P", "stage": "chain", "status": "complete", "verdict": "KEEP C3", "stopped_by_gate": true, "stopped_after": "dev", "reason": "DEV 条件(1)或(2)未满足，HARD/CONFIRM未打开", "mechanisms_sha256": "866fcc66657d0f58f265044e80e55e92d3033a51cbcaadd401382bc432e83eab", "software_smoke": false}

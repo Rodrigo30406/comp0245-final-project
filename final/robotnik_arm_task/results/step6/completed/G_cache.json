@@ -1,0 +1,27 @@
+{
+  "started": "2026-11-02T18:44:38.557806+00:00",
+  "finished": "2026-11-02T18:44:50.972860+00:00",
+  "implementation_sha256": {
+    "bc_features.py": "e96bd3a2c6133dec19fd87c0d1e3107b6a4b4ed7aace5d0e74369cd9208f0dc8",
+    "policies/bc_policy.py": "7fd1505d593c681a46bca9da418bd656f075d15a87c80af30ba888e18018a38a",
+    "policies/pd_layer.py": "34888c092d7c4ad665e8997f7f82e006c55f23c85abe8b22d784dace1e85321f",
+    "results/step6/G_mechanisms.py": "ed43f06aa7cc599a89e5c229d1cc6571800283246bfa99a159bd18d21ada8612",
+    "results/step6/P_mechanisms.py": "c7d046820ff5838810d6cd7ceb1eb69122bf3954469e9a44e9b83b2010f95dc4",
+    "results/step6/check_backward_compat.py": "a0bd9255b25aca9c4c7b833bd84c0c2d8b1ca780fb2aad6bccb6910a705f8739",
+    "results/step6/freeze_gp.py": "a754fb008f2ed512ff44509ea1814dfa30e3d4a166e46102425e122e052d08bf",
+    "results/step6/gp_common.py": "24448cd17df490c8c42e526723e4976a5ca2cb663bee03ccf120abed6f4b939b",
+    "results/step6/gp_figures.py": "fd313ee912fac9354d0edc4d1567ab36875801eaa32330868074bceb644a6399",
+    "results/step6/gp_mechanisms.py": "ac467ff62e0805bb2f4f4f38df38048c654b68f31a63f41d9e8b242dc7c59ba5",
+    "results/step6/gp_smoke.py": "146f2e1b8845152f64cfad00436231d85887743613ce648add5de2398e105ea6",
+    "results/step6/gp_training.py": "6ffcccd80dad80c41f485957e67d4546cf01cb40d9b60deb1773dba010181479",
+    "results/step6/run_expG.sh": "95c201366feb6ed80e6e1b64e408f9f25f1ddb1c174609a5b272acf2ea87430d",
+    "results/step6/run_expP.sh": "ce3c6d3ae3430327e3f0e13a1a38a7562f3edf4668df3621c3de70c333e0da96",
+    "results/step6/step6_pipeline.py": "bc94c0da2668dd09c2b4c860af4b69f22ec68dfbef8dc91e94b741a392c26d27",
+    "train_policy.py": "441df4894b64cf5dbca595e258bd6068ad7d6f66c715c99681234381cfac6e86"
+  },
+  "settings": {
+    "software_smoke": false,
+    "smoke_case": null,
+    "smoke_epochs": null
+  }
+}

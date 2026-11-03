@@ -90,8 +90,11 @@ MODELS = {  # model name -> (kind, feature set)
     "ego-novw-trig": ("mlp", "ego_novw"),   # experiment C3: ego-novw + K copies of the trigger frame
     "ego-novw-trig-ee": ("mlp", "ego_novw_ee"),   # experiment D: C3 + the near-field end-effector error features
     "ego-novw-trig-dag1": ("mlp", "ego_novw"),   # experiment F: C3 + one round of shadow-expert rows
+    "ego-novw-trig-chunk": ("mlp", "ego_novw"),  # opt-in experiment G: action blocks
+    "ego-novw-trig-pd": ("mlp", "ego_novw"),     # opt-in experiment P: joint references + fixed PD
 }
-TRIGGER_MODELS = ("ego-novw-trig", "ego-novw-trig-ee", "ego-novw-trig-dag1")
+TRIGGER_MODELS = ("ego-novw-trig", "ego-novw-trig-ee", "ego-novw-trig-dag1",
+                  "ego-novw-trig-chunk", "ego-novw-trig-pd")
 TRIGGER_JITTER_SEED = 0  # numpy default_rng seed of the arm-qd jitter of the trigger copies (shared by all seeds)
 MLP_PARAMS = {"hidden_layer_sizes": (128, 128), "activation": "relu", "solver": "adam", "learning_rate_init": 1e-3,
               "alpha": 1e-4, "batch_size": 200, "shuffle": True}
@@ -980,7 +983,17 @@ def load_extra_rows(directory, feature_set, split_path=SPLIT_PATH):
 
 def run_train(model_name, seed=None, out=None, cache_dir=CACHE_DIR, split_path=SPLIT_PATH, max_epochs=MAX_EPOCHS,
               max_train_episodes=None, max_val_episodes=None, force=False, hide_losses=False, log=print,
-              trigger_copies_k=None, trigger_qd_jitter="auto", trigger_dir=None, extra_rows=None):
+              trigger_copies_k=None, trigger_qd_jitter="auto", trigger_dir=None, extra_rows=None,
+              chunk_k=None, chunk_delta=None, side_dir=None):
+    if model_name in ("ego-novw-trig-chunk", "ego-novw-trig-pd"):
+        if extra_rows is not None:
+            raise SystemExit("G/P do not accept experiment F's --extra-rows")
+        from results.step6.gp_training import run_training
+        return run_training(model_name, seed, out, cache_dir, split_path, max_epochs,
+                            max_train_episodes, max_val_episodes, force, hide_losses, log,
+                            trigger_copies_k, trigger_qd_jitter, trigger_dir, chunk_k, chunk_delta, side_dir)
+    if chunk_k is not None or chunk_delta is not None or side_dir is not None:
+        raise SystemExit("--chunk-k / --chunk-delta / --side-cache are opt-in G/P arguments")
     kind, feature_set = MODELS[model_name]
     if model_name == "ego-novw-trig-dag1" and extra_rows is None:
         raise SystemExit("ego-novw-trig-dag1 needs --extra-rows")
@@ -1287,6 +1300,9 @@ def offline_metrics(model_path, cache_dir=CACHE_DIR, split_path=SPLIT_PATH, allo
     t0 = time.time()
     model = bcf.load_model(model_path)
     meta = model["meta"]
+    if meta.get("output_representation") in ("chunk", "pd_reference"):
+        from results.step6.gp_training import offline_metrics as step6_offline
+        return step6_offline(model_path, cache_dir, split_path, allow_subset, log)
     va = Cache("val", cache_dir, split_path, allow_subset=allow_subset)
     if meta.get("split_sha256") and meta["split_sha256"] != sha256_file(split_path):
         raise RuntimeError(f"{model_path} was trained on another split file")
@@ -1484,6 +1500,18 @@ def main(argv=None):
     p.add_argument("--trigger-cache", default=TRIGGER_DIR)
     p.add_argument("--workers", type=int, default=12, help="pool size (at most 12)")
 
+    for name in ("build-chunk-cache", "build-pdref-cache"):
+        p = sub.add_parser(name, help="new immutable side labels (step 6; original caches remain read-only)")
+        p.add_argument("--split", default=SPLIT_PATH)
+        p.add_argument("--cache", default=CACHE_DIR)
+        p.add_argument("--trigger-cache", default=TRIGGER_DIR)
+        p.add_argument("--side-cache", default=None)
+        p.add_argument("--workers", type=int, default=12)
+        p.add_argument("--allow-subset", action="store_true", help="smoke only: allow subset source caches")
+        if name == "build-chunk-cache":
+            p.add_argument("--chunk-k", type=int, default=10)
+            p.add_argument("--chunk-delta", type=int, default=9, choices=(9, 27, 81))
+
     for name in ("train", "train-many"):
         p = sub.add_parser(name, help="train one model" if name == "train" else "train several seeds in parallel")
         p.add_argument("--model", required=True, choices=sorted(MODELS))
@@ -1508,12 +1536,16 @@ def main(argv=None):
                             "with nav_done False), one value or 7 comma-separated values (rad/s; 0 = none)")
         p.add_argument("--trigger-cache", default=TRIGGER_DIR)
         p.add_argument("--extra-rows", default=None, help="append validated, unweighted side-cache rows (experiment F)")
+        p.add_argument("--chunk-k", type=int, default=None, help="opt-in G action block length (G default 10)")
+        p.add_argument("--chunk-delta", type=int, default=None, help="opt-in G action spacing in steps (G default 9)")
+        p.add_argument("--side-cache", default=None, help="opt-in G/P immutable label cache")
 
     p = sub.add_parser("offline", help="offline metrics of a saved model on the validation rows")
     p.add_argument("--model", required=True, help="trained/<name>.npz")
     p.add_argument("--split", default=SPLIT_PATH)
     p.add_argument("--cache", default=CACHE_DIR)
     p.add_argument("--out", default=None, help="default: next to the model, <name>.offline.json")
+    p.add_argument("--allow-subset", action="store_true", help="smoke only: allow subset validation cache")
 
     args = ap.parse_args(argv)
     if args.cmd == "split":
@@ -1527,28 +1559,42 @@ def main(argv=None):
         build_ee_cache(args.cache, args.trigger_cache, args.split, workers=args.workers)
     elif args.cmd == "build-trigger-cache":
         build_trigger_cache(args.split, args.trigger_cache, workers=args.workers)
+    elif args.cmd in ("build-chunk-cache", "build-pdref-cache"):
+        from results.step6.gp_training import build_side_cache
+        build_side_cache("chunk" if args.cmd == "build-chunk-cache" else "pd_reference",
+                         args.cache, args.trigger_cache, args.split, args.side_cache,
+                         getattr(args, "chunk_k", 10), getattr(args, "chunk_delta", 9),
+                         args.workers, args.allow_subset)
     elif args.cmd == "train":
         run_train(args.model, args.seed, args.out, args.cache, args.split, args.max_epochs, args.max_train_episodes,
                   args.max_val_episodes, force=args.force, hide_losses=args.hide_losses,
                   log=lambda s: print(s, flush=True), trigger_copies_k=args.trigger_copies,
                   trigger_qd_jitter=args.trigger_qd_jitter, trigger_dir=args.trigger_cache,
-                  extra_rows=args.extra_rows)
+                  extra_rows=args.extra_rows, chunk_k=args.chunk_k, chunk_delta=args.chunk_delta,
+                  side_dir=args.side_cache)
     elif args.cmd == "train-many":
         if (args.model in TRIGGER_MODELS) != (args.trigger_copies is not None):
             raise SystemExit(f"--trigger-copies is required for, and only for, the models {TRIGGER_MODELS}")
         extra = ["--hide-losses"] if args.hide_losses else []
         if args.extra_rows is not None:
             extra += ["--extra-rows", args.extra_rows]
+        for flag, value in (("--chunk-k", args.chunk_k), ("--chunk-delta", args.chunk_delta),
+                            ("--side-cache", args.side_cache)):
+            if value is not None:
+                extra += [flag, str(value)]
         if args.trigger_copies is not None:
             extra += ["--trigger-copies", str(args.trigger_copies), "--trigger-qd-jitter", str(args.trigger_qd_jitter),
                       "--trigger-cache", args.trigger_cache]
         run_train_many(args.model, parse_seeds(args.seeds), args.jobs, force=args.force, cache_dir=args.cache,
                        split_path=args.split, extra_args=extra)
     elif args.cmd == "offline":
-        res = offline_metrics(args.model, args.cache, args.split)
+        res = offline_metrics(args.model, args.cache, args.split, allow_subset=args.allow_subset)
         out = args.out or args.model[:-4] + ".offline.json"
         write_json_atomic(out, res)
-        print_offline(res)
+        if res.get("output_representation") in ("chunk", "pd_reference"):
+            print(json.dumps(to_json(res), indent=1))
+        else:
+            print_offline(res)
         print(f"wrote {out}")
 
 

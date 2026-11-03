@@ -1,0 +1,27 @@
+Same method as step5/tolerance_curve.py: P(min_error < tau), strict threshold; min_error is frozen at protocol v1 stop, before extended hold. DEV C3 uses the exact stalled-replaced controls used for step6 comparisons.
+各容差为 seed 平均 [两层 bootstrap 95% CI]，%。
+
+C3
+ego-novw-trig_s0_dev: replaced 6 stalled rows from /home/w/comp0245/LAB_SESSION_COMP_0245_2026_PUBLIC/.claude/worktrees/eval-protocol/final/robotnik_arm_task/results/step3/nostall/ego-novw-trig_s0_dev
+ego-novw-trig_s1_dev: replaced 24 stalled rows from /home/w/comp0245/LAB_SESSION_COMP_0245_2026_PUBLIC/.claude/worktrees/eval-protocol/final/robotnik_arm_task/results/step3/nostall/ego-novw-trig_s1_dev
+ego-novw-trig_s2_dev: replaced 36 stalled rows from /home/w/comp0245/LAB_SESSION_COMP_0245_2026_PUBLIC/.claude/worktrees/eval-protocol/final/robotnik_arm_task/results/step3/nostall/ego-novw-trig_s2_dev
+ego-novw-trig_s3_dev: replaced 8 stalled rows from /home/w/comp0245/LAB_SESSION_COMP_0245_2026_PUBLIC/.claude/worktrees/eval-protocol/final/robotnik_arm_task/results/step3/nostall/ego-novw-trig_s3_dev
+ego-novw-trig_s4_dev: replaced 22 stalled rows from /home/w/comp0245/LAB_SESSION_COMP_0245_2026_PUBLIC/.claude/worktrees/eval-protocol/final/robotnik_arm_task/results/step3/nostall/ego-novw-trig_s4_dev
+  5 mm: 23.566667 [18.833333, 28.166667]
+  7.5 mm: 43.233333 [37.500000, 49.200000]
+  10 mm: 62.133333 [56.633333, 67.900000]
+  15 mm: 74.333333 [69.466667, 79.166667]
+  20 mm: 80.633333 [76.265833, 84.766667]
+  30 mm: 86.966667 [83.133333, 90.400000]
+  50 mm: 91.866667 [88.700000, 94.500000]
+  100 mm: 96.600000 [94.900000, 98.000833]
+
+P
+  5 mm: 30.700000 [24.600000, 36.400000]
+  7.5 mm: 52.033333 [44.766667, 58.666667]
+  10 mm: 70.933333 [64.200000, 77.066667]
+  15 mm: 82.733333 [77.833333, 87.133333]
+  20 mm: 88.266667 [84.133333, 91.833333]
+  30 mm: 91.900000 [88.333333, 94.866667]
+  50 mm: 94.933333 [92.200000, 97.166667]
+  100 mm: 97.233333 [95.733333, 98.466667]

@@ -127,7 +127,8 @@ def save_model(path, feature_set, x_mean, x_scale, y_mean, y_scale, weights, bia
     arrays = {f"W{k}": np.asarray(w, dtype=float) for k, w in enumerate(weights)}
     arrays.update({f"b{k}": np.asarray(b, dtype=float) for k, b in enumerate(biases)})
     np.savez(path, format_version=FORMAT_VERSION, feature_set=feature_set,
-             feature_names=np.array(FEATURE_SETS[feature_set]), output_names=np.array(OUTPUT_NAMES),
+             feature_names=np.array(FEATURE_SETS[feature_set]),
+             output_names=np.array(meta.get("output_names", OUTPUT_NAMES)),
              n_layers=len(weights), x_mean=np.asarray(x_mean, dtype=float), x_scale=np.asarray(x_scale, dtype=float),
              y_mean=np.asarray(y_mean, dtype=float), y_scale=np.asarray(y_scale, dtype=float),
              meta=json.dumps(meta), **arrays)
@@ -139,13 +140,18 @@ def load_model(path):
         if int(f["format_version"]) != FORMAT_VERSION:
             raise ValueError(f"{path}: model format {int(f['format_version'])}, expected {FORMAT_VERSION}")
         feature_set = str(f["feature_set"])
-        if list(f["feature_names"]) != FEATURE_SETS[feature_set] or list(f["output_names"]) != OUTPUT_NAMES:
+        meta = json.loads(str(f["meta"]))
+        expected_outputs = meta.get("output_names", OUTPUT_NAMES)
+        if list(f["feature_names"]) != FEATURE_SETS[feature_set] or list(f["output_names"]) != expected_outputs:
             raise ValueError(f"{path}: feature or output names differ from bc_features.py")
+        if "output_names" in meta and (len(expected_outputs) != len(f["y_mean"])
+                                       or len(expected_outputs) != len(f["y_scale"])):
+            raise ValueError(f"{path}: output names and standardisation dimensions differ")
         n = int(f["n_layers"])
         return {"feature_set": feature_set, "x_mean": f["x_mean"], "x_scale": f["x_scale"],
                 "y_mean": f["y_mean"], "y_scale": f["y_scale"],
                 "weights": [f[f"W{k}"] for k in range(n)], "biases": [f[f"b{k}"] for k in range(n)],
-                "meta": json.loads(str(f["meta"]))}
+                "meta": meta}
 
 
 def forward(model, X):

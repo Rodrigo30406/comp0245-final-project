@@ -1,0 +1,52 @@
+{
+  "root": "/home/w/comp0245/LAB_SESSION_COMP_0245_2026_PUBLIC/.claude/worktrees/eval-protocol/final/robotnik_arm_task",
+  "output": "/home/w/comp0245/LAB_SESSION_COMP_0245_2026_PUBLIC/.claude/worktrees/eval-protocol/final/robotnik_arm_task/results/step6",
+  "experiment": "P",
+  "seeds": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9
+  ],
+  "descriptive_only": true,
+  "software_smoke": false,
+  "parts": {
+    "dev": {
+      "status": "complete",
+      "models": [
+        "C3",
+        "P"
+      ],
+      "missing_requested_models": []
+    },
+    "tolerance": {
+      "status": "complete",
+      "models": [
+        "C3",
+        "P"
+      ],
+      "missing_requested_models": []
+    },
+    "offline": {
+      "status": "complete",
+      "seeds": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9
+      ]
+    }
+  }
+}
