@@ -1929,6 +1929,75 @@ combined in one final arm per line. Reserved test banks untouched. Trainings run
 after the §6z.2 ablation trainers (4–8 min each at stride 20; stride 10 roughly double); evaluations two at a time after the
 ablation evaluations. Expected end ~08:30.
 
+### 6ab.1 GRU sweep results (3 Nov 05:16–08:49): only training longer moves the pure GRU; the jitter does not help the weighted GRU
+
+Chain `chain_gru_sweep2.sh` (trainers one at a time, evaluations three at a time, 3 h 50 min for 18 trainings and 12
+evaluations). Same columns as §6aa.2; "tol." = base inside the expert's tolerance at 40 s. The `lr3e-4` evaluations failed
+on a label with a hyphen (`Use unique LABEL=RUN_DIRECTORY`) and are re-running as `gru28_lr3em4_seed*`; its trainings
+stopped at epochs 106 / 118 / 114 with NRMSE 0.135 / 0.130 / 0.131.
+
+| GRU 28 pure, mixture v2 | offline NRMSE (best epoch) | Nominal 1 / 2 / 5 cm | parked | arm ext. | drift | held ≥ 10 s | moving at 40 s | tol. | Random 1 / 2 / 5 cm | held ≥ 10 s | teammate success nom. |
+|---|---:|---|---:|---:|---:|---:|---:|---:|---|---:|---:|
+| control s0 (§6aa.2) | 0.134 (38) | 78 / 101 / 158 | 175 | 160 | 0.08 m | 104 | 7 | 57 | 66 / 84 / 149 | 95 | 38.0% |
+| control s1 | 0.129 (47) | 78 / 125 / 175 | 146 | 194 | 0.14 m | 133 | 15 | 51 | 79 / 117 / 177 | 126 | 39.5% |
+| control s2 | 0.135 (39) | 73 / 107 / 158 | 143 | 146 | 0.10 m | 105 | 25 | 15 | 71 / 100 / 142 | 95 | 38.5% |
+| hidden 256 s0 | 0.116 (56) | 34 / 105 / 181 | 166 | 144 | 0.06 m | 97 | 0 | 101 | 44 / 108 / 176 | 99 | 19.0% |
+| hidden 256 s1 | **0.112** (86) | 30 / 55 / 111 | 173 | 114 | 0.10 m | 65 | 4 | 29 | 32 / 51 / 107 | 58 | 17.1% |
+| hidden 256 s2 | **0.111** (78) | 53 / 78 / 116 | 180 | 100 | 0.12 m | 77 | 16 | 48 | 44 / 64 / 100 | 59 | 27.8% |
+| patience 20 s0 | 0.116 (117) | 128 / 162 / 191 | 138 | 187 | 0.07 m | 112 | 4 | 26 | 121 / 163 / 195 | 111 | 64.4% |
+| patience 20 s1 | 0.119 (78) | 60 / 111 / 177 | 143 | 160 | 0.09 m | 138 | 12 | 88 | 55 / 95 / 174 | 132 | 31.2% |
+| **patience 20 s2** | 0.113 (137) | **150 / 197 / 205** | 165 | 168 | 0.05 m | **180** | 0 | 58 | **135 / 195 / 205** | 168 | **77.6%** |
+| stride 10 ms s0 | 0.124 (53) | 36 / 51 / 92 | 170 | 94 | 0.27 m | 48 | 7 | 18 | 34 / 47 / 72 | 45 | 20.0% |
+| stride 10 ms s1 | 0.124 (54) | 57 / 95 / 182 | 127 | 192 | 0.09 m | 105 | 0 | 64 | 46 / 89 / 158 | 96 | 29.3% |
+| stride 10 ms s2 | 0.124 (50) | 39 / 49 / 77 | 171 | 45 | 0.15 m | 55 | 7 | 25 | 30 / 41 / 67 | 45 | 20.5% |
+| lr 3e-4 s0 / s1 / s2 | 0.135 (106) / 0.130 (118) / 0.131 (114) | pending | | | | | | | pending | | |
+| 4 episodes per batch s0 | 0.125 (38) | 105 / 140 / 179 | 150 | 162 | 0.07 m | 142 | 9 | 71 | 95 / 122 / 178 | 126 | 52.7% |
+| 4 per batch s1 | 0.135 (23) | 56 / 83 / 135 | 116 | 185 | 0.17 m | 78 | 35 | 21 | 56 / 77 / 117 | 72 | 29.3% |
+| 4 per batch s2 | 0.130 (30) | 66 / 108 / 172 | 158 | 149 | 0.07 m | 125 | 10 | 92 | 58 / 110 / 168 | 119 | 34.1% |
+| expert | | 205 / 205 / 205 | 205 | 154 | | 204 | 0 | 129 | 200 / 200 / 200 | 198 | 100% |
+
+| GRU 28 + trigger device | offline NRMSE (best epoch) | Nominal 1 / 2 / 5 cm | parked | arm ext. | drift | held ≥ 10 s | moving at 40 s | tol. | Random 1 / 2 / 5 cm | held ≥ 10 s | teammate success nom. |
+|---|---:|---|---:|---:|---:|---:|---:|---:|---|---:|---:|
+| weight 144 s0 (§6aa.2) | 0.189 (36) | **150 / 165 / 201** | 76 | 152 | 0.04 m | 174 | 0 | | 135 / 169 / 198 | 163 | 74.1% |
+| weight 144 s1 | 0.197 (26) | 133 / 168 / 188 | 144 | 205 | 0.11 m | 159 | 1 | | 116 / 158 / 192 | 154 | 66.3% |
+| weight 144 s2 | 0.195 (27) | 102 / 161 / 186 | 155 | 165 | 0.06 m | 181 | 13 | | 111 / 162 / 185 | 163 | 51.7% |
+| weight 144 + jitter s0 | 0.177 (36) | 130 / 156 / 190 | 129 | 146 | 0.05 m | 150 | 5 | 76 | 121 / 147 / 184 | 145 | 65.9% |
+| weight 144 + jitter s1 | 0.173 (44) | 77 / 137 / 182 | 58 | 182 | 0.06 m | 136 | 7 | 30 | 72 / 127 / 182 | 128 | 41.0% |
+| weight 144 + jitter s2 | 0.178 (36) | 105 / 154 / 194 | 109 | 172 | 0.11 m | 150 | 36 | 7 | 95 / 155 / 193 | 152 | 53.2% |
+
+**Pure line, against the rule (three seeds above 73–78 at 1 cm, none below 158–175 at 5 cm).**
+
+- **Patience 20 is the only factor with a gain, and it is not a clean one.** Seeds 0 and 2 ran to epochs 117 and 137 and
+  arrive 128 and 150 at 1 cm (5 cm 191 and 205: seed 2 reaches every nominal and every random geometry within 5 cm, holds
+  10 s in 180, and is the best pure model of the programme under every column); seed 1 stopped at epoch 78 and gives 60.
+  Within the hidden-128 / stride-20 / lr 1e-3 family the 1 cm count follows the number of gradient updates to the selected
+  checkpoint: control 38 / 47 / 39 epochs → 78 / 78 / 73; 4 per batch (two updates per epoch) 76 / 46 / 60 epoch-equivalents →
+  105 / 56 / 66; patience 20 117 / 78 / 137 → 128 / 60 / 150. The offline metric moved from 0.134 to 0.113–0.119 over the same
+  range: the pure GRU keeps getting better in closed loop long after the offline curve has flattened enough for patience 8
+  to stop it. Round two (below) tests whether this continues.
+- **Capacity makes the hold stronger and the ignition weaker.** Hidden 256 fits best of anything trained in the programme
+  (0.111–0.116) and arrives least of the sweep (30–53 at 1 cm): the base parks in 166–180 episodes and the arm leaves home in
+  100–144 only; 104–172 stops are outside the tolerance, 9–14 cm off. The offline metric is inverted once more, and for the
+  same reason as always: the extra fit goes into the long hold, not into the one row per episode that starts the reach.
+- **Finer memory hurts.** Stride 10 ms: arm extended 45–94 in two seeds, drift 0.27 m, stops 20–22 cm off. One confound
+  is built into the arm: with 1 000 memory updates per TBPTT chunk the gradient spans 10 s instead of the whole 20 s
+  episode (the §6g finding that a 20 ms memory is already fine stands).
+- **Four episodes per batch** stops earlier (epochs 23–38), seed 0 gains (105) and seeds 1–2 lose; no gain by the rule.
+
+**Device line.** Fresh jitter on the arm velocities at the weighted step gives 130 / 77 / 105 against the weight alone
+150 / 133 / 102 and lowers the offline NRMSE (0.173–0.178 vs 0.189–0.197): the MLP's copies-over-weight advantage (§6aa.2)
+does not transfer. Candidate reason, to measure if the line is pursued: in the sequence model the trigger step is one of
+2 000 inputs to a hidden-state trajectory, so noise on its seven arm velocities perturbs the state rather than widening
+the ignition region the stateless head sees. Seed 1 also parks least (58) with the arm extended most (182): its base keeps
+a residual command while the arm reaches, the §6z.1 seed-1 pattern.
+
+**Round two (pre-registered 3 Nov 09:10, queued behind the §6ac trainers, one trainer at a time).** Pure: `gru28_patience40`
+(patience 40, min_delta 0, `mlp_pytorch_successes_patience40*.json`), hypothesis: the 1 cm count keeps rising with the
+updates past the offline plateau, and seed 1 catches up; same rule, against the control. Device: `gru28_trigw144_patience20`
+(weight 144, no jitter, patience 20), hypothesis: the weighted GRU stopped at epochs 26–44 and the pure line gained from
+training longer; rule against the weight-144 control (150 / 133 / 102; 5 cm 186–201). Both lines evaluated on the two v2
+validations; reserved banks untouched.
+
 ## 6ac. Parking strategies re-tested on v2 + K 144 (pre-registered 3 Nov 05:20, queued)
 
 **Why.** Every base-parking remedy of E7 / E8 (§6l–§6n, §6t, §6v, §6w) was measured with a sleeping arm, and §6h showed the
@@ -2111,6 +2180,10 @@ tried on v1 K 144 (§6aa.1).
   matter, the goal geometry most; seed 1 drives away after reaching (median end 1.9 m), a mode v2 removed.
 - 3 Nov 05:20: parking remedies on v2 + K 144 pre-registered and queued (§6ac): dead band 0.45 (evaluation only) and
   categorical wheels + 144 copies (3 seeds), behind the GRU sweep trainers.
+- 3 Nov 08:49: GRU sweep done (§6ab.1). Pure line: patience 20 is the only gain (128 / 60 / 150 at 1 cm vs 73–78; seed 2 is
+  the best pure model of the programme, 150 / 197 / 205, held 180), hidden 256 fits best (0.111) and arrives least (30–53), stride
+  10 ms and 4 per batch lose. Device line: weight + jitter 130 / 77 / 105 does not beat weight 150 / 133 / 102. `lr3e-4`
+  evaluations re-running (hyphen in the label). Round two queued: `gru28_patience40` (pure) and `gru28_trigw144_patience20` (device).
 - Next, on request: E6 (§6c, nominal data without the clock) — the cheapest test of the reach-trigger mechanism.
 - E2 needs a collector mode; nothing in `src/` is edited while a collector,
   trainer or evaluator is running (provenance guards).
