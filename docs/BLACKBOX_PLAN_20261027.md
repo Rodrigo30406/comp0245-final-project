@@ -1757,6 +1757,30 @@ Rule of the wave: one factor per arm, 3 seeds, both v2 validations, 1 / 2 / 5 cm
 teammate's columns, mechanistic probe (`arm_switch_probe.py`) on every arm. `src/` is edited only between the running
 chains (collectors and trainers hash their sources).
 
+### 6aa.1 K 144 + dead band 0.45 rad/s (2 Nov 19:14–19:55): the creep goes, the arrivals barely move
+
+Same three v1 models, evaluated with the E8d band (`e9_trig144_db045_on_*`). Stable arrivals of 205, "→" = without band → with band:
+
+| K 144 | Nominal 1 cm | 5 cm | parked | arm ext. | drift after parking | held ≥ 10 s | moving at 40 s | in tolerance at end | Random 1 cm | 5 cm | drift | held ≥ 10 s |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| seed 0 | 96 → **118** | 140 → 144 | 101 → 76 | 198 → 174 | 0.22 → 0.07 m | 107 → **135** | 111 → 58 | 10 → 47 | 103 → 99 | 121 → 119 | 0.08 → 0.05 | 103 → 113 |
+| seed 1 | 142 → 147 | 165 → 167 | 105 → 118 | 181 → 170 | 0.32 → 0.08 m | 134 → 117 | 137 → 99 | 2 → 15 | 106 → 108 | 123 → 131 | 0.36 → 0.06 | 99 → 100 |
+| seed 2 | 132 → 123 | 146 → 147 | 88 → 98 | 176 → 167 | 0.14 → 0.08 m | 131 → 127 | 105 → 103 | 10 → 33 | 108 → 100 | 113 → 108 | 0.08 → 0.04 | 107 → 102 |
+
+- **What the band does, as predicted:** drift after parking falls to 7–8 cm nominal and 4–6 cm random for every seed; the
+  base ends inside the expert's tolerance in 47 / 15 / 33 episodes instead of 10 / 2 / 10; seed 0 moves at 40 s in 58
+  episodes instead of 111.
+- **What did not happen:** held-10 s did not rise to the number of arrivals (prediction of §6aa). Seed 0 gains (107 → 135),
+  seed 1 loses (134 → 117), seed 2 is flat. 1 cm arrivals +22 / +5 / −9 nominal, −4 / +2 / −8 random. Arm extended drops in
+  every seed (198 → 174, 181 → 170, 176 → 167) and 'parked' drops for seed 0 (101 → 76): the band also removes the small
+  wheel corrections the policy uses to finish the approach, so some episodes now stop short of the box and the arm, which
+  ignites on the parked state, reaches from a worse pose (the "stopped outside" count rises for seeds 0 and 1).
+- **Reading.** The creep was two things: a residual command on a base already in place (the band fixes it) and a slow
+  finishing of the approach (the band kills it). E9 removed the hold/creep coupling that made the band useless in §6t,
+  so the band now pays off where the policy was already in the box, and costs where it was not. Net: a 5–10 cm better
+  park, same arrivals. A learned zero (E8e soft threshold, or the K 144 model trained on v2 where the stop rows are
+  cleaner) is the next test of this coupling; the band stays a diagnostic.
+
 ## 7. Status
 
 - Done: decomposition (§1), variant `raw21_target_clock_v1`; E1 collected,
@@ -1893,6 +1917,8 @@ chains (collectors and trainers hash their sources).
 - 2 Nov 19:14: K 144 three seeds (§6y.2): nominal 1/2/5 cm = 96/124/140, **142/158/165**, 132/137/146; random 103/116/121,
   106/119/123, 108/111/113; held 10 s 107 / 134 / 131 nominal. Teammate's success 49–71% nominal, 51–53% random (theirs 52–70%).
   Dead-band evaluation of the same three seeds running; v2 night chain running (control seed 0 at 18:49).
+- 2 Nov 19:55: K 144 + band (§6aa.1): drift after parking 0.22–0.32 → 0.07–0.08 m, but 1 cm arrivals 96/142/132 → 118/147/123
+  and held 10 s 107/134/131 → 135/117/127: the band fixes the residual command and kills the slow finish of the approach.
 - Next, on request: E6 (§6c, nominal data without the clock) — the cheapest test of the reach-trigger mechanism.
 - E2 needs a collector mode; nothing in `src/` is edited while a collector,
   trainer or evaluator is running (provenance guards).

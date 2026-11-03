@@ -58,6 +58,7 @@ EVALS = {  # evaluation dir -> {policy label in summary: (display name, training
     "e8b_mlpgru_on_clean_validation_20261102": {f"mlpgru_seed_seed{s}": (f"E8b: MLP 64 encoder -> GRU 128, memory 20 ms, 28 pure, mixture 4096, seed {s}", f"gru_e8b_mlpgru_mixture4096_polar_seed{s}") for s in range(3)},
     "e9_ksweep_mlp28_on_clean_validation_20261102": {f"trig{k}_seed0": (f"E9: MLP 28 pure + {k} trigger copies per episode (first zero-wheel row, arm-qd jitter), mixture 4096, seed 0", f"mlp_e9_mixture4096_polar_trig{k}_seed0") for k in (16, 144, 512)},
     "e9_trig144_mlp28_on_clean_validation_20261102": {f"trig144_seed{s}": (f"E9: MLP 28 pure + 144 trigger copies per episode, mixture 4096, seed {s}", f"mlp_e9_mixture4096_polar_trig144_seed{s}") for s in range(3)},
+    "e9_trig144_db045_on_clean_validation_20261102": {f"trig144_seed{s}": (f"E9 K 144 seed {s} evaluated with the 0.45 rad/s wheel dead band (E8d option)", f"mlp_e9_mixture4096_polar_trig144_seed{s}") for s in range(3)},
     "e2_gru_polar_on_clean_validation_20261101": {f"gru_polar_e2_seed{s}": (f"E2 nominal + random + near-target 6144: GRU 28 pure, memory 20 ms, seed {s}", f"gru_e2_mixture6144_polar_stride20_seed{s}") for s in range(3)},
     "dart_low_gru_egocentric_on_clean_validation_20261027": {"gru_dartlow_ego_mem1ms": ("GRU 25 egocentric, memory 1 ms, DART low noise", "gru_dart_low_ego_stride1")},
 }
