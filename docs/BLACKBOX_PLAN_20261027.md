@@ -1881,6 +1881,30 @@ Same chain, split and validations as §6z.1. Stable arrivals of 205:
 - **Still true across the wave:** offline NRMSE ranks the arms backwards (control MLP 0.119 → 1 arrival; weighted MLP 0.188 →
   150). Model selection stays closed loop on the validation geometries; the reserved test banks are untouched.
 
+## 6ab. GRU 28 pure control sweep on mixture v2 (pre-registered 3 Nov 04:30, queued): tuning the model that uses no device
+
+**Why.** Rodrigo's call: the GRU 28 control (§6aa.2) is the only model that ignites the arm and parks with no label-derived
+device (no trigger copies, no trigger weight, no gate), and it is worth tuning on its own terms before the K 144 MLP is
+declared the final policy. Its failure mode is precision, not mechanism: 1 cm 73–78 while 5 cm 158–175, base inside the
+expert's box in 15–57 of 205, stop 10–14 cm off, arm extended 146–194 (seed 2 ignites least).
+
+**Arms** (`chain_gru_sweep.sh`, one factor each against the §6aa.2 control: hidden 128, head 128, stride 20 ms, TBPTT chunk
+1000 memory updates = the whole episode, 8 episodes per batch, Adam 1e-3, patience 8 / min_delta 1e-4; 3 seeds, both v2
+validations, selection closed loop on the validation geometries only):
+
+| arm | change | hypothesis |
+|---|---|---|
+| `gru28_h256` | hidden 256, head 256 | capacity: the stop position and the reach are both held in 128 units |
+| `gru28_stride10` | memory every 10 ms | finer memory resolves the last centimetres of the approach |
+| `gru28_patience20` | patience 20, min_delta 0 (`mlp_pytorch_successes_patience20*.json`) | the control stopped at epoch 38–47 while still improving slowly |
+| `gru28_lr3e-4` | Adam 3e-4 (`mlp_pytorch_successes_lr3e-4*.json`) | a smaller step finds a sharper zero / reach boundary |
+| `gru28_epb4` | 4 episodes per batch | twice the updates per epoch, noisier gradient |
+
+Rule: an arm counts as a gain if its three seeds beat the control's three on nominal 1 cm (73–78) and do not lose at 5 cm
+(158–175); winning factors are then combined in one final arm. Reserved test banks untouched. Trainings run one at a time
+after the §6z.2 ablation trainers (4–8 min each at stride 20; stride 10 roughly double); evaluations two at a time after the
+ablation evaluations. Expected end ~08:30.
+
 ## 7. Status
 
 - Done: decomposition (§1), variant `raw21_target_clock_v1`; E1 collected,
@@ -2028,6 +2052,9 @@ Same chain, split and validations as §6z.1. Stable arrivals of 205:
 - 3 Nov 03:20: gated + trigger weight done (§6aa.2): 98 / 78 / 53 at 1 cm nominal, gate closes 44–53 ms before the label zero
   open loop (v1: after), base inside the box in 74 / 78 / 61 (v1 E8a: 0). Ablation §6z.2 relaunched 03:25 on the full v1 split
   (the pre-filtered split file is rejected by the partition check); ~2 h with its two evaluations.
+- 3 Nov 04:30: GRU pure sweep pre-registered and queued (§6ab): hidden 256, stride 10 ms, patience 20, lr 3e-4, 4 episodes per
+  batch; 15 trainings + 10 evaluations behind the §6z.2 ablation. The GRU-with-weight + jitter idea is dropped: Rodrigo wants
+  the GRU tuned without any label-derived device.
 - Next, on request: E6 (§6c, nominal data without the clock) — the cheapest test of the reach-trigger mechanism.
 - E2 needs a collector mode; nothing in `src/` is edited while a collector,
   trainer or evaluator is running (provenance guards).
