@@ -39,7 +39,9 @@ Under the teammate's protocol v1.1 (touch 10 mm, no dwell, 100 ms traces): succe
 
 Where it still differs from the expert: the base parks 10–25 cm from the expert's spot in most episodes (inside the 8 cm
 box in 30 / 3 / 52 of 205 vs 129) and seed 1 keeps a slow residual wheel command (0.25 m drift, moving at 40 s in 129
-episodes). The arm absorbs the base error; the task metric does not see it. §6ac tests the remedies.
+episodes). The arm absorbs the base error; the task metric does not see it. §6ac.1 (3 Nov 11:06) fixes it: the 0.45 rad/s
+wheel dead band at the output gives 198 / 195 / 190 at 1 cm with drift 0.07 m, inside the box 118–139 and held 10 s equal to the
+arrivals, and categorical wheels + 144 copies do the same inside the model (176 / 176 / 195 at 1 cm, 201 / 201 / 204 at 5 cm).
 
 ## 3. How we got here: the chain of decisions
 

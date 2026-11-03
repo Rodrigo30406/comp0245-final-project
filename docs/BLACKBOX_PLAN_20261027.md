@@ -2029,6 +2029,47 @@ tried on v1 K 144 (§6aa.1).
    with the weight (as the MLP control vs K 144), so 1 cm arrivals fall well below 98 / 78 / 53. If instead the control gate
    confirms (closes after the label zero), the early closing was the weight's doing.
 
+### 6ac.1 Band and categorical wheels on v2 + K 144 (3 Nov 09:05–11:06): with the arm awake, an exact zero gives the expert's parking
+
+Chain `chain_park_v2.sh`. Arm 1 re-evaluates the three §6z.1 K 144 models with the 0.45 rad/s wheel dead band (no
+retraining; the evaluator counts the banded rows as clipped, hence "clip 0.8" in its summary). Arm 2 trains the E7c
+categorical head (41 bins, argmax) with 144 trigger copies (`v2_mlp28_cat41_trig144_seed*`, 20–48 min each, best epoch
+24–27). Same columns as §6z.1, both v2 validations:
+
+| mixture v2, MLP 28 | offline NRMSE (best epoch) | Nominal 1 / 2 / 5 cm | parked | arm ext. | drift | held ≥ 10 s | moving at 40 s | tol. | Random 1 / 2 / 5 cm | held ≥ 10 s | tol. | teammate success nom. |
+|---|---:|---|---:|---:|---:|---:|---:|---:|---|---:|---:|---:|
+| K 144 s0 (§6z.1) | 0.139 (27) | **199 / 202 / 202** | 145 | 189 | 0.06 m | 202 | 15 | 30 | 200 / 203 / 204 | 200 | 38 | 97.6% |
+| K 144 s1 | 0.135 | 193 / 198 / 204 | 175 | 199 | 0.25 m | 182 | 129 | 3 | 197 / 203 / 203 | 185 | 17 | 94.1% |
+| K 144 s2 | 0.141 | 175 / 194 / 199 | 150 | 180 | 0.14 m | 172 | 36 | 52 | 187 / 196 / 199 | 188 | 53 | 86.3% |
+| K 144 s0 + band 0.45 | same model | 198 / 200 / 201 | 147 | 158 | 0.07 m | 200 | 3 | **139** | 197 / 200 / 202 | 199 | **141** | 97.1% |
+| K 144 s1 + band | same model | 195 / **204 / 204** | 161 | 164 | 0.07 m | 197 | 25 | 118 | 189 / 199 / 202 | 199 | 124 | 95.1% |
+| K 144 s2 + band | same model | 190 / 196 / 197 | 136 | 160 | 0.07 m | 191 | 5 | 125 | 190 / 194 / 199 | 193 | 116 | 93.7% |
+| categorical 41 + K 144 s0 | 0.149 (27) | 176 / 190 / 201 | 112 | 152 | 0.07 m | 194 | 1 | 97 | 179 / 193 / 202 | 199 | 121 | 86.3% |
+| categorical + K 144 s1 | 0.148 (24) | 176 / 190 / 201 | 137 | 162 | 0.06 m | 195 | 10 | 84 | 179 / 191 / 203 | 196 | 82 | 86.3% |
+| **categorical + K 144 s2** | 0.151 (24) | 195 / 201 / **204** | 142 | 166 | 0.06 m | **203** | 0 | 132 | **200 / 204 / 205** | **202** | 124 | 96.6% |
+| expert | | 205 / 205 / 205 | 205 | 154 | | 204 | 0 | 129 | 200 / 200 / 200 | 198 | 128 | 100% |
+
+- **The band's prediction holds in full.** Drift after parking 0.07 m in every seed (was 0.06 / 0.25 / 0.14), base inside the
+  expert's tolerance at 40 s in 118–139 episodes (was 30 / 3 / 52; the expert 129), still moving at 40 s in 3 / 25 / 5 (was
+  15 / 129 / 36), held 10 s equal to the arrivals (200 / 197 / 191). The §6aa.1 cost on v1 (approaches that ended short) is
+  gone: 1 cm 198 / 195 / 190 against 199 / 193 / 175, and seed 2 gains 15 because the arm's reach no longer runs out once
+  the base stops where the expert's did. "Arm extended" falls from 180–199 to 158–164, next to the expert's 154: parked
+  correctly, the arm travels the expert's distance.
+- **Categorical wheels + copies remove the creep inside the model.** Moving at 40 s 0 / 10 / 1, drift 0.06–0.07 m, inside
+  the tolerance 84–132, held 194–203 on both banks. Seeds 0 and 1 pay about 20 arrivals at 1 cm (176; median final 2.8 and
+  1.9 cm vs 1.2) at the approach's end, the E7c chatter of §6m; seed 2 is the best model so far at 2 and 5 cm (195 / 201 / 204
+  nominal, 200 / 204 / 205 random, held 203 / 202). Offline NRMSE 0.148–0.151 (the categorical head's expected value is
+  scored as a regression), best epoch 24–27.
+- **What this settles.** Both stop devices failed in E7c / E8d with a sleeping arm (§6m, §6t: the base read the resting arm as
+  "keep driving", the arm read the stopped base as nothing) and both work once the ignition row is in the data. The §6k
+  diagnosis stands in its final form: the parking error was never a missing zero, it was the coupling; with the reach
+  ignited, an exact zero, learned (categorical) or imposed (band), gives the expert's parking without costing the arrivals.
+- **For the final policy.** The band is a threshold on the policy's wheel output and has to be declared as part of the
+  policy (one number, 0.45 rad/s, taken from the demonstrations' gap between zero and the slowest driving command, §6t);
+  the categorical head is inside the model and scores as well or better at 2 and 5 cm. Choice between them is Rodrigo's;
+  neither changes the black-box status (both are functions of the labels and the outputs). Arm 3 (gated control on v2)
+  reports next.
+
 ## 7. Status
 
 - Done: decomposition (§1), variant `raw21_target_clock_v1`; E1 collected,
@@ -2188,6 +2229,10 @@ tried on v1 K 144 (§6aa.1).
   the best pure model of the programme, 150 / 197 / 205, held 180), hidden 256 fits best (0.111) and arrives least (30–53), stride
   10 ms and 4 per batch lose. Device line: weight + jitter 130 / 77 / 105 does not beat weight 150 / 133 / 102. lr 3e-4 89 / 92 / 41,
   loses at 5 cm. Round two queued: `gru28_patience40` (pure) and `gru28_trigw144_patience20` (device).
+- 3 Nov 11:06: parking remedies on v2 + K 144 done (§6ac.1). Band 0.45 at the evaluator: 1 cm 198 / 195 / 190 (was 199 / 193 /
+  175), drift 0.07 m every seed, inside the expert's box 118–139 (was 3–52; expert 129), held = arrivals. Categorical 41 + 144
+  copies: 176 / 176 / 195 at 1 cm, 201 / 201 / 204 at 5 cm, held 194–203, creep gone inside the model; seed 2 best at 2 / 5 cm so
+  far. With the arm awake, both stop devices work; the coupling diagnosis (§6k, §6t.1) is confirmed. Gated control v2 evaluating.
 - Next, on request: E6 (§6c, nominal data without the clock) — the cheapest test of the reach-trigger mechanism.
 - E2 needs a collector mode; nothing in `src/` is edited while a collector,
   trainer or evaluator is running (provenance guards).

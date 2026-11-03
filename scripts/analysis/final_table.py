@@ -71,6 +71,8 @@ EVALS = {  # evaluation dir -> {policy label in summary: (display name, training
     "v2_gru28_stride10_on_clean_validation_20261103": {f"gru28_stride10_seed{s}": (f"Mixture v2: GRU 28 (stride 20 ms) memory every 10 ms, seed {s}", f"v2_gru28_stride10_seed{s}") for s in range(3)},
     "v2_gru28_lr3e-4_on_clean_validation_20261103": {f"gru28_lr3em4_seed{s}": (f"Mixture v2: GRU 28 (stride 20 ms) Adam 3e-4, seed {s}", f"v2_gru28_lr3e-4_seed{s}") for s in range(3)},
     "v2_gru28_epb4_on_clean_validation_20261103": {f"gru28_epb4_seed{s}": (f"Mixture v2: GRU 28 (stride 20 ms) 4 episodes per batch, seed {s}", f"v2_gru28_epb4_seed{s}") for s in range(3)},
+    "v2_mlp28_trig144_db045_on_clean_validation_20261103": {f"mlp28_trig144_seed{s}": (f"Mixture v2: MLP 28 pure + 144 trigger copies, seed {s}, evaluated with the 0.45 rad/s wheel dead band", f"v2_mlp28_trig144_seed{s}") for s in range(3)},
+    "v2_mlp28_cat41_trig144_on_clean_validation_20261103": {f"mlp28_cat41_trig144_seed{s}": (f"Mixture v2: MLP 28 pure, categorical wheels (41 bins) + 144 trigger copies, seed {s}", f"v2_mlp28_cat41_trig144_seed{s}") for s in range(3)},
     "v2_gru28_control_on_clean_validation_20261102": {f"gru28_control_seed{s}": (f"Mixture v2: GRU 28 (stride 20 ms) control, seed {s}", f"v2_gru28_control_seed{s}") for s in range(3)},
     "e9_trig144_db045_on_clean_validation_20261102": {f"trig144_seed{s}": (f"E9 K 144 seed {s} evaluated with the 0.45 rad/s wheel dead band (E8d option)", f"mlp_e9_mixture4096_polar_trig144_seed{s}") for s in range(3)},
     "e2_gru_polar_on_clean_validation_20261101": {f"gru_polar_e2_seed{s}": (f"E2 nominal + random + near-target 6144: GRU 28 pure, memory 20 ms, seed {s}", f"gru_e2_mixture6144_polar_stride20_seed{s}") for s in range(3)},
