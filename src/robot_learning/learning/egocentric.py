@@ -80,7 +80,9 @@ DEFAULT_OPTIONS = {"wheel_loss": "l2",            # l2 | l1 on the two wheel out
                    "trigger_qd_jitter": "auto",   # rad/s N(0, s) on the arm velocities of those copies; "auto" = std of arm qd over the moving rows
                    "trigger_weight": 1.0,         # loss weight of the trigger row itself (the no-duplication twin of trigger_copies)
                    "action_chunk": 1,             # predict the commands of this many future steps (chunk), execute the first
-                   "action_chunk_stride": 20}     # physics rows between chunk steps (20 = 20 ms)
+                   "action_chunk_stride": 20,     # physics rows between chunk steps (20 = 20 ms)
+                   "training_episode_cap": 0}     # data-size series: keep only this many training episodes (after the success filter),
+                                                  # a fixed-rng subset shared by every training seed; 0 = all
 TRIGGER_JITTER_SEED = 0  # one fixed rng for the trigger-copy jitter, so every training seed sees the same added rows
 
 
@@ -116,6 +118,8 @@ def resolve_options(config, variant, overrides=None):
     for key in ("action_chunk", "action_chunk_stride"):
         if type(opts[key]) is not int or opts[key] < 1:
             raise ValueError(f"{key} must be an integer >= 1")
+    if type(opts["training_episode_cap"]) is not int or opts["training_episode_cap"] < 0:
+        raise ValueError("training_episode_cap must be an integer >= 0 (0 = every training episode)")
     if opts["action_chunk"] > 1 and (opts["wheel_output"] != "regression" or opts["wheel_loss"] != "l2" or opts["stop_weight"] != 1.0):
         raise ValueError("action_chunk > 1 needs plain L2 regression (wheel_output regression, wheel_loss l2, stop_weight 1)")
     return opts
@@ -452,6 +456,13 @@ def train(dataset, split_path, config_path, output, horizon_s=40.0, device_name=
     episode_filter = {"keep_expert_failures": keep_failures}
     if not keep_failures:
         split, counts = drop_expert_failures(split); episode_filter.update(counts)
+    cap = opts["training_episode_cap"]
+    if cap:
+        if cap > len(split["training"]):
+            raise ValueError(f"training_episode_cap {cap} exceeds the {len(split['training'])} training episodes available")
+        keep = sorted(np.random.RandomState(TRIGGER_JITTER_SEED).permutation(len(split["training"]))[:cap])
+        split = {**split, "training": [split["training"][i] for i in keep]}
+        episode_filter["training_episode_cap"] = {"cap": cap, "kept": cap, "rng_seed": TRIGGER_JITTER_SEED}
     source_cfg = read_json(dataset / "config.json")
     episode_cfg = resolve_episode_config({k: v for k, v in source_cfg.items() if k in episode_defaults()})
     dt = read_json(dataset / "episodes" / f"{records[0]['episode_id']}.json")["dt"]

@@ -3,11 +3,13 @@ from pathlib import Path
 import sys
 import time
 import traceback
+import collections
 import numpy as np
 from robot_learning.data.storage import read_json, sha256, write_json
 from robot_learning.learning.model import LinearPolicy, MLPPolicy
 from robot_learning.settings import get_roboenv_root
 from robot_learning.simulation.episode import Episode
+from robot_learning.evaluation.adversity import Adversity
 from .metrics import TaskMetrics
 from .subsystems import SubsystemMetrics, world_to_base
 
@@ -18,11 +20,18 @@ def action_limits(episode_config):
     return np.array([wheel]*4 + [episode_config['arm_controller']['max_torque']]*7)
 
 
-def make_action_filter(limits, wheel_dead_band=0.0):
+def make_action_filter(limits, wheel_dead_band=0.0, delay_steps=0, gain=None):
     """Clip to the declared envelope; with a dead band, wheel commands whose largest magnitude is below it become exactly
     zero (the torques are untouched). The band applies to learned policies only (see cli.validate_protocol)."""
     limits = np.asarray(limits, dtype=float)
+    if type(delay_steps) is not int or delay_steps < 0:
+        raise ValueError('delay_steps must be an integer >= 0')
+    pending = collections.deque([np.zeros(len(limits))] * delay_steps)  # action_delay_steps adversity: zeros before the first command
     def apply(action):
+        if delay_steps:
+            pending.append(np.asarray(action, dtype=float).copy()); action = pending.popleft()
+        if gain is not None:
+            action = np.asarray(action, dtype=float) * gain  # actuator_gain adversity: the executed command, not the label
         action = np.clip(action, -limits, limits)
         if wheel_dead_band > 0 and np.abs(action[:4]).max() < wheel_dead_band:
             action = action.copy(); action[:4] = 0.0
@@ -46,9 +55,10 @@ def run_rollout(directory, job):
     clipped = np.zeros(11, dtype=np.int64); peak_raw = np.zeros(11)
     prediction_ns = 0; count = 0; violations = 0; joint_counts = np.zeros(7,dtype=np.int64)
     dead_band = float(protocol.get('wheel_dead_band_rad_s', 0.)) if spec['kind'] != 'expert' else 0.0
+    adversity = Adversity(protocol, scenario['seed'], is_expert=spec['kind'] == 'expert')
     record = {**job, 'status': 'running', 'limits': limits.tolist(),
               'limits_meaning': 'expert command envelope, not a hardware certification',
-              'wheel_dead_band_rad_s': dead_band,
+              'wheel_dead_band_rad_s': dead_band, 'adversity': adversity.summary() if adversity.active else None,
               'valid': False, 'metrics': None}
     write_json(output, record)
     try:
@@ -73,14 +83,15 @@ def run_rollout(directory, job):
             def policy(observation):
                 nonlocal prediction_ns, count
                 start = time.perf_counter_ns()
-                action = model.predict_action(observation)
+                action = model.predict_action(adversity.observe(observation))
                 prediction_ns += time.perf_counter_ns()-start; count += 1
                 return action
         np.random.seed(scenario['seed'])
         # Effective dt is checked after setup; horizon is integer physical steps.
         with Episode(scenario['target'], cfg, get_roboenv_root(), scenario['initial_base'],
                      policy=policy, horizon_steps=1,
-                     action_filter=make_action_filter(limits, dead_band)) as episode:
+                     action_filter=make_action_filter(limits, dead_band, adversity.delay_steps, adversity.gain),
+                     perturbation=adversity if adversity.active else None) as episode:
             if policy is not None and hasattr(model, 'reset'):
                 model.reset(episode.dt)
             steps = int(round(protocol['horizon_s']/episode.dt))
@@ -134,6 +145,8 @@ def run_rollout(directory, job):
     finally:
         if subsystem is not None:
             record['subsystems']=subsystem.result(bool(record['valid']))
+        if adversity.active:
+            record['adversity']=adversity.summary()
         executed = metrics.steps if metrics is not None else 0
         record.update(wall_s=time.monotonic()-started,
                       clipping_count_per_command=clipped.tolist(),

@@ -16,13 +16,14 @@ from robot_learning.data.storage import read_json, write_json, sha256, provenanc
 from robot_learning.data.scheduler import THREAD_VARIABLES, stop_processes, validate_workers
 from robot_learning.learning.dataset import inventory, validate_partition, extra_inventory, record_directory
 from robot_learning.simulation.config import resolve_episode_config, episode_defaults, same_expert_configuration
+from robot_learning.evaluation.adversity import ADVERSITY_KEYS, validate_adversities
 
 DEFAULT_CONFIG = PROJECT_ROOT/'experiment_specs/evaluation/validation.json'
 
 
 def validate_protocol(cfg):
     required={'name','horizon_s','dwell_s','tolerances_m','trace_every_steps','limits','failure_distance_penalty_m'}
-    if not required <= set(cfg) or set(cfg)-required-{'dense_trace_until_s','wheel_dead_band_rad_s'}:
+    if not required <= set(cfg) or set(cfg)-required-{'dense_trace_until_s','wheel_dead_band_rad_s'}-ADVERSITY_KEYS:
         raise ValueError('Unknown or missing evaluation configuration')
     for k in ['horizon_s','dwell_s','failure_distance_penalty_m']:
         if type(cfg[k]) not in (int,float) or not np.isfinite(cfg[k]) or cfg[k]<=0:
@@ -43,6 +44,7 @@ def validate_protocol(cfg):
         raise ValueError('Tolerances must increase without duplicates')
     if cfg['limits']!='expert_command_envelope':
         raise ValueError('Unsupported actuator limit protocol')
+    validate_adversities(cfg)
     # Declared output filter on learned policies only: when both wheel commands are below the band, the wheels are set
     # to exactly zero. The expert's own non-zero wheel commands never fall below 0.45 rad/s (min_lin_vel / wheel_radius),
     # so a band at or under that value clips nothing the expert does; it is a policy variant and is recorded as such.

@@ -24,7 +24,7 @@ import numpy as np
 from robot_learning.data.storage import read_json, write_json, sha256, utc_now, git_info
 from robot_learning.settings import PROJECT_ROOT
 from robot_learning.simulation.config import episode_defaults, resolve_episode_config
-from .dataset import inventory, load_episode, validate_partition, extra_inventory
+from .dataset import inventory, load_episode, validate_partition, extra_inventory, drop_expert_failures
 from .egocentric import validate_spec, spec_from_episode_config, VARIANT
 from .gru_policy import MODES, input_names, features_for, padded_group
 from .metrics import errors, aggregate
@@ -263,6 +263,9 @@ def train(dataset, split_path, config_path, output, horizon_s=40.0, device_name=
         raise ValueError("Split belongs to another dataset")
     records = inventory(dataset) + extra_inventory(saved)
     split = validate_partition(records, {k: saved[k] for k in ["training", "validation"]})
+    keep_failures = bool(config.get("keep_expert_failures", True)); episode_filter = {"keep_expert_failures": keep_failures}
+    if not keep_failures:  # rule of 2 Nov: train and select on expert successes only (same as the MLP and GRU trainers)
+        split, counts = drop_expert_failures(split); episode_filter.update(counts)
     source_cfg = read_json(dataset / "config.json")
     episode_cfg = resolve_episode_config({k: v for k, v in source_cfg.items() if k in episode_defaults()})
     dt = read_json(dataset / "episodes" / f"{records[0]['episode_id']}.json")["dt"]
@@ -374,6 +377,7 @@ def train(dataset, split_path, config_path, output, horizon_s=40.0, device_name=
                 "gradient_clip_norm": 10.0, "regression_parameters": sum(p.numel() for p in network.parameters()), "weight_dtype": "float32",
                 "input_features": len(names), "input_names": names, "independent_outputs": 9, "feature_spec": spec,
                 "control_period": f"head reacts every physics step (1 ms); one attention token every {stride} step(s) over the last {window} tokens; memory reset per episode",
+                "episode_filter": episode_filter, "training_episodes": len(split["training"]), "validation_episodes": len(split["validation"]),
                 "epochs_completed": epoch, "best_epoch": best_epoch, "training_updates": updates,
                 "best_validation_episode_macro_balanced_nrmse": best,
                 "stop_reason": "patience" if stale >= hp["patience"] else "max_epochs",

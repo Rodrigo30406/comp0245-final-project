@@ -77,6 +77,70 @@ class EvaluationMetricTests(unittest.TestCase):
         self.assertIsNot(band(small),small)                                     # the caller's array is not modified
 
 
+class AdversityTests(unittest.TestCase):
+    def test_protocol_adversity_keys_are_validated(self):
+        from robot_learning.evaluation.adversity import validate_adversities
+        cfg=read_json(PROJECT_ROOT/'experiment_specs/evaluation/validation.json')
+        validate_protocol({**cfg,'action_delay_steps':50,'payload_mass_kg':1.0,
+                           'base_push':{'time_s':4.0,'duration_s':0.5,'force_n':100.0},
+                           'observation_noise':{'base_m':0.02,'yaw_rad':0.02,'q_rad':0.01,'qd_rad_s':0.05}})
+        for bad in [{'action_delay_steps':-1},{'action_delay_steps':2.0},{'payload_mass_kg':-1.0},{'payload_mass_kg':'1'},
+                    {'base_push':{'time_s':39.8,'duration_s':0.5,'force_n':100.0}},{'base_push':{'time_s':4.0,'force_n':100.0}},
+                    {'base_push':{'time_s':4.0,'duration_s':0.0,'force_n':100.0}},
+                    {'observation_noise':{}},{'observation_noise':{'base_m':0.0}},{'observation_noise':{'target_m':0.1}},{'observation_noise':{'q_rad':-0.1}},
+                    {'unknown_adversity':1}]:
+            with self.assertRaises(ValueError,msg=str(bad)):validate_protocol({**cfg,**bad})
+        validate_adversities({**cfg,'action_delay_steps':0})
+
+    def test_delay_filter_executes_earlier_commands_and_zeros_before_the_first(self):
+        limits=action_limits(resolve_episode_config({}))
+        delayed=make_action_filter(limits,0.0,2)
+        a=[np.full(11,float(i+1)) for i in range(4)]
+        np.testing.assert_array_equal(delayed(a[0]),np.zeros(11)); np.testing.assert_array_equal(delayed(a[1]),np.zeros(11))
+        np.testing.assert_array_equal(delayed(a[2]),np.clip(a[0],-limits,limits)); np.testing.assert_array_equal(delayed(a[3]),np.clip(a[1],-limits,limits))
+        with self.assertRaises(ValueError):make_action_filter(limits,0.0,-1)
+        from robot_learning.evaluation.adversity import Adversity
+        cfg=read_json(PROJECT_ROOT/'experiment_specs/evaluation/validation.json')
+        adv=Adversity({**cfg,'actuator_gain':{'wheel_left':0.85}},1,is_expert=True); self.assertTrue(adv.active)
+        gained=make_action_filter(limits,0.0,0,adv.gain); out=gained(np.array([2.0,2.0,2.0,2.0]+[1.0]*7))
+        np.testing.assert_allclose(out,[2.0,1.7,1.7,2.0]+[1.0]*7)   # wheels 1 and 2 are the left side (worker.action_limits order)
+        for bad in [{'actuator_gain':{}},{'actuator_gain':{'wheel_left':1.0}},{'actuator_gain':{'wheel_left':0.0}},{'actuator_gain':{'front':0.5}}]:
+            with self.assertRaises(ValueError):validate_protocol({**cfg,**bad})
+
+    def test_observation_noise_touches_the_policy_state_only_and_is_seeded(self):
+        from robot_learning.evaluation.adversity import Adversity
+        cfg={**read_json(PROJECT_ROOT/'experiment_specs/evaluation/validation.json'),'observation_noise':{'base_m':0.02,'yaw_rad':0.02,'q_rad':0.01,'qd_rad_s':0.05}}
+        obs=np.arange(21,dtype=float)
+        expert=Adversity(cfg,5,is_expert=True); np.testing.assert_array_equal(expert.observe(obs),obs)
+        self.assertIn('expert reads',expert.summary()['note'])
+        a=Adversity(cfg,5,is_expert=False); b=Adversity(cfg,5,is_expert=False); c=Adversity(cfg,6,is_expert=False)
+        na=a.observe(obs); np.testing.assert_array_equal(na,b.observe(obs)); self.assertFalse(np.array_equal(na,c.observe(obs)))
+        np.testing.assert_array_equal(na[[2,18,19,20]],obs[[2,18,19,20]])   # base z and the target are never noised
+        self.assertTrue(np.all(na[[0,1,3]]!=obs[[0,1,3]])); self.assertTrue(np.all(na[4:18]!=obs[4:18]))
+        self.assertTrue(a.active); self.assertFalse(Adversity(read_json(PROJECT_ROOT/'experiment_specs/evaluation/validation.json'),5,is_expert=False).active)
+
+    def test_push_and_payload_act_on_the_simulated_robot(self):
+        from robot_learning.evaluation.adversity import Adversity, END_EFFECTOR_LINK
+        base=read_json(PROJECT_ROOT/'experiment_specs/evaluation/validation.json'); cfg=resolve_episode_config({})
+        def run(protocol,steps=300):
+            adv=Adversity(protocol,3,is_expert=True)
+            with Episode([1,0,.5],cfg,get_roboenv_root(),horizon_steps=steps,perturbation=adv if adv.active else None) as ep:
+                if protocol.get('payload_mass_kg'):
+                    link=next(j for j in range(ep.client.getNumJoints(ep.robot_id)) if ep.client.getJointInfo(ep.robot_id,j)[12].decode()==END_EFFECTOR_LINK)
+                    mass=ep.client.getDynamicsInfo(ep.robot_id,link)[0]
+                else: mass=None
+                last=None
+                for tr in ep.transitions(): last=tr
+                return last['next'],adv.summary(),mass
+        plain,_,_=run(base)
+        pushed,realised,_=run({**base,'base_push':{'time_s':0.05,'duration_s':0.1,'force_n':200.0}})
+        self.assertIn(realised['base_push']['sense'],('from_behind','head_on')); self.assertAlmostEqual(realised['base_push']['start_time_s'],0.05,places=6)
+        self.assertGreater(np.linalg.norm(pushed['base'][:2]-plain['base'][:2]),1e-4,'the push moves the base')
+        loaded,realised_p,mass=run({**base,'payload_mass_kg':1.5},steps=50)
+        self.assertAlmostEqual(mass,realised_p['payload_mass_kg']['link_mass_kg']); self.assertAlmostEqual(realised_p['payload_mass_kg']['added_kg'],1.5)
+        self.assertGreater(mass,1.5)
+
+
 class AutonomousEngineTests(unittest.TestCase):
     def test_extended_expert_matches_original_prefix_and_first_stop(self):
         cfg=resolve_episode_config({'max_steps':5})

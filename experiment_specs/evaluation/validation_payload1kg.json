@@ -1,0 +1,14 @@
+{
+  "name": "development_validation_closed_loop_payload1kg",
+  "horizon_s": 40.0,
+  "dwell_s": 0.5,
+  "tolerances_m": [
+    0.01,
+    0.02,
+    0.05
+  ],
+  "trace_every_steps": 100,
+  "limits": "expert_command_envelope",
+  "failure_distance_penalty_m": 10.0,
+  "payload_mass_kg": 1.0
+}

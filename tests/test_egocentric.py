@@ -533,6 +533,20 @@ class WeightAndChunkTrainingTests(unittest.TestCase):
         policy, metrics = train(data, root / 'split.json', root / 'cfg.json', root / 'run', 40.0, 'cpu', 'raw21_targetpolar_clock_v1')
         return policy, read_json(root / 'run/model_info.json')
 
+    def test_training_episode_cap_keeps_a_fixed_subset(self):
+        from robot_learning.learning.egocentric import resolve_options
+        self.assertEqual(resolve_options({}, "raw21_targetpolar_clock_v1", {"training_episode_cap": 3})["training_episode_cap"], 3)
+        for bad in ({"training_episode_cap": -1}, {"training_episode_cap": 2.0}, {"training_episode_cap": True}):
+            with self.assertRaises(ValueError):
+                resolve_options({}, "raw21_targetpolar_clock_v1", bad)
+        with tempfile.TemporaryDirectory() as tmp, threadpool_limits(limits=1):
+            policy, info = self.run_training({'training_episode_cap': 2}, tmp)
+            self.assertEqual(info['training_episodes'], 2); self.assertEqual(info['training_rows'], 2 * 80)
+            self.assertEqual(info['episode_filter']['training_episode_cap'], {'cap': 2, 'kept': 2, 'rng_seed': 0})
+        with tempfile.TemporaryDirectory() as tmp, threadpool_limits(limits=1):
+            with self.assertRaises(ValueError):
+                self.run_training({'training_episode_cap': 99}, tmp)
+
     def test_trigger_weight_is_recorded_and_trains(self):
         with tempfile.TemporaryDirectory() as tmp, threadpool_limits(limits=1):
             policy, info = self.run_training({'trigger_weight': 50}, tmp)

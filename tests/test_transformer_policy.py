@@ -116,6 +116,23 @@ class TrainingRunTests(unittest.TestCase):
             loaded = TransformerPolicy.load(root / 'run/model.npz')
             x = np.random.default_rng(9).normal(size=(3, 21))
             np.testing.assert_array_equal(loaded.predict(x), policy.predict(x))
+            self.assertEqual(info['episode_filter'], {'keep_expert_failures': True}); self.assertEqual(info['training_episodes'], 4)
+
+    def test_expert_success_filter(self):
+        from robot_learning.learning.transformer_policy import train
+        from robot_learning.learning.dataset import inventory
+        from robot_learning.learning.train import DEFAULT_CONFIG
+        with tempfile.TemporaryDirectory() as tmp, threadpool_limits(limits=1):
+            root = Path(tmp); data = root / 'data'; data.mkdir(); make_dense_dataset(data, episodes=6, stop_tail=20, failures=2)
+            records = inventory(data)
+            write_json(root / 'split.json', {'dataset': str(data), 'training': records[:3] + records[4:5], 'validation': records[3:4] + records[5:6]})
+            cfg = read_json(DEFAULT_CONFIG.parent / 'mlp_pytorch_successes.json')
+            cfg['mlp'].update(max_epochs=2, patience=100); cfg['torch']['device'] = 'cpu'; write_json(root / 'cfg.json', cfg)
+            train(data, root / 'split.json', root / 'cfg.json', root / 'run', 40.0, 'cpu', mode='raw21_targetpolar_clock_v1',
+                  stride=4, window=10, d_model=D, layers=LAYERS, heads=HEADS, ffn=FFN, head_width=WIDTH, episodes_per_batch=2)
+            info = read_json(root / 'run/model_info.json')
+            self.assertEqual(info['episode_filter'], {'keep_expert_failures': False, 'training': {'kept': 3, 'dropped_expert_failures': 1}, 'validation': {'kept': 1, 'dropped_expert_failures': 1}})
+            self.assertEqual(info['training_episodes'], 3)
 
 
 if __name__ == '__main__':

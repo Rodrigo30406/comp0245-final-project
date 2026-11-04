@@ -35,7 +35,7 @@ class Episode:
     """One fresh simulator and controller state; use as a context manager."""
 
     def __init__(self, target, config, roboenv_root, initial_base=None, *,
-                 policy=None, horizon_steps=None, action_filter=None):
+                 policy=None, horizon_steps=None, action_filter=None, perturbation=None):
         vector(target, 3, "target")
         keys = episode_defaults().keys()
         self.config = resolve_episode_config({k: v for k, v in config.items() if k in keys})
@@ -51,6 +51,10 @@ class Episode:
         self.policy = policy
         self.horizon_steps = horizon_steps
         self.action_filter = action_filter
+        # A declared test-time adversity (evaluation.adversity): setup(episode) once the robot exists, before_step(episode)
+        # before every physics step. Expert and policies alike; the lecturer's controller and stop rules are untouched.
+        self.perturbation = perturbation
+        self.robot_id = None
         self.first_lecturer_stop = None
         self.client = None
 
@@ -75,6 +79,7 @@ class Episode:
         self.sim = sim = create_simulation(self.roboenv_root, headless=cfg["headless"], physics=cfg["physics"])
         self.client = client = sim.pybullet_client
         rid = sim.bot[0].bot_pybullet
+        self.robot_id = rid
         if self.initial_base is not None:
             position, nominal_orientation = client.getBasePositionAndOrientation(rid)
             linear_velocity, angular_velocity = client.getBaseVelocity(rid)
@@ -92,6 +97,8 @@ class Episode:
         self.dyn, self.ee_id, self.shoulder_id, self.joint_names = create_dynamics(sim, self.roboenv_root)
         if len(self.joint_names) != 17 or not all("wheel" in name for name in self.joint_names[:4]):
             raise ValueError("Expected Robotnik joint order: 4 wheels + 7 arm + 6 fingers")
+        if self.perturbation is not None:
+            self.perturbation.setup(self)
         self.dt = float(sim.GetTimeStep())
         self.state = self.observe(0.0)
         self.initial_state = self.state
@@ -165,6 +172,8 @@ class Episode:
             if self.nav.done and self.navigation_end is None:
                 self.navigation_end = current["time"]
             self.command.SetControlCmd(np.concatenate((action, np.zeros(6))), ["velocity"] * 4 + ["torque"] * 13)
+            if self.perturbation is not None:
+                self.perturbation.before_step(self)
             self.sim.Step(self.command, "torque")
             if dyn.visualizer:
                 for index in range(len(self.sim.bot)):
