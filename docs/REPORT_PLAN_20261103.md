@@ -383,3 +383,12 @@ Queued (`chain_nominal_only.sh`, after the transformer patience-40 chain): the s
 successes alone (721 episodes), 3 seeds, both banks. That is the one data ablation the report keeps, at Rodrigo's
 request (4 Nov): success-only training and the start-referenced goal are stated as conditions of the dataset, and the
 with / without random-start comparison is the ablation.
+
+**Rodrigo, 4 Nov 14:30.** (1) The start-referenced goal is not a "rule" of the dataset: the world-origin bearing was a
+mis-generalisation of the first random-start collector, and referencing the goal to the start pose is simply the
+correct expert. The report states three collection conditions (DART, successes only, random starts) and measures two
+of them: no DART (0 / 205) and nominal starts only (`chain_nominal_only.sh`, queued). (2) Model names adopted:
+MLP-Base (21 obs. + clock), MLP-Ego (+7 egocentric transforms), MLP-Ego-IC (+K ignition copies), GRU-Ego, TF-Ego,
++DB and MLP-Ego-Cat for the parking variants. (3) Two more seeds (3, 4) of MLP-Ego-IC, GRU-Ego and TF-Ego queued
+(`chain_seeds34.sh`, after the nominal-only chain; configs `mlp_pytorch_successes{,_patience40,_patience20}_seed{3,4}.json`),
+evaluated on both banks as `v2_<tag>_s34_on_*_20261104`, so the report can give mean ± sd over five seeds.
