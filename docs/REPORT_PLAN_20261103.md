@@ -115,7 +115,7 @@ one thing worth adding is the trigger weight for the sequence trainer (the GRU's
 ## 7. Results (appended as they arrive)
 
 
-### 7.1 E11, two of the three banks (4 Nov 04:40; `ood_far_start` still evaluating)
+### 7.1 E11, the three banks (4 Nov 04:40, far start added 06:45)
 
 Stable arrivals at 1 / 2 / 5 cm on the 205 evaluated geometries of each bank, expert row = the same geometries with the
 expert (`runs/evaluation/ood_<bank>_<group>_20261103`):
@@ -123,7 +123,8 @@ expert (`runs/evaluation/ood_<bank>_<group>_20261103`):
 | bank | expert | K 144 (3 seeds) | K 144 + band 0.45 | categorical + K 144 | GRU 28, patience 40 |
 |---|---|---|---|---|---|
 | `ood_far_targets` (2.2–3 m) | 205 / 205 / 205 | **205 / 205 / 205**, 196 / 205 / 205, 197 / 205 / 205 | 202 / 203 / 204, 198 / 205 / 205, 205 / 205 / 205 | 178 / 196 / 205, 184 / 196 / 204, 194 / 205 / 205 | 111 / 139 / 160, 61 / 128 / 189, 118 / 186 / 205 |
-| `ood_target_height` (0.15–0.28 and 0.85–1.05 m) | 205 / 205 / 205 | 18 / 64 / 157, 41 / 63 / 77, 16 / 84 / 129 | 22 / 72 / 159, 35 / 61 / 75, 17 / 75 / 112 | (running) | 16 / 57 / 131, 6 / 26 / 83, 14 / 46 / 114 |
+| `ood_target_height` (0.15–0.28 and 0.85–1.05 m) | 205 / 205 / 205 | 18 / 64 / 157, 41 / 63 / 77, 16 / 84 / 129 | 22 / 72 / 159, 35 / 61 / 75, 17 / 75 / 112 | 31 / 58 / 113, 14 / 39 / 110, 22 / 63 / 151 | 16 / 57 / 131, 6 / 26 / 83, 14 / 46 / 114 |
+| `ood_far_start` (start 2.3–3.5 m out, any yaw) | 205 / 205 / 205 | **200 / 200 / 200**, 195 / 204 / 204, 201 / 205 / 205 | 196 / 196 / 196, 198 / 204 / 204, 204 / 205 / 205 | 150 / 165 / 175, 177 / 189 / 202, 198 / 202 / 205 | 85 / 106 / 132, 59 / 104 / 180, 103 / 188 / 205 |
 
 - **Far targets: the prediction was wrong in the good direction.** The planar-distance input is 2.2–4.2 m, outside anything
   demonstrated (≤ 2.8 m), and the MLP does not care: 196–205 at 1 cm, the expert's own count. The drive is bearing-driven
@@ -138,6 +139,18 @@ expert (`runs/evaluation/ood_<bank>_<group>_20261103`):
   the 1 cm one almost never. The GRU is no better (6–16 at 1 cm). Height is the dimension the demonstrations do not cover,
   and no input transform can supply the missing arm configurations: this is the honest limit of the dataset, and the
   remedy (collecting demonstrations at those heights) is a data decision, not a model one.
+
+- **Far starts (06:45): the K 144 MLP generalises again, 195–201 at 1 cm, and the clock prediction was wrong.** The
+  drives are 1.7–6 m (training ≤ 2.8 m) and the robot arrives later than any demonstration, yet the base parks in 181–196
+  and the arm fires in 203–205: the stop and the ignition are read from the target-in-base-frame and arm features, not
+  from the clock. The GRU falls to 59–103 (its ignition: arm active 128 in seed 0; its parking is fine, 181–200), the
+  categorical to 150–198. Two geometries defeat every MLP seed and the band alike: starts at the far corners
+  (2.63, 3.47, yaw −2.36) and (3.06, −3.27, yaw −2.93), facing away from the target. There the heading error is near π,
+  cos ≈ −1 and sin ≈ 0, so the sign of the turn is undetermined and the demonstrations contain almost no such rows at
+  4–5 m; the policy drives straight away for 68–159 m. That is the one failure mode of the far-start bank and the first
+  drive-away since v2. The remaining 1–7 misses per seed have the base 3–14 cm from the goal and the arm 0.13–0.46 m
+  short: an arm that fires from an approach direction it was not shown.
+- **Categorical wheels on the height bank** (06:45): 31 / 14 / 22 at 1 cm, 113 / 110 / 151 at 5 cm, like the others.
 
 ### 7.2 E12, first round (4 Nov 04:40): two adversities calibrated wrong, two results
 
