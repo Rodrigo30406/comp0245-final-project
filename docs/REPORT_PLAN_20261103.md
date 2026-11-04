@@ -468,6 +468,12 @@ training geometries, 721 expert successes kept, same 205 validation geometries a
 - Report: Table II row "MLP-Ego-IC, nominal starts only" 178 / 115 / 170 and 199 / 195 / 193; §III-C paragraph.
   `final_table.py` registers `v2_mlp28nom_trig144_on_clean_validation_20261104`.
 
+**Seed reporting convention (Rodrigo, 4 Nov 19:00).** Tables II and III give stable arrivals as a percentage of the
+205 geometries, mean ± s.d. over the seeds with the min–max range in brackets (`scripts/analysis/seed_stats.py`
+computes the cells); single-seed rows are marked "seed 0". No cell reports the best seed alone. The prose keeps the
+per-seed counts where the mechanism is the point (which seed sleeps, which parks). With seeds 3 and 4 the same cells
+go to five seeds.
+
 **Chain order, 4 Nov 15:00.** The nominal-only and payload chains were stalled from 14:47 to 14:55 by their own
 process check: a shell wrapper whose command text contained `train_egocentric.py` matched the `ps | grep` guard, so
 both waited on a process that was only a string. Removed the wrapper, and the nominal-only chain then failed twice in
