@@ -349,3 +349,37 @@ never satisfies its 8 cm / 0.05 rad parking test with a 5% wheel asymmetry on th
 decides where it gives up. The policies win (180–203) because they have no parking test to satisfy. `nav_timeout`
 stays at 25 s everywhere (demonstrations and evaluation), as in `AGENTS.md`; raising it for evaluation would be a
 declared variant of the expert and, on this evidence, would not change the count.
+
+### 7.7 E14 closed (4 Nov 13:10): the whole GPU chain evaluated on the final mixture
+
+Seed 0 unless three numbers are given; stable arrivals 1 / 2 / 5 cm on the 205 nominal geometries, then on the 205
+random-start geometries.
+
+| run | nominal | random start | reading |
+|---|---|---|---|
+| raw 21 + clock, no device (×3) | 8 / 21 / 67, 0 / 1 / 18, 0 / 0 / 16 | 4 / 15 / 57, 0 / 0 / 17, 0 / 0 / 12 | chapter 1 stands on the final data |
+| raw 21 + clock + 144 copies | 15 / 53 / 117 | 26 / 46 / 101 | the ignition device needs the egocentric inputs: same device, 15 against 199 |
+| egocentric + 16 copies | 102 / 144 / 195 | 101 / 146 / 196 | K too small: the onset row still loses to the resting rows |
+| egocentric + 144 copies (×3, reference) | 199 / 193 / 175 | 200 / 197 / 187 | |
+| egocentric + 512 copies | 200 / 204 / 204 | 202 / 205 / 205 | plateau from 144; the "fires early" effect seen on the earlier collection does not appear here |
+| 144 copies, 400 training episodes | 142 / 165 / 191 | 137 / 154 / 183 | |
+| 800 | 148 / 193 / 200 | 127 / 172 / 194 | |
+| 1 600 | 177 / 193 / 201 | 174 / 194 / 204 | |
+| 2 400 | 195 / 198 / 202 | 187 / 200 / 202 | |
+| 3 221 (all) | 199 / 193 / 175 | 200 / 197 / 187 | 1 cm keeps climbing to the full set; 5 cm saturates at 800 |
+| 144 copies, **no DART** (clean mixture, 4 000 episodes, ×3) | 0 / 0 / 0 ×3 | 0 / 0 / 0 ×3 | |
+| no device, no DART (×3) | 0 / 0 / 0 ×3 | 0 / 0 / 0 ×3 | |
+
+Three things for the report. (1) The transforms and the device are not additive: raw + device gives 15, egocentric
+without device 1, egocentric + device 199. The device makes the onset row learnable; the egocentric inputs make the
+rest of the task learnable from any start pose (raw + device on the random bank ends 0.42 m from the base goal, median,
+after 2.6 m of path: it drives to the wrong place). (2) DART is a condition, not an option: without the injected
+noise at collection even 4 000 clean episodes with the device give 0 arrivals; the policy leaves the demonstrated
+states within the first seconds and has no recovery rows. (3) Data size: at 1 cm the curve is still rising at 3 221
+(142 → 148 → 177 → 195 → 199), at 5 cm it is flat from 800 episodes; the 1 cm precision is what the data buys. K: 16
+→ 102, 144 → 199, 512 → 200 at seed 0, so the device saturates by 144.
+
+Queued (`chain_nominal_only.sh`, after the transformer patience-40 chain): the same policy trained on the nominal-start
+successes alone (721 episodes), 3 seeds, both banks. That is the one data ablation the report keeps, at Rodrigo's
+request (4 Nov): success-only training and the start-referenced goal are stated as conditions of the dataset, and the
+with / without random-start comparison is the ablation.

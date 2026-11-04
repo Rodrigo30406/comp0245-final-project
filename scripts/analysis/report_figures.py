@@ -13,7 +13,7 @@ idx='000024'
 def tr(d,pol): return np.load(f'{d}/traces/{pol}_episode_{idx}.npz', allow_pickle=True)
 E=tr(K,'expert'); Ct=tr(C,'mlp28_control_seed0'); Kt=tr(K,'mlp28_trig144_seed0')
 fig,ax=plt.subplots(1,3,figsize=(7.1,1.75))
-for t,c,l in [(E,C_EXPERT,'expert'),(Ct,C_CTRL,'MLP, no device'),(Kt,C_K144,'MLP + ignition copies')]:
+for t,c,l in [(E,C_EXPERT,'expert'),(Ct,C_CTRL,'MLP-Ego'),(Kt,C_K144,'MLP-Ego-IC')]:
     ax[0].plot(t['observation'][:,0],t['observation'][:,1],color=c,label=l)
     ax[1].plot(t['time'],t['action'][:,1],color=c,label=l)   # left wheel command (rad/s)
     ax[2].plot(t['time'],t['distance'],color=c,label=l)
@@ -39,8 +39,8 @@ fig,axes=plt.subplots(1,2,figsize=(7.1,1.9),sharey=True)
 for ax,tol,title in [(axes[0],'0.01','stable arrivals at 1 cm'),(axes[1],'0.05','stable arrivals at 5 cm')]:
     for i,(name,dm,dg) in enumerate(groups):
         m,ex=cnt(dm,'mlp28',tol); g,_=cnt(dg,'gru28',tol)
-        ax.plot([i-0.18]*3,[100*x/205 for x in m],marker='o',ms=3,ls='none',color=C_K144,label='MLP + ignition copies' if i==0 else None)
-        ax.plot([i+0.18]*3,[100*x/205 for x in g],marker='s',ms=3,ls='none',color=C_GRU,label='GRU, no device' if i==0 else None)
+        ax.plot([i-0.18]*3,[100*x/205 for x in m],marker='o',ms=3,ls='none',color=C_K144,label='MLP-Ego-IC' if i==0 else None)
+        ax.plot([i+0.18]*3,[100*x/205 for x in g],marker='s',ms=3,ls='none',color=C_GRU,label='GRU-Ego' if i==0 else None)
         ax.hlines(100*ex/205,i-0.35,i+0.35,color=C_EXPERT,lw=1.0,label='expert' if i==0 else None)
     ax.set_xticks(range(len(groups))); ax.set_xticklabels([g[0] for g in groups]); ax.set_title(title); ax.set_ylim(-3,116)
     ax.axvline(4.5,color='0.85',lw=0.6); ax.axvline(1.5,color='0.85',lw=0.6)
@@ -48,3 +48,16 @@ axes[0].set_ylabel('% of 205 geometries'); axes[1].legend(frameon=False,loc='low
 [(a.text(0.5,108,'validation',ha='center',color='0.4',fontsize=6), a.text(3,108,'new distributions',ha='center',color='0.4',fontsize=6), a.text(6,108,'adversities',ha='center',color='0.4',fontsize=6)) for a in axes]
 fig.tight_layout(pad=0.4); fig.savefig(OUT+'generalisation.pdf'); fig.savefig(OUT+'generalisation.png',dpi=160); plt.close(fig)
 print('done')
+# ---- Figure: the geometry problem, random starts: raw-input MLP with the device against the egocentric MLP --------
+RAW='runs/evaluation/v2_mlp22raw_trig144_on_e1v2_random_validation_20261103'; EGO='runs/evaluation/v2_mlp28_trig144_on_e1v2_random_validation_20261102'
+eps=['000026','000011','000052']
+fig,ax=plt.subplots(1,3,figsize=(3.5,1.45))
+for a,i in zip(ax,eps):
+    e=np.load(f'{EGO}/traces/expert_episode_{i}.npz'); r=np.load(f'{RAW}/traces/mlp22raw_trig144_seed0_episode_{i}.npz'); k=np.load(f'{EGO}/traces/mlp28_trig144_seed0_episode_{i}.npz')
+    for t,c,l in [(e,C_EXPERT,'expert'),(r,C_CTRL,'MLP-Base-IC'),(k,C_K144,'MLP-Ego-IC')]:
+        a.plot(t['observation'][:,0],t['observation'][:,1],color=c,lw=0.9,label=l)
+    sc=json.load(open(f'{EGO}/episodes/expert_episode_{i}.json'))['scenario']; tg=sc['target']; st=sc['initial_base']
+    a.plot(tg[0],tg[1],marker='x',color='#D55E00',ms=5,ls='none',label='target'); a.plot(st['x'],st['y'],marker='o',color='0.5',ms=3,ls='none',label='start')
+    a.set_aspect('equal'); a.set_xticks([]); a.set_yticks([]); [a.spines[s].set_visible(True) for s in ('top','right')]; [a.spines[s].set_color('0.8') for s in a.spines]
+h,l=ax[0].get_legend_handles_labels(); fig.legend(h,l,frameon=False,fontsize=5.5,loc='lower center',ncol=5,handlelength=1.2,columnspacing=0.8,bbox_to_anchor=(0.5,-0.02))
+fig.tight_layout(pad=0.2,w_pad=0.3,rect=(0,0.1,1,1)); fig.savefig(OUT+'geometry.pdf'); fig.savefig(OUT+'geometry.png',dpi=200); plt.close(fig); print('geometry done')
