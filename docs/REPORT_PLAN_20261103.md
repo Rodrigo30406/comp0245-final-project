@@ -157,14 +157,41 @@ Second round queued (`chain_adv2.sh`, after the first chain finishes): payload 0
 one tenth and one half of the above, and the delay levels the expert survives, each on K 144 ×3 and GRU patience 40 ×3
 (`experiment_specs/evaluation/validation_payload0p{1,25,5}kg.json`, `validation_obsnoise_{tenth,half}.json`).
 
-### 7.3 E14, GPU chain so far (4 Nov 04:40)
+### 7.3 E14, GPU chain: the first two groups evaluated (4 Nov 05:20)
 
-Trained, evaluations at the end of the chain: transformer 28 on v2 (3 seeds, validation NRMSE 0.106 / 0.109 / 0.111, the
-best offline fit again); MLP on the 21 raw inputs + clock on v2 (0.169 / 0.151 / 0.158, the worst fit, as the chapter-1
-baseline should be); clean no-DART K 144 seed 0 done, seed 1 training.
+Stable arrivals at 1 / 2 / 5 cm, nominal validation and the v2 random-start bank (205 geometries each), 3 seeds:
 
-**Delay calibration on the expert (4 Nov 04:50, three targets, `delay_calib.py`):** 1 ms reached 3 / 3; 2 ms reached
-3 / 3 within 2 cm at 40 s (one declared "not reachable" by its own stall logic at 5 cm, then settled to 2 mm); 5 ms 2 / 3
-(the third parks 0.2 m short); 10 ms 0 / 3 (0.4–0.7 m short); 20 ms the base runs away (3–17 m). The torque loop's
-tolerance is a few milliseconds, two to three control periods. Second round uses **2 ms** (expert survives) and **5 ms**
-(expert's edge): `validation_delay2ms.json`, `validation_delay5ms.json`.
+| run | offline NRMSE | nominal 1 cm | nominal 5 cm | random 1 cm | base parked / arm extended (nominal) |
+|---|---|---|---|---|---|
+| transformer 28, patience 20, no device (`v2_tf28_p20`) | 0.106 / 0.109 / 0.111 | **166** / 85 / 104 | 185 / 137 / 182 | 153 / 73 / 113 | 169–184 / 103–149 |
+| MLP, 21 raw inputs + clock, no transforms (`v2_mlp22raw_control`) | 0.169 / 0.151 / 0.158 | 8 / 0 / 0 | 67 / 18 / 16 | 4 / 0 / 0 | 93–137 / 22–169 |
+| (reference) GRU 28, patience 40, no device | 0.105–0.108 | 138 / 121 / 151 | 177 / 193 / 205 | 118 / 103 / 140 | |
+| (reference) MLP 28 + K 144 | 0.135–0.141 | 199 / 193 / 175 | 202 / 204 / 199 | 200 / 197 / 187 | 145–175 / 180–199 |
+
+- **The transformer ignites on v2.** Trained on expert successes only (the filter it lacked until yesterday) it parks in
+  169–184 episodes and extends the arm in 103–149, with no label-derived device: seed 0 gives 166 at 1 cm, more than any
+  GRU seed, seeds 1 and 2 give 85 and 104 (GRU 121–151). Final distance 0.07–0.22 m mean, drift after parking 0.07–0.18 m.
+  Its limiting factor is the ignition (arm extended 103–149 vs base parked 169–184), the same coupling failure as every
+  pure model, only less frequent. Next step, queued with no code change (`chain_tf_p40.sh`, after the story chain): patience
+  40, three seeds, the step that gave the GRU +10 / +61 / +1. The trigger weight for the sequence trainer stays as the
+  option if that is not enough.
+- **Chapter 1 on v2 is confirmed.** The lecturer's 21 inputs plus the clock fit worst offline (0.15–0.17) and reach 0–8
+  at 1 cm; the base parks in 93–137 episodes but 0.6–1.5 m from the expert's spot (final distance 0.8–1.9 m), and the
+  arm extends in 22–169. Without the target expressed in the base frame the regressor cannot place the stop; the 7
+  transforms (chapter 3) are what fix it, not the data.
+
+### 7.4 E13, efficiency (4 Nov 05:20, `scripts/analysis/efficiency_table.py`)
+
+| run | model | parameters | trainer-measured µs median / p95 | in-loop µs (evaluator median) | training min | epochs (best) | val NRMSE |
+|---|---|---:|---:|---:|---:|---|---:|
+| `v2_mlp22raw_control_seed0` | MLP, 22 inputs | 20 617 | 108 / 115 | | 47 | 40 (32) | 0.169 |
+| `v2_mlp28_trig144_seed0` | MLP, 28 inputs, K 144 | 21 385 | 145 / 154 | 82 | 36 | 35 (27) | 0.139 |
+| `v2_mlp28_cat41_trig144_seed0` | MLP, categorical wheels, K 144 | 31 705 | 151 / 164 | | 49 | 35 (27) | 0.149 |
+| `v2_gru28_patience40_seed2` | GRU, memory every 20 ms | 81 929 | 33 / 43 | 78 | 15 | 253 (213) | 0.108 |
+| `v2_tf28_p20_seed0` | transformer, memory every 20 ms, 20 s window | 81 993 | 47 / 154 | 154 | 25 | 192 (172) | 0.106 |
+| `v2_gated_trigw144_seed0` | gated GRU, trigger weight 144 | 10 986 | 31 / 37 | | 4 | 65 (57) | 0.244 |
+
+The trainer latencies were measured on a loaded machine (the same MLP reads 35 µs on an idle one, 145 µs beside two
+evaluators), so the in-loop column is the fair one: 80 µs for the MLP and the GRU, 150 µs for the transformer, all inside
+the 1 000 µs control period on one CPU core with NumPy. The MLP trains in 25–50 min on the 35 M rows; the sequence
+models in 15–25 min on 3 221 episodes. The full table over every v2 run: `python3 -I scripts/analysis/efficiency_table.py`.
