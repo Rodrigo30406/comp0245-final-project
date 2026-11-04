@@ -339,7 +339,7 @@ def collect_batch(args):
         # a fresh run must not mix with episodes of an earlier run (a later --resume would keep them)
         raise SystemExit(f"{out_dir} already holds episodes: use --resume, or a new / emptied folder")
     scenarios = (make_no_obstacle_scenarios(args) if args.no_obstacle else
-                 make_scenarios(args.seed, args.n_episodes, args.noise_frac))
+                 make_scenarios(args.seed, args.n_episodes, args.noise_frac, course=getattr(args, "course", False)))
     if args.resume and os.path.exists(scenarios_path):
         previous, _ = load_scenarios(scenarios_path)
         if [s.to_dict() for s in previous] != [s.to_dict() for s in scenarios]:
@@ -400,6 +400,8 @@ def parse_args(argv=None):
     parser.add_argument("--episodes", help="subset to collect, e.g. '0-99' or '3,7,10' (scenarios.json has all)")
     parser.add_argument("--allow-test2", action="store_true", help="allow building the sealed test2 set")
     parser.add_argument("--no-obstacle", action="store_true", help="A-to-B equivalence mode (gate A2)")
+    parser.add_argument("--course", action="store_true",
+                        help="harder scenarios: 2-3 obstacles (pillars, walls, gates), see obstacle_task/course.py")
     parser.add_argument("--noise-v", type=float, default=0.02, help="std of base linear speed noise (m/s)")
     parser.add_argument("--noise-w", type=float, default=0.05, help="std of base angular speed noise (rad/s)")
     parser.add_argument("--noise-torque", type=float, default=2.0, help="std of arm torque noise (N*m)")

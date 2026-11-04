@@ -1,6 +1,7 @@
-"""Simulation additions of the obstacle task (step 9): static cylinders, robot-obstacle contact and clearance.
+"""Simulation additions of the obstacle task (step 9): static obstacles, robot-obstacle contact and clearance.
 
-spawn_obstacles() creates every cylinder of a scenario as a fixed body (mass 0) standing on the floor. The collector
+spawn_obstacles() creates every obstacle of a scenario as a fixed body (mass 0) standing on the floor: cylinders
+(pillars) and, in the obstacle courses (obstacle_task/course.py), boxes (walls, gates). The collector
 and the harness call it right after the shared setup (evaluate_policy.setup_simulation: base reset, fingers, model),
 before the first simulation step, so both start from the same state. Robot-obstacle contacts are generated even
 with the config's collision_enable 0, which only toggles the robot's self-collision.
@@ -25,15 +26,28 @@ CLEARANCE_SEARCH = 100.0   # m, getClosestPoints search distance (beyond the tas
 
 
 def spawn_obstacles(client, obstacles):
-    """Fixed cylinders from [{x, y, r, h}, ...] standing on the floor; returns their body ids."""
+    """Fixed obstacles standing on the floor; returns their body ids.
+
+    Each entry is a cylinder {x, y, r, h} (no "type" key: the single-obstacle task) or a box
+    {"type": "box", x, y, hx, hy, yaw, h} (walls and gates of the courses; hx along the wall, yaw about z)."""
     bodies = []
     for ob in obstacles:
-        radius, height = float(ob["r"]), float(ob["h"])
+        height = float(ob["h"])
+        position = [float(ob["x"]), float(ob["y"]), height / 2]
+        if ob.get("type", "cylinder") == "box":
+            half = [float(ob["hx"]), float(ob["hy"]), height / 2]
+            collision = client.createCollisionShape(p.GEOM_BOX, halfExtents=half)
+            visual = client.createVisualShape(p.GEOM_BOX, halfExtents=half, rgbaColor=OBSTACLE_RGBA)
+            orientation = [0.0, 0.0, math.sin(float(ob["yaw"]) / 2), math.cos(float(ob["yaw"]) / 2)]   # yaw about z
+            bodies.append(client.createMultiBody(baseMass=0, baseCollisionShapeIndex=collision,
+                                                 baseVisualShapeIndex=visual, basePosition=position,
+                                                 baseOrientation=orientation))
+            continue
+        radius = float(ob["r"])
         collision = client.createCollisionShape(p.GEOM_CYLINDER, radius=radius, height=height)
         visual = client.createVisualShape(p.GEOM_CYLINDER, radius=radius, length=height, rgbaColor=OBSTACLE_RGBA)
         bodies.append(client.createMultiBody(baseMass=0, baseCollisionShapeIndex=collision,
-                                             baseVisualShapeIndex=visual,
-                                             basePosition=[float(ob["x"]), float(ob["y"]), height / 2]))
+                                             baseVisualShapeIndex=visual, basePosition=position))
     return bodies
 
 

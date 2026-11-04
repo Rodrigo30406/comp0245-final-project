@@ -1,18 +1,26 @@
-"""Expert v2 of the obstacle task (plan section 2): two base segments over the UNCHANGED template controllers.
+"""Expert v3 of the obstacle task (plan section 2): waypoint legs over the UNCHANGED template controllers.
 
-TwoSegmentNavigation drives the base with robotnik_arm_control.base_controller, unchanged:
-  segment 0: goal = scenario.waypoint_xy (goal bearing dock_bearing, unused: the orient phase never runs there);
-  segment 1: goal = scenario.dock_xy, goal bearing = dock_bearing, i.e. exactly the A-to-B navigation.
-At every step the controller of the current segment is called. When a segment-0 call leaves its state in phase
-"orient" (the base reached or passed the waypoint), that call's command is discarded, segment 1 starts with a fresh
+TwoSegmentNavigation drives the base with robotnik_arm_control.base_controller, unchanged, along the scenario's route
+start -> waypoint 1 -> ... -> waypoint n -> dock (n = 1 in the single-obstacle task, 2-3 in an obstacle course,
+obstacle_task/course.py):
+  leg i < n: goal = waypoint i (goal bearing dock_bearing, unused: the orient phase never runs there);
+  last leg:  goal = scenario.dock_xy, goal bearing = dock_bearing, i.e. exactly the A-to-B navigation.
+At every step the controller of the current leg is called. When a waypoint-leg call leaves its state in phase
+"orient" (the base reached or passed the waypoint), that call's command is discarded, the next leg starts with a fresh
 BaseNavState() and its controller is called in the same step. The navigation timeout (NAV_TIMEOUT = 45 s, A-to-B
-25 s) is absolute episode time, so it covers the whole navigation: if it fires in segment 0, segment 1 starts with
-done=True (zero wheel commands from that step on, the arm starts reaching where the base is).
-Without obstacles (gate A2) segment 0 is skipped and the A-to-B timeout (25 s) is used: the A-to-B expert exactly.
+25 s) is absolute episode time, so it covers the whole navigation: if it fires in a waypoint leg, every remaining leg
+is skipped at once and the dock leg starts with done=True (zero wheel commands from that step on, the arm starts
+reaching where the base is).
+Without obstacles (gate A2) the waypoint legs are skipped and the A-to-B timeout (25 s) is used: the A-to-B expert
+exactly.
+
+`segment` keeps its two-valued meaning for the labels and the learners: 0 = driving to any waypoint, 1 = the dock leg
+and reaching. `leg` is the index of the current leg (0 .. n). For one waypoint the behaviour is identical to expert v2
+(state0 is the waypoint leg's state, state1 the dock leg's).
 
 ExpertPolicy is the expert of both the collector and the harness: reset(target, info), then act(obs) ->
 (wheel_cmds (4,), torque_arm (7,)), the clean expert commands. It reads the standard robot info (dyn_model, frame
-ids, joint limits, time step, init_q_mes) plus the PRIVILEGED info["scenario"] (Scenario or its dict: waypoint, dock),
+ids, joint limits, time step, init_q_mes) plus the PRIVILEGED info["scenario"] (Scenario or its dict: waypoints, dock),
 which the harness gives to this exact class only. The arm is robotnik_arm_control.arm_controller unchanged, with
 reach_active = (segment == 1 and state1.done). The collector reads its state after act() for the labels and the
 noise fade: segment, base_state, current_goal_pos, q_des_arm, qd_des_arm, segment_switch_time, nav_done_time.
@@ -33,24 +41,41 @@ from robotnik_arm_control import (  # noqa: E402
 from robotnik_arm_task import ARM_REACH_LIMIT, BASE_NAV_TIMEOUT  # noqa: E402
 from obstacle_task.scenario import Scenario  # noqa: E402
 
-NAV_TIMEOUT = 45.0         # s, whole navigation (both segments); A-to-B: BASE_NAV_TIMEOUT = 25 s
+NAV_TIMEOUT = 45.0         # s, whole navigation (all legs); A-to-B: BASE_NAV_TIMEOUT = 25 s
 
 
 class TwoSegmentNavigation:
-    """Waypoint -> dock navigation state over the unchanged base_controller (see the module docstring)."""
+    """Waypoints -> dock navigation state over the unchanged base_controller (see the module docstring)."""
 
     def __init__(self, scenario, params=None):
         self.scenario = Scenario.from_dict(scenario) if isinstance(scenario, dict) else scenario
-        self.segment = 0 if self.scenario.obstacles else 1
+        self.route = self.scenario.route()                       # (n, 2) waypoints; n = 0 without obstacles
+        self.goals = [np.asarray(w, dtype=float) for w in self.route] + \
+                     [np.asarray(self.scenario.dock_xy, dtype=float)]
+        self.leg = 0 if self.scenario.obstacles else len(self.goals) - 1
         self.params = params or BaseControllerParams(
             nav_timeout=NAV_TIMEOUT if self.scenario.obstacles else BASE_NAV_TIMEOUT)
-        self.state0, self.state1 = BaseNavState(), BaseNavState()
-        self.segment_switch_time = None
+        self.states = [BaseNavState() for _ in self.goals]
+        self.segment_switch_time = None                          # start of the dock leg
         self.nav_done_time = None
 
     @property
+    def segment(self):
+        return 0 if self.leg < len(self.goals) - 1 else 1
+
+    @property
     def state(self):
-        return self.state0 if self.segment == 0 else self.state1
+        return self.states[self.leg]
+
+    @property
+    def state0(self):
+        """State of the first waypoint leg (the only one in the single-obstacle task)."""
+        return self.states[0]
+
+    @property
+    def state1(self):
+        """State of the dock leg."""
+        return self.states[-1]
 
     @property
     def done(self):
@@ -58,21 +83,27 @@ class TwoSegmentNavigation:
 
     @property
     def current_goal_pos(self):
-        return np.asarray(self.scenario.waypoint_xy if self.segment == 0 else self.scenario.dock_xy,
-                          dtype=float)
+        return self.goals[self.leg]
+
+    def _call(self, base_pos, base_bearing, current_time):
+        return base_controller(self.state, base_pos, base_bearing, self.current_goal_pos,
+                               self.scenario.dock_bearing, current_time, self.params)
 
     def command(self, base_pos, base_bearing, current_time):
-        """Wheel commands of this step; switches to segment 1 (same step) when segment 0 ends."""
-        wheels = base_controller(self.state, base_pos, base_bearing, self.current_goal_pos,
-                                 self.scenario.dock_bearing, current_time, self.params)
-        # Segment 0 ends in "orient" (waypoint reached or passed) or by the timeout (done in align / drive)
-        if self.segment == 0 and (self.state0.phase == "orient" or self.state0.done):
+        """Wheel commands of this step; advances to the next leg (same step) when a waypoint leg ends."""
+        wheels = self._call(base_pos, base_bearing, current_time)
+        # A waypoint leg ends in "orient" (waypoint reached or passed) or by the timeout (done in align / drive)
+        while self.segment == 0 and (self.state.phase == "orient" or self.state.done):
             timed_out = current_time > self.params.nav_timeout
-            self.segment = 1
-            self.segment_switch_time = float(current_time)
-            self.state1 = BaseNavState(done=timed_out)
-            wheels = base_controller(self.state1, base_pos, base_bearing, self.current_goal_pos,
-                                     self.scenario.dock_bearing, current_time, self.params)
+            if timed_out:
+                self.leg = len(self.goals) - 1                   # skip the remaining waypoints
+                self.states[-1] = BaseNavState(done=True)
+            else:
+                self.leg += 1
+                self.states[self.leg] = BaseNavState()
+            if self.segment == 1:
+                self.segment_switch_time = float(current_time)
+            wheels = self._call(base_pos, base_bearing, current_time)
         if self.done and self.nav_done_time is None:
             self.nav_done_time = float(current_time)
         return wheels

@@ -75,6 +75,17 @@ class Scenario:
     noisy: bool = False          # DART-style command noise in data collection (decided by make_scenarios)
     attempts: int = 1            # rejection-sampling attempts used
     meta: dict = field(default_factory=dict)
+    waypoints: list = field(default_factory=list)   # [[x, y], ...] all waypoints in driving order (obstacle courses);
+    #                              empty = the single-obstacle scenario, whose only waypoint is waypoint_xy
+    course: str = ""             # "" = single obstacle (fork in the road); course.COURSE_FORMAT = multi-obstacle course
+
+    def route(self):
+        """Waypoints (n, 2) the expert drives through between the start and the dock, in order."""
+        if self.waypoints:
+            return np.asarray(self.waypoints, dtype=float).reshape(-1, 2)
+        if self.obstacles:
+            return np.asarray(self.waypoint_xy, dtype=float).reshape(1, 2)
+        return np.zeros((0, 2))
 
     def to_dict(self):
         return asdict(self)
@@ -156,11 +167,18 @@ def sample_scenario(seed, episode):
     raise RuntimeError(f"no valid scenario for seed {seed} episode {episode} in {MAX_TRIES} tries")
 
 
-def make_scenarios(seed, n_episodes, noise_frac=0.0):
-    """Scenarios 0..n-1 of a set; the noisy flag of each comes from its own stream."""
+def make_scenarios(seed, n_episodes, noise_frac=0.0, course=False):
+    """Scenarios 0..n-1 of a set; the noisy flag of each comes from its own stream.
+    course=True draws multi-obstacle courses (obstacle_task/course.py) instead of the single obstacle."""
+    if course:
+        from obstacle_task.course import sample_course     # lazy: course.py imports this module
+        draw = sample_course
+    else:
+        draw = sample_scenario
+    # (every scenario gets its noisy flag from its own stream)
     out = []
     for ep in range(int(n_episodes)):
-        sc = sample_scenario(seed, ep)
+        sc = draw(seed, ep)
         sc.noisy = bool(np.random.default_rng([int(seed), ep, STREAM + 1]).random() < noise_frac)
         out.append(sc)
     return out

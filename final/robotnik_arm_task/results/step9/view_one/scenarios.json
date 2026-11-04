@@ -1,0 +1,88 @@
+{
+ "format": "obstacle_scenarios_v1",
+ "sampler": {
+  "FORMAT": "obstacle_scenarios_v1",
+  "STREAM": 9,
+  "TARGET_R": [
+   3.5,
+   5.0
+  ],
+  "TARGET_THETA_DEG": [
+   -180.0,
+   180.0
+  ],
+  "TARGET_Z": [
+   0.2,
+   1.2
+  ],
+  "INIT_RADIUS": 2.0,
+  "INIT_YAW_DEG": [
+   -180.0,
+   180.0
+  ],
+  "OBST_RADIUS": [
+   0.25,
+   0.35
+  ],
+  "OBST_HEIGHT": 1.5,
+  "ALONG": [
+   0.3,
+   0.7
+  ],
+  "LATERAL": 0.4,
+  "AMBIG_BAND": 0.2,
+  "CHASSIS_HALF_WIDTH": 0.31,
+  "WAYPOINT_CLEAR": 0.9,
+  "END_CLEAR": 0.9,
+  "SEGMENT_CLEAR": 0.45,
+  "TARGET_CLEAR": 0.3,
+  "MAX_TRIES": 10000
+ },
+ "extra": {
+  "set_name": "view_one",
+  "seed": 0,
+  "noise_frac": 0.0,
+  "no_obstacle": false
+ },
+ "scenarios": [
+  {
+   "seed": 0,
+   "episode": 0,
+   "target": [
+    -0.48584775714778367,
+    -3.7813397341252943,
+    0.6102079139455618
+   ],
+   "init_xy": [
+    -0.925164016057516,
+    0.052844383396916786
+   ],
+   "init_yaw": -1.795788594305415,
+   "dock_xy": [
+    -0.5598398727798282,
+    -3.1355648764354846
+   ],
+   "dock_bearing": -1.456715010952657,
+   "standoff": 0.65,
+   "obstacles": [
+    {
+     "x": -0.5327949403541836,
+     "y": -1.1572414046262445,
+     "r": 0.3103927244863603,
+     "h": 1.5
+    }
+   ],
+   "along": 0.38852599850500574,
+   "lateral_offset": 0.25206965611092025,
+   "ambiguous": false,
+   "side": -1,
+   "waypoint_xy": [
+    -1.7353198471295077,
+    -1.2950252791345216
+   ],
+   "noisy": false,
+   "attempts": 2,
+   "meta": {}
+  }
+ ]
+}

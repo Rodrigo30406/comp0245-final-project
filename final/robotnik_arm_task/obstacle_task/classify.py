@@ -85,7 +85,7 @@ def required_turns(scenario):
     """The expert's nominal in-place turns (deg): (align = at the start + at the waypoint, orient = at the dock)."""
     sc = Scenario.from_dict(scenario) if isinstance(scenario, dict) else scenario
     init, dock = np.asarray(sc.init_xy), np.asarray(sc.dock_xy)
-    points = [init, np.asarray(sc.waypoint_xy), dock] if sc.obstacles else [init, dock]
+    points = [init, *sc.route(), dock]
     bearings = [float(np.arctan2(b[1] - a[1], b[0] - a[0])) for a, b in zip(points, points[1:])]
     align = _angle(bearings[0], sc.init_yaw) + sum(_angle(b, a) for a, b in zip(bearings, bearings[1:]))
     orient = _angle(sc.dock_bearing, bearings[-1])
