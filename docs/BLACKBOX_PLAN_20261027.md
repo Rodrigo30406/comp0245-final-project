@@ -2317,7 +2317,7 @@ trigger weight; 5–9 min each, NRMSE 0.194 / 0.181 / 0.175, best epoch 60 / 86 
   118 / 103 / 140, epochs 308 / 286 / 213: a gain by the rule over the control (78 / 78 / 73) with diminishing returns past
   patience 20 (+10 / +61 / +1); seed 2 is the best model with no device (151 / 198 / 205, held 10 s in 193, teammate 75.6%).
   Device line, weight 144 + patience 20: 114 / 58 / 148 vs 150 / 133 / 102, no gain, line closed. Nothing queued on the GPU.
-- 3 Nov 15:40: lecturer's feedback ("raise the level") → `REPORT_PLAN_20261103.md`: the storyline as one line of ablations
+- 3 Nov 21:40: lecturer's feedback ("raise the level") → `REPORT_PLAN_20261103.md`: the storyline as one line of ablations
   on mixture v2 (baseline 21 inputs, data size, transforms, DART clean twins, failures, remedies one by one, combinations),
   E11 out-of-distribution banks (far targets, heights, far starts), E12 adversities in the evaluator (delay, left-wheel gain
   0.95, 1 kg payload, observation noise; the base push excluded after measurement: lateral wheel friction 0.01 makes any side

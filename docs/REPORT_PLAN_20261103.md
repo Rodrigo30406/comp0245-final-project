@@ -1,4 +1,4 @@
-# Report plan (3 Nov 2026, 15:40): the storyline on mixture v2, the ablations, and the generalisation / robustness / efficiency programme
+# Report plan (3 Nov 2026, 21:40): the storyline on mixture v2, the ablations, and the generalisation / robustness / efficiency programme
 
 Written after the lecturer's feedback of 3 Nov ("the basic problem is defined; raise the level, propose something new")
 and the brief's evaluation slide (accuracy, **generalisation to new targets / initial conditions**, **robustness to
@@ -40,7 +40,7 @@ small, and the report must show the scale: for the v2 control, wheels RMSE 0.19 
 `metrics.json` (`per_output_episode_macro`, units rad/s and N·m), and `PER_JOINT_ERRORS.md` has the v1 table. The chapter
 then shows that the same policy arrives 0 times, and Figure 2c (offline NRMSE vs arrivals, inverted across models) closes it.
 
-## 2. E11, generalisation beyond the training distribution (pre-registered 3 Nov 15:30, collecting)
+## 2. E11, generalisation beyond the training distribution (pre-registered 3 Nov 21:30, collecting)
 
 Three evaluation banks of 210 episodes (5 held back by the split format, 205 evaluated), expert recorded on each so the
 expert row is the reference, no model ever trains on them (`experiment_specs/collection/ood_*.json`,
@@ -55,7 +55,7 @@ expert row is the reference, no model ever trains on them (`experiment_specs/col
 Evaluated: K 144 ×3, K 144 + band, GRU patience 40 ×3, categorical + K 144 ×3; same 1 / 2 / 5 cm metrics, arm / base
 decomposition and stop profile. The interesting output is where each policy breaks, not only the count.
 
-## 3. E12, robustness to adversities (pre-registered 3 Nov 15:30, running)
+## 3. E12, robustness to adversities (pre-registered 3 Nov 21:30, running)
 
 Adversities are keys of the frozen evaluation protocol (`src/robot_learning/evaluation/adversity.py`,
 `experiment_specs/evaluation/validation_<adversity>.json`), applied to the expert and the policies alike from the scenario
@@ -71,7 +71,7 @@ seed, so the expert row is the reference under the same adversity. On the 205 no
 Each on K 144 ×3, K 144 + band (both devices candidates for the final policy), GRU patience 40 ×3.
 
 **Excluded with a measurement: the base push.** Implemented and unit-tested (`base_push`), calibrated on the expert
-3 Nov 15:00: sideways, any push (down to 30 N for 0.3 s during the approach) makes the base slide indefinitely with zero
+3 Nov 21:00: sideways, any push (down to 30 N for 0.3 s during the approach) makes the base slide indefinitely with zero
 wheel commands, because the wheel contact's lateral friction is 0.01 (`PhysicsParameters.anisotropic_friction`), and the
 expert ends 3–9 m from the target; along the heading the velocity-controlled wheels absorb 100–150 N for 0.5 s (1–9 cm of
 displacement, no effect on the arrival). A lateral push therefore measures a simulator artefact and a longitudinal one
@@ -93,7 +93,7 @@ Parameters, inference latency per observation (NumPy, single observation, median
 A 1 ms control period leaves 1 000 µs; every policy fits with margin on one CPU core. To add: the training-time column for
 every v2 run and the arrivals-vs-episodes curve from chapter 2.
 
-## 5. Queue (launched 3 Nov 15:35; one trainer at a time, evaluations three at a time)
+## 5. Queue (launched 3 Nov 21:50; one trainer at a time, evaluations three at a time)
 
 GPU chain, in order: transformer v2 ×3 (patience 20, success filter added to the trainer today) → MLP 22 raw control ×3 →
 [waits for the clean split] MLP 28 clean + K 144 ×3, MLP 28 clean control ×3 → K 16, K 512, raw + K 144 (seed 0 each) →
