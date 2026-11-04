@@ -1,0 +1,16 @@
+Protocol v2.0 (T_MAX 60 s, contact ends the run)
+Policy expert on data/obstacle/dev2: success 300/300 = 100.0% [98.7, 100.0] (95% Wilson), settled 300/300
+Stop reasons: reached 300
+Policy step time: mean 0.175 ms, p99 0.523 ms (median over episodes; control period 1 ms)
+Recorded clean expert reached / this policy succeeded (300 episodes): both 300, expert only 0, policy only 0, neither 0
+Recorded comparison: 300/300 episodes identical over the common length (float32), max differences: base_pos 0, q_mes 0, qd_mes 0, wheel_cmds 0, torque_arm 0
+v1.1 held_10s (EE < 15 mm for 10 s after the first reach): 300/300 = 100.0% [98.7, 100.0]; extended hold ended: completed 300
+v1.1 stable arrival (EE within tol for >= 0.5 s, ending by 40 s): 5cm 300/300 = 100.0% [98.7, 100.0], 2cm 300, 1cm 300
+v1.1 parked (ring distance < 0.2 m and base still for >= 1.0 s): 300/300 = 100.0% [98.7, 100.0]; arm extended (EE > 0.1 m from its start in the base frame): 242/300 = 80.7% [75.8, 84.7] (both up to the v1 stop point)
+v2.0 collision: 0/300 = 0.0% [0.0, 1.3]; links -
+v2.0 passed_obstacle: 300/300 = 100.0% [98.7, 100.0]; no_pass (never passed, no collision): 0/300 = 0.0% [0.0, 1.3]
+v2.0 side_taken == scenario_side among passes: 300/300
+v2.0 docked (= v1.1 parked): 300/300 = 100.0% [98.7, 100.0]; docked_clean: 300/300 = 100.0% [98.7, 100.0] (95% Wilson)
+v2.0 min_clearance (m): min 0.173, median 0.384
+v2.0 inside the ambiguous band: success 137/137 = 100.0% [97.3, 100.0], docked_clean 137/137 = 100.0% [97.3, 100.0]
+v2.0 outside the ambiguous band: success 163/163 = 100.0% [97.7, 100.0], docked_clean 163/163 = 100.0% [97.7, 100.0]

@@ -1,0 +1,129 @@
+{
+  "A3": {
+    "passed": true,
+    "trajectories": 100,
+    "scans": 334486,
+    "traj_every": 10,
+    "max_abs_diff": 0.0,
+    "info_float32_recorded_poses_max_abs_diff": 4.708037313116975e-05
+  },
+  "A4": {
+    "episodes": 100,
+    "success": 100,
+    "success_rate": 1.0,
+    "collisions": 0,
+    "passes": 100,
+    "wrong_side_passes": [],
+    "docked_clean": 100,
+    "docked_clean_rate": 1.0,
+    "failures": [],
+    "not_docked_clean": [],
+    "stop_reasons": {
+      "reached": 100
+    },
+    "held_10s": 100,
+    "min_clearance_m": {
+      "min": 0.22090473424480703,
+      "p5": 0.27983858012104035,
+      "median": 0.39341457549154873
+    },
+    "t_reach_s": {
+      "min": 18.07,
+      "median": 23.325499999999998,
+      "p95": 26.2774,
+      "max": 27.437
+    },
+    "time_to_dock_s": {
+      "min": 18.134,
+      "median": 22.2695,
+      "p95": 25.46975,
+      "max": 26.644000000000002
+    },
+    "passed": true
+  },
+  "A5": {
+    "episodes": 100,
+    "all_noisy": true,
+    "reached": 100,
+    "success_rate": 1.0,
+    "collisions": 0,
+    "collision_rate": 0.0,
+    "ee_within_10mm_any_step": 100,
+    "statuses": {
+      "reached": 100
+    },
+    "not_reached": {},
+    "nav_timed_out": 0,
+    "duration_s": {
+      "min": 17.932999999998934,
+      "median": 23.293500000005487,
+      "p95": 26.29945000000916,
+      "max": 27.79800000001099
+    },
+    "passed": true
+  },
+  "A6": {
+    "compared": 100,
+    "identical": 100,
+    "steps_compared": 2344498,
+    "max_abs_diff": {
+      "cmp_max_base_pos": 0.0,
+      "cmp_max_q_mes": 0.0,
+      "cmp_max_qd_mes": 0.0,
+      "cmp_max_wheel_cmds": 0.0,
+      "cmp_max_torque_arm": 0.0
+    },
+    "passed": true
+  },
+  "collector_pilot2": {
+    "episodes": 100,
+    "statuses": {
+      "reached": 100
+    },
+    "collisions": 0,
+    "ambiguous": 48,
+    "left": 45,
+    "segment_switch_time_s": {
+      "min": 6.717000000000578,
+      "median": 10.423499999999663,
+      "p95": 13.500399999997956,
+      "max": 14.398999999997459
+    },
+    "nav_done_time_s": {
+      "min": 16.96399999999775,
+      "median": 21.016000000002702,
+      "p95": 24.180050000006567,
+      "max": 25.354000000008003
+    }
+  },
+  "collector_pilot2n": {
+    "episodes": 100,
+    "statuses": {
+      "reached": 100
+    },
+    "collisions": 0,
+    "ambiguous": 48,
+    "left": 45,
+    "segment_switch_time_s": {
+      "min": 6.757000000000591,
+      "median": 10.458999999999643,
+      "p95": 13.600149999997901,
+      "max": 14.367999999997476
+    },
+    "nav_done_time_s": {
+      "min": 17.334999999998203,
+      "median": 20.95000000000262,
+      "p95": 24.112300000006485,
+      "max": 25.627000000008337
+    }
+  },
+  "classes_expert_pilot2": {
+    "success": 100
+  },
+  "passed": {
+    "A3": true,
+    "A4": true,
+    "A5": true,
+    "A6": true
+  }
+}
