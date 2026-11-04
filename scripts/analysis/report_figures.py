@@ -32,8 +32,9 @@ groups=[('nominal','v2_mlp28_trig144_on_clean_validation_20261102','v2_gru28_pat
         ('far\ntargets','ood_far_targets_mlp28_trig144_20261103','ood_far_targets_gru28_patience40_20261103'),
         ('far\nstarts','ood_far_start_mlp28_trig144_20261103','ood_far_start_gru28_patience40_20261103'),
         ('target\nheight','ood_target_height_mlp28_trig144_20261103','ood_target_height_gru28_patience40_20261103'),
-        ('left wheels\nat 95%','adv_gain_left095_mlp28_trig144_20261103','adv_gain_left095_gru28_patience40_20261103'),
-        ('obs.\nnoise','adv_obsnoise_mlp28_trig144_20261103','adv_obsnoise_gru28_patience40_20261103')]
+        ('wheels\nat 95%','adv_gain_left095_mlp28_trig144_20261103','adv_gain_left095_gru28_patience40_20261103'),
+        ('noise\n1/2','adv_obsnoise_half_mlp28_trig144_20261104','adv_obsnoise_half_gru28_patience40_20261104'),
+        ('noise\nfull','adv_obsnoise_mlp28_trig144_20261103','adv_obsnoise_gru28_patience40_20261103')]
 fig,axes=plt.subplots(1,2,figsize=(7.1,1.9),sharey=True)
 for ax,tol,title in [(axes[0],'0.01','stable arrivals at 1 cm'),(axes[1],'0.05','stable arrivals at 5 cm')]:
     for i,(name,dm,dg) in enumerate(groups):
@@ -44,6 +45,6 @@ for ax,tol,title in [(axes[0],'0.01','stable arrivals at 1 cm'),(axes[1],'0.05',
     ax.set_xticks(range(len(groups))); ax.set_xticklabels([g[0] for g in groups]); ax.set_title(title); ax.set_ylim(-3,116)
     ax.axvline(4.5,color='0.85',lw=0.6); ax.axvline(1.5,color='0.85',lw=0.6)
 axes[0].set_ylabel('% of 205 geometries'); axes[1].legend(frameon=False,loc='lower left',ncol=1)
-[(a.text(0.5,108,'validation',ha='center',color='0.4',fontsize=6), a.text(3,108,'new distributions',ha='center',color='0.4',fontsize=6), a.text(5.5,108,'adversities',ha='center',color='0.4',fontsize=6)) for a in axes]
+[(a.text(0.5,108,'validation',ha='center',color='0.4',fontsize=6), a.text(3,108,'new distributions',ha='center',color='0.4',fontsize=6), a.text(6,108,'adversities',ha='center',color='0.4',fontsize=6)) for a in axes]
 fig.tight_layout(pad=0.4); fig.savefig(OUT+'generalisation.pdf'); fig.savefig(OUT+'generalisation.png',dpi=160); plt.close(fig)
 print('done')
