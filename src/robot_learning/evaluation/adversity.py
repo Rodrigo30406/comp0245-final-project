@@ -11,8 +11,11 @@ Each adversity is a key of the frozen evaluation protocol, so it is part of the 
                         friction, so a sideways push makes the base slide indefinitely with zero wheel commands (expert
                         included: 30 N for 0.3 s during the approach ends 3 m from the target); that is a physics
                         artefact, not a controller property, and is not used as an adversity.
-  payload_mass_kg     : extra mass on the end-effector link, unknown to the expert's gravity compensation; expert and
-                        policies alike.
+  payload_mass_kg     : extra mass on the last arm link (robot_j2s7s300_link_7), unknown to the expert's gravity
+                        compensation; expert and policies alike. Not on the end-effector frame: that URDF link has no
+                        inertial block, PyBullet gives it 1 kg and a 7e-7 inertia, and any changeDynamics call on it
+                        (even with the mass unchanged) saturates the expert's torques in 100% of steps (measured 4 Nov,
+                        docs/REPORT_PLAN_20261103.md section 7.6); the adv_payload*_20261104 runs carry that artefact.
   actuator_gain       : the executed command is the issued one times wheel_left / wheel_right / arm (a calibration error
                         of the actuators, e.g. the left wheels at 85%); expert and policies alike (make_action_filter),
                         the labels and the policy outputs untouched. Calibration measured 3 Nov: the base push is either
@@ -32,7 +35,8 @@ ADVERSITY_KEYS = {"action_delay_steps", "base_push", "payload_mass_kg", "observa
 GAIN_KEYS = {"wheel_left", "wheel_right", "arm"}
 NOISE_KEYS = {"base_m", "yaw_rad", "q_rad", "qd_rad_s"}
 PUSH_KEYS = {"time_s", "duration_s", "force_n"}
-END_EFFECTOR_LINK = "robot_j2s7s300_end_effector"
+END_EFFECTOR_LINK = "robot_j2s7s300_end_effector"  # the reach frame (massless in the URDF)
+PAYLOAD_LINK = "robot_j2s7s300_link_7"  # the last link with an inertial block: where the payload goes (4 Nov fix)
 BASE_LINK = "robot_base_link"  # the 25 kg base body; the URDF root (robot_base_footprint) is a massless frame at the ground
 SEED_OFFSET = 7919  # the collector/evaluator use np.random.seed(scenario seed); the adversity rng is a separate stream
 
@@ -115,10 +119,10 @@ class Adversity:
             self._push_link = self._link(episode, BASE_LINK)
         if self.payload:
             client, rid = episode.client, episode.robot_id
-            link = self._link(episode, END_EFFECTOR_LINK)
+            link = self._link(episode, PAYLOAD_LINK)
             original = client.getDynamicsInfo(rid, link)[0]
             client.changeDynamics(rid, link, mass=original + self.payload)
-            self.realised["payload_mass_kg"] = {"added_kg": self.payload, "link": END_EFFECTOR_LINK,
+            self.realised["payload_mass_kg"] = {"added_kg": self.payload, "link": PAYLOAD_LINK,
                                                 "link_mass_kg": original + self.payload}
 
     def before_step(self, episode):

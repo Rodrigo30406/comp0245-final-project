@@ -406,6 +406,46 @@ stopping at patience 40 instead of 20, three seeds. Stable arrivals of 205, nomi
   §III-D updated. `final_table.py` registers `v2_tf28_p40_on_clean_validation_20261104`. Seeds 3 and 4 of the
   transformer (`chain_seeds34.sh`, relaunched 14:55) also train at patience 40 so the five seeds share the recipe.
 
+### 7.9 E12 payload on the last arm link (`chain_payload_link7.sh`, done 4 Nov 16:33)
+
+`adversity.py` patched and committed: the payload goes on `robot_j2s7s300_link_7` (the last link with an inertial block),
+not on the massless end-effector frame. The mechanism check of §7.6 reproduced before the runs: +0.1 kg on the
+end-effector frame saturates the expert's torques in 14 937 of 15 000 steps, +0.1 kg on link 7 in 26 (nominal 23), and
+the expert reaches the target in all three cases. The `adv_payload*_20261104` rows (end-effector frame) stay excluded.
+
+Stable arrivals at 1 / 2 / 5 cm, nominal validation bank, expert and three seeds each:
+
+| payload | expert | MLP-Ego-IC (K 144) 1 cm | 2 cm | 5 cm | GRU-Ego 1 cm | 2 cm | 5 cm |
+|---|---|---|---|---|---|---|---|
+| none | 205 | 199 / 193 / 175 | 202 / 198 / 204 | 202 / 204 / 199 | 138 / 121 / 151 | 160 / 154 / 198 | 177 / 193 / 205 |
+| 0.1 kg | 204 | (re-running, see below) | | | 141 / 109 / 157 | 159 / 147 / 200 | 177 / 190 / 205 |
+| 0.25 kg | 205 | 191 / 195 / 153 | 199 / 204 / 204 | 203 / 205 / 204 | 121 / 80 / 119 | 161 / 137 / 188 | 187 / 190 / 205 |
+| 0.5 kg | 205 | 50 / 36 / 37 | 186 / 196 / 184 | 202 / 200 / 199 | 69 / 18 / 64 | 145 / 122 / 157 | 191 / 190 / 203 |
+
+Closest approach of the hand to the target (`minimum_distance_m`), three seeds pooled (615 episodes):
+
+| policy | payload | 10th / 25th / median / 75th / 90th percentile (mm) | < 10 mm | 10–20 mm | > 20 mm |
+|---|---|---|---|---|---|
+| MLP-Ego-IC | none | 1.6 / 2.5 / 3.8 / 5.5 / 8.6 | 570 | 30 | 15 |
+| MLP-Ego-IC | 0.25 kg | 2.4 / 3.9 / 5.5 / 7.0 / 8.8 | 574 | 34 | 7 |
+| MLP-Ego-IC | 0.5 kg | 3.3 / 5.2 / 7.3 / 10.0 / 14.6 | 460 | 124 | 31 |
+| GRU-Ego | none | – / 2.2 / 5.7 / 13.1 / – | 416 | 101 | 98 |
+| GRU-Ego | 0.5 kg | – / 4.5 / 8.6 / 17.4 / – | 346 | 143 | 126 |
+
+- **The load is a steady-state offset, not a loss of the task.** With 0.5 kg the MLP still arrives at 5 cm in 199–202
+  and at 2 cm in 184–196, and the closest approach moves from 3.8 to 7.3 mm at the median and from 8.6 to 14.6 mm at
+  the 90th percentile: 124 episodes bottom out between 1 and 2 cm, which is the 1 cm column falling from 175–199 to
+  36–50. That is what a torque clone does under an unmodelled load: the arm torques were demonstrated for the unloaded
+  arm, the policy has no integral action, and the extra gravity moment leaves a residual proportional to the mass
+  (about 2 mm per 0.25 kg at the median). The expert's loop closes it (204 / 205 / 205; its one failure is at 0.1 kg).
+- **GRU-Ego carries the same offset on top of its parking variance**: median closest approach 5.7 → 8.6 mm, 1 cm
+  arrivals 138 / 121 / 151 → 69 / 18 / 64, 5 cm unchanged (190–203). Seed 1, the worst parker, loses most.
+- The 0.1 kg MLP evaluation (`adv_payload0p1kg_link7_mlp28_trig144_20261104`) was killed at 14:57 by the clean-up of
+  the aborted nominal-only chain (my error: three evaluators were running, one was this one) and is re-running alone
+  since 16:40; GRU at 0.1 kg is unchanged from nominal (141 / 109 / 157).
+- Report: Table III gets the payload rows (expert / MLP-Ego-IC / GRU-Ego at 1 cm) and the adversity paragraph the
+  offset explanation; the artefact sentence stays as one line.
+
 **Chain order, 4 Nov 15:00.** The nominal-only and payload chains were stalled from 14:47 to 14:55 by their own
 process check: a shell wrapper whose command text contained `train_egocentric.py` matched the `ps | grep` guard, so
 both waited on a process that was only a string. Removed the wrapper, and the nominal-only chain then failed twice in
