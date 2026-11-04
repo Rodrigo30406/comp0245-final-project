@@ -162,3 +162,9 @@ one tenth and one half of the above, and the delay levels the expert survives, e
 Trained, evaluations at the end of the chain: transformer 28 on v2 (3 seeds, validation NRMSE 0.106 / 0.109 / 0.111, the
 best offline fit again); MLP on the 21 raw inputs + clock on v2 (0.169 / 0.151 / 0.158, the worst fit, as the chapter-1
 baseline should be); clean no-DART K 144 seed 0 done, seed 1 training.
+
+**Delay calibration on the expert (4 Nov 04:50, three targets, `delay_calib.py`):** 1 ms reached 3 / 3; 2 ms reached
+3 / 3 within 2 cm at 40 s (one declared "not reachable" by its own stall logic at 5 cm, then settled to 2 mm); 5 ms 2 / 3
+(the third parks 0.2 m short); 10 ms 0 / 3 (0.4–0.7 m short); 20 ms the base runs away (3–17 m). The torque loop's
+tolerance is a few milliseconds, two to three control periods. Second round uses **2 ms** (expert survives) and **5 ms**
+(expert's edge): `validation_delay2ms.json`, `validation_delay5ms.json`.
