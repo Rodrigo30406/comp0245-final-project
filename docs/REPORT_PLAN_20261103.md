@@ -406,6 +406,15 @@ stopping at patience 40 instead of 20, three seeds. Stable arrivals of 205, nomi
   §III-D updated. `final_table.py` registers `v2_tf28_p40_on_clean_validation_20261104`. Seeds 3 and 4 of the
   transformer (`chain_seeds34.sh`, relaunched 14:55) also train at patience 40 so the five seeds share the recipe.
 
+**Chain order, 4 Nov 15:00.** The nominal-only and payload chains were stalled from 14:47 to 14:55 by their own
+process check: a shell wrapper whose command text contained `train_egocentric.py` matched the `ps | grep` guard, so
+both waited on a process that was only a string. Removed the wrapper, and the nominal-only chain then failed twice in
+its first minute (training split pointed at the clean stratified dataset instead of the DART one; a helper function
+missing), fixed and relaunched at 14:57 with `runs/splits/dart_low_geometry_819_205.json` (same 205 validation
+geometries as the evaluation bank, checked by episode id; 819 training geometries of which the trainer keeps the 721
+expert successes). Order now: nominal-only (`v2_mlp28nom_trig144_seed{0,1,2}`) → payload on link 7 → seeds 3 / 4
+(MLP-Ego-IC, GRU-Ego, TF-Ego at patience 40).
+
 **Rodrigo, 4 Nov 14:30.** (1) The start-referenced goal is not a "rule" of the dataset: the world-origin bearing was a
 mis-generalisation of the first random-start collector, and referencing the goal to the start pose is simply the
 correct expert. The report states three collection conditions (DART, successes only, random starts) and measures two
