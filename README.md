@@ -343,8 +343,9 @@ pixi run --manifest-path ../RoboEnv/pixi.toml -e ml python scripts/evaluate_poli
 After the lecturer's feedback of 3 Nov ("raise the level"), the plan is [REPORT_PLAN_20261103.md](docs/REPORT_PLAN_20261103.md):
 the report as one line of ablations on mixture v2 (chapters 1–7 of that file, retrains queued), plus three new programmes
 aimed at the brief's evaluation axes: **E11** out-of-distribution banks (targets beyond 2.2 m, target heights 0.15–0.28 and
-0.85–1.05 m, start poses 2.3–3.5 m away), **E12** adversities in the evaluator (50 ms command delay, left wheels at 95%,
-1 kg payload, observation noise; expert and policies under the same condition), **E13** efficiency (parameters, latency per
+0.85–1.05 m, start poses 2.3–3.5 m away), **E12** adversities in the evaluator (command delay 2 / 5 ms, left wheels at 95%,
+payload 0.1–0.5 kg, observation noise at three levels; expert and policies under the same condition; the payload rows of
+4 Nov are an artefact of the massless end-effector frame and are being re-run on link 7, REPORT_PLAN §7.6), **E13** efficiency (parameters, latency per
 step, training time, arrivals vs data).
 
 - GPU: transformer on v2 → MLP on the 21 raw inputs (v2) → no-DART twins of v2 → K 16 / 512 and raw + K 144 → data-size series (~10 h).

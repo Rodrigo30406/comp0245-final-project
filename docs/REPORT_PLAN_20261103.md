@@ -261,3 +261,79 @@ correction afterwards; the K 144 MLP, whose base ends 10–25 cm off in most epi
 the arm converges with it (175–199 at 1 cm). So the earlier sentence "the gate closes the base but does not ignite the
 arm" becomes: the gate ignites the arm in 73–99% of episodes, but freezes the base at a point chosen once, and from the
 wrong point the arm cannot finish. The coupling diagnosis of §6w stands; its mechanism is the stop point, not the ignition.
+
+### 7.6 E12, second round (4 Nov 10:45): one adversity was an artefact, noise is a dither, delay has no margin
+
+Calibrated levels from §7.2, K 144 ×3 and GRU patience 40 ×3 on the 205 nominal geometries, expert under the same
+condition (except noise, which it does not read). Stable arrivals 1 / 2 / 5 cm per seed.
+
+| adversity | expert | K 144 seeds 0 / 1 / 2 | GRU 28 patience 40 seeds 0 / 1 / 2 |
+|---|---|---|---|
+| none (reference) | 205 / 205 / 205 | 199 / 193 / 175 at 1 cm | 138 / 121 / 151 at 1 cm; 177 / 193 / 205 at 5 cm |
+| payload 0.1 kg on the end-effector frame | 204 / 204 / 204 | 0 / 0 / 0 (all tolerances) | 0 / 0 / 0 |
+| payload 0.25 kg, same | 201 / 201 / 201 | 0 / 0 / 0 | 0 / 0 / 0 |
+| payload 0.5 kg, same | 196 / 198 / 198 | 0 / 0 / 0 | 0 / 0 / 0 |
+| observation noise, one tenth (2 mm, 0.002 rad, 0.001 rad, 0.005 rad/s) | 205 (clean) | 34 / 43 / 61, **103 / 131 / 141**, 10 / 14 / 15 | 149 / 172 / 189, 143 / 186 / 204, 148 / 202 / 205 |
+| observation noise, one half (1 cm, 0.01 rad, 0.005 rad, 0.025 rad/s) | 205 (clean) | 10 / 20 / 26, 17 / 23 / 28, 4 / 6 / 7 | **199 / 204 / 204, 184 / 201 / 202, 177 / 200 / 204** |
+| observation noise, full (§7.2) | 205 (clean) | 7 / 13 / 16, 8 / 12 / 15, 5 / 9 / 11 | 127 / 181 / 195, 149 / 178 / 187, 119 / 175 / 198 |
+| command delay 2 ms | 204 / 205 / 205 | 0 / 0 / 1, 0 / 0 / 0, 0 / 1 / 1 | 0 / 0 / 0 ×3 |
+| command delay 5 ms | 129 / 152 / 186 | 0 / 0 / 0 ×3 | 0 / 0 / 0 ×3 |
+
+**Payload: the adversity, not the policies, was broken.** 0.1 kg and 0.5 kg give the same 0 / 205, which is not how a
+payload behaves, and the expert's own arm is abnormal under it: torques at the 30 N·m limit in 26% of the sampled steps
+(median episode; 0% nominally), joint speeds up to 29 rad/s (0.75 nominally), while it still parks and reaches (204 /
+201 / 196) because its base loop never reads the arm. The mechanism, measured with `$S/payload_mech.py` on one
+geometry, 15 s each: the URDF link `robot_j2s7s300_end_effector` has **no inertial block**; PyBullet loads it as a
+1 kg body with a 6.7e-7 kg·m² inertia (its own warning says so). Calling `changeDynamics` on that link with the **mass
+unchanged** (1.0 → 1.0 kg) already saturates the expert's torques in 14 979 of 15 000 steps (nominal: 23) with joint
+speeds of 33 rad/s; adding 0.1 kg changes nothing further; giving the frame a realistic inertia does not cure it
+(14 937 / 15 000). Hanging 0.1 or 0.5 kg on `robot_j2s7s300_link_7`, the last link with an inertial block, leaves the
+expert exactly nominal (26–28 saturated steps, 8 rad/s, reaches at 10 mm). So the second-round payload rows measure
+"a chattering 1 kg phantom appears at the hand", not a payload. What they do show, again, is the decoupling: the expert
+tolerates its own arm chattering at the limit because the wheels are a separate controller; the clones, whose 11 outputs
+come from one network, follow the arm into saturation (torques at the limit 86% of steps, joint speeds at the 100 rad/s
+cap, wheels at the limit 94% MLP / 73% GRU, final distances 2–1500 m). Fix queued (`chain_payload_link7.sh`, after the
+GPU chains, because their evaluators import `src/` live): `adversity.py` gets `PAYLOAD_LINK = robot_j2s7s300_link_7`,
+and 0.1 / 0.25 / 0.5 kg are re-run as `adv_payload*_link7_*_20261104`. The `payload1kg` row of §7.2 and the three rows
+above are **not** payload results and will not be reported as such.
+
+**Observation noise: the GRU's curve is not monotone, and the reason is the ignition.** GRU at 1 cm: nominal 138 / 121
+/ 151 → one tenth 149 / 143 / 148 → one half **199 / 184 / 177** → full 127 / 149 / 119. Two effects pull in opposite
+directions, both visible in the decomposition:
+
+| GRU patience 40, seeds 0 / 1 / 2 | nominal | noise 1/10 | noise 1/2 | noise full |
+|---|---|---|---|---|
+| arm active (joint rule) | 170 / 200 / 205 | 181 / 205 / 205 | 205 / 205 / 205 | 205 / 205 / 205 |
+| base parked (8 cm box, 0.5 s) | 132 / 170 / 146 | 109 / 167 / 131 | 65 / 78 / 42 | 68 / 87 / 49 |
+| stable 5 cm | 177 / 193 / 205 | 189 / 204 / 205 | 204 / 202 / 204 | 195 / 187 / 198 |
+| stable 1 cm | 138 / 121 / 151 | 149 / 143 / 148 | 199 / 184 / 177 | 127 / 149 / 119 |
+
+Noise on q / qd **wakes the GRU's arm**: the sleeping-arm episodes (35 in seed 0 nominally) disappear at one half of
+the level. That is the ignition problem of §4 solved by dither instead of by the device: a stateless reading of "arm at
+rest" is exactly what the recurrent model latches on, and 0.005 rad of jitter breaks the latch. At the same time noise
+on the base pose degrades parking monotonically (132 → 109 → 65 → 68 parked in seed 0), and at the full level the
+parking loss outweighs the ignition gain. At one half both halves of the task still hold, hence the peak. The MLP K 144
+has no ignition to gain (arm active 204–205 already) and only the loss: its torques chatter and clip 14–47% of the
+time at **one tenth** of the level (0.001 rad on q, 0.005 rad/s on qd), 39–52% at one half, and the wheels follow
+(at the limit 19–67% of steps). Seed 1 is the exception (103 at one tenth), the other two collapse. The lesson for the
+report: the 1 kHz stateless torque regressor is a marginally stable arm loop that amplifies any input perturbation,
+and the GRU's 20 ms state is a low-pass filter that both tolerates the noise and profits from it.
+
+**Delay: the expert has no margin either, and the clone inherits that plus the coupling.** With 2 ms of command delay
+the expert's arm loop already chatters (torques at the limit 44% of sampled steps, joint speeds 3.9 rad/s against 0.75
+nominal; mean |qd| during the drive 1.0 rad/s against 0.02) and it still arrives 204 / 205 because the base is a
+separate loop; at 5 ms it loses 76 at 1 cm (129 / 152 / 186) and the hand hunts (final 10 mm median). Both clones are
+at 0 / 205 from 2 ms. The MLP blows up (torques at the limit 74%, joint speeds at the 100 rad/s cap, wheels at the
+limit 85%). The GRU does **not** blow up: its arm chatters like the expert's (mean |qd| 0.79–1.0 rad/s, torques at the
+limit 37%) and its wheels keep driving at 1.5–2.5 rad/s, but the base never parks (0–1 of 205) and the hand never comes
+within 5 cm (0–2 episodes): the navigation head reads an arm state (|qd| ≈ 1 rad/s during the drive) that in the
+demonstrations only occurs during the reach, and the drive does not converge. Delay is therefore not a graded
+robustness test of the clone: the expert's own gains leave zero delay margin at 1 kHz, the clone copies that loop, and
+loses in addition the separation that lets the expert finish anyway.
+
+**What goes to the report (Table III).** Gain 0.95: policies ≥ expert. Noise at three levels: MLP collapses from one
+tenth, GRU peaks at one half with the ignition explanation. Delay 2 / 5 ms: expert 204 / 129, clones 0, with the
+no-margin sentence. Payload: pending the link-7 re-run; until then only the artefact note. Prediction scoring for the
+round: "payload 0.1–0.5 kg graded" wrong (artefact); "lower noise helps the MLP" wrong except one seed; "GRU degrades
+monotonically with noise" wrong, it improves first; "delay 2 ms survivable for the policies because the expert is
+clean there" wrong, the expert is not clean there, it only looks so in the arrival count.
