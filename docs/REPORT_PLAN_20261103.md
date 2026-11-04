@@ -418,7 +418,7 @@ Stable arrivals at 1 / 2 / 5 cm, nominal validation bank, expert and three seeds
 | payload | expert | MLP-Ego-IC (K 144) 1 cm | 2 cm | 5 cm | GRU-Ego 1 cm | 2 cm | 5 cm |
 |---|---|---|---|---|---|---|---|
 | none | 205 | 199 / 193 / 175 | 202 / 198 / 204 | 202 / 204 / 199 | 138 / 121 / 151 | 160 / 154 / 198 | 177 / 193 / 205 |
-| 0.1 kg | 204 | (re-running, see below) | | | 141 / 109 / 157 | 159 / 147 / 200 | 177 / 190 / 205 |
+| 0.1 kg | 204 | 201 / 199 / 188 | 202 / 201 / 203 | 203 / 203 / 204 | 141 / 109 / 157 | 159 / 147 / 200 | 177 / 190 / 205 |
 | 0.25 kg | 205 | 191 / 195 / 153 | 199 / 204 / 204 | 203 / 205 / 204 | 121 / 80 / 119 | 161 / 137 / 188 | 187 / 190 / 205 |
 | 0.5 kg | 205 | 50 / 36 / 37 | 186 / 196 / 184 | 202 / 200 / 199 | 69 / 18 / 64 | 145 / 122 / 157 | 191 / 190 / 203 |
 
@@ -440,11 +440,33 @@ Closest approach of the hand to the target (`minimum_distance_m`), three seeds p
   (about 2 mm per 0.25 kg at the median). The expert's loop closes it (204 / 205 / 205; its one failure is at 0.1 kg).
 - **GRU-Ego carries the same offset on top of its parking variance**: median closest approach 5.7 → 8.6 mm, 1 cm
   arrivals 138 / 121 / 151 → 69 / 18 / 64, 5 cm unchanged (190–203). Seed 1, the worst parker, loses most.
-- The 0.1 kg MLP evaluation (`adv_payload0p1kg_link7_mlp28_trig144_20261104`) was killed at 14:57 by the clean-up of
-  the aborted nominal-only chain (my error: three evaluators were running, one was this one) and is re-running alone
-  since 16:40; GRU at 0.1 kg is unchanged from nominal (141 / 109 / 157).
+- At 0.1 kg both models are unchanged from nominal (MLP 201 / 199 / 188, GRU 141 / 109 / 157). The 0.1 kg MLP
+  evaluation was killed at 14:57 by the clean-up of the aborted nominal-only chain (my error: three evaluators were
+  running, one was this one) and re-run alone 16:40–17:12.
 - Report: Table III gets the payload rows (expert / MLP-Ego-IC / GRU-Ego at 1 cm) and the adversity paragraph the
   offset explanation; the artefact sentence stays as one line.
+
+### 7.10 Nominal starts only: the random-start condition measured (`chain_nominal_only.sh`, done 4 Nov 17:09)
+
+MLP-Ego-IC (K 144) trained on the DART nominal collection alone, `runs/splits/dart_low_geometry_819_205.json`: 819
+training geometries, 721 expert successes kept, same 205 validation geometries as every other row. Offline NRMSE 0.179 /
+0.183 / 0.180 (mixture: 0.135–0.141), best epoch 23 / 15 / 22. Stable arrivals 1 / 2 / 5 cm:
+
+| policy (3 seeds) | nominal bank | random-start bank | base parked nominal / random | drift after parking (median) nominal |
+|---|---|---|---|---|
+| nominal starts only (721 ep.) | 178 / 115 / 170; 194 / 148 / 184; 199 / 195 / 193 | **40 / 58 / 62**; 55 / 91 / 78; 84 / 127 / 84 | 85–124 / 7–29 | 0.10 / 1.11 / 0.10 m |
+| full mixture (3 221 ep.) | 199 / 193 / 175; 202 / 198 / 204; 202 / 204 / 199 | 200 / 197 / 187; 203 / 203 / 196; 204 / 203 / 199 | 145–175 / 133–169 | 0.06 / 0.25 / 0.14 m |
+
+- **From nominal starts the nominal-only policy still works** (178 / 115 / 170 at 1 cm, 193–199 at 5 cm): the 721
+  episodes carry the geometry of the task. What they do not carry is the stop from any pose: on the random-start bank
+  the hand passes within 5 cm in 84–129 episodes but the base parks in 7–29, and the median final distance is 1.0–2.1 m,
+  the robot reaches and then drives on. Even from nominal starts it parks in 85–124 episodes (full set 145–175) and seed
+  1 drifts 1.1 m after parking: fewer stop rows, weaker latch.
+- So the random-start repeats buy two things: the task from any pose (40–62 → 187–200 on the random bank) and a firmer
+  stop on the nominal starts themselves. With the no-DART result (0 everywhere) this closes the two measured
+  conditions; success-only training is stated as a condition and not measured, at Rodrigo's request.
+- Report: Table II row "MLP-Ego-IC, nominal starts only" 178 / 115 / 170 and 199 / 195 / 193; §III-C paragraph.
+  `final_table.py` registers `v2_mlp28nom_trig144_on_clean_validation_20261104`.
 
 **Chain order, 4 Nov 15:00.** The nominal-only and payload chains were stalled from 14:47 to 14:55 by their own
 process check: a shell wrapper whose command text contained `train_egocentric.py` matched the `ps | grep` guard, so
