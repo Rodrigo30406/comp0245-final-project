@@ -114,3 +114,51 @@ one thing worth adding is the trigger weight for the sequence trainer (the GRU's
 
 ## 7. Results (appended as they arrive)
 
+
+### 7.1 E11, two of the three banks (4 Nov 04:40; `ood_far_start` still evaluating)
+
+Stable arrivals at 1 / 2 / 5 cm on the 205 evaluated geometries of each bank, expert row = the same geometries with the
+expert (`runs/evaluation/ood_<bank>_<group>_20261103`):
+
+| bank | expert | K 144 (3 seeds) | K 144 + band 0.45 | categorical + K 144 | GRU 28, patience 40 |
+|---|---|---|---|---|---|
+| `ood_far_targets` (2.2–3 m) | 205 / 205 / 205 | **205 / 205 / 205**, 196 / 205 / 205, 197 / 205 / 205 | 202 / 203 / 204, 198 / 205 / 205, 205 / 205 / 205 | 178 / 196 / 205, 184 / 196 / 204, 194 / 205 / 205 | 111 / 139 / 160, 61 / 128 / 189, 118 / 186 / 205 |
+| `ood_target_height` (0.15–0.28 and 0.85–1.05 m) | 205 / 205 / 205 | 18 / 64 / 157, 41 / 63 / 77, 16 / 84 / 129 | 22 / 72 / 159, 35 / 61 / 75, 17 / 75 / 112 | (running) | 16 / 57 / 131, 6 / 26 / 83, 14 / 46 / 114 |
+
+- **Far targets: the prediction was wrong in the good direction.** The planar-distance input is 2.2–4.2 m, outside anything
+  demonstrated (≤ 2.8 m), and the MLP does not care: 196–205 at 1 cm, the expert's own count. The drive is bearing-driven
+  (cos / sin of the heading error) and the stop is decided by the target-in-base-frame features, which are in range once the
+  robot is near; the out-of-range distance only has to say "far, keep driving". The GRU loses (61–118 at 1 cm vs 121–151
+  nominal): its hidden state integrates a longer drive than any it was trained on, and the stop fires late or early
+  (5 cm 160–205). This is the clearest generalisation result of the programme and it separates the two architectures.
+- **Target height: both halves fail, as predicted, and the failure is in the arm.** Split by half (seeds 0 / 1 / 2 of
+  K 144, 103 high and 102 low geometries): high 12 / 31 / 3 at 1 cm and 69 / 52 / 47 at 5 cm; low 6 / 10 / 13 and
+  88 / 25 / 82. The base parks in 39–79 of 205 (vs 145–175 nominal) and the arm extends in 185–200, so the base loses its
+  spot and the arm, asked for a configuration outside the demonstrated 0.3–0.8 m band, reaches the 5 cm shell in 77–157 and
+  the 1 cm one almost never. The GRU is no better (6–16 at 1 cm). Height is the dimension the demonstrations do not cover,
+  and no input transform can supply the missing arm configurations: this is the honest limit of the dataset, and the
+  remedy (collecting demonstrations at those heights) is a data decision, not a model one.
+
+### 7.2 E12, first round (4 Nov 04:40): two adversities calibrated wrong, two results
+
+| adversity | expert | K 144 (3 seeds) | K 144 + band | GRU 28, patience 40 | what happened |
+|---|---|---|---|---|---|
+| `gain_left095` | 182 / 182 / 183 | **199 / 201 / 203**, 194 / 200 / 203, 180 / 198 / 199 | 194 / 197 / 198, 189 / 203 / 203, 191 / 197 / 199 | 133 / 157 / 175, 107 / 142 / 190, 150 / 202 / 205 | the policies beat the expert: the expert's stall / timeout logic gives up on 23 geometries where its curved drive is slow, the policies have no timeout and keep correcting through the heading inputs; GRU unchanged from nominal |
+| `obsnoise` (2 cm, 0.02 rad, 0.01 rad, 0.05 rad/s) | 205 (clean reference) | 7 / 13 / 16, 8 / 12 / 15, 5 / 9 / 11 | 7 / 12 / 16, 11 / 15 / 16, 4 / 8 / 9 | **127 / 181 / 195, 149 / 178 / 187, 119 / 175 / 198** | the MLP is thrown: arm torques clipped 33–67% of the time, joint-limit violations, final distance 10–148 m (the robot is flung by chattering torques); the GRU keeps 187–198 at 5 cm with final distances 0.1–1 m and no clipping. Memory filters the noise; a 1 kHz stateless regressor amplifies it |
+| `payload1kg` | 154 / 170 / 183 | 0 / 0 / 0 | 0 / 0 / 0 | 0 / 0 / 0 | the expert's PD absorbs 1 kg (final 0.23 m mean); every policy saturates the arm torques (clipping 70–99%), leaves the demonstrated arm states and is flung (final 10–1700 m). Level too high for a torque regressor with no feedback law of its own; **re-run at 0.1 / 0.25 / 0.5 kg** |
+| `delay50ms` | 0 / 0 / 0 | 0 / 0 / 0 | 0 / 0 / 0 | 0 / 0 / 0 | the **expert itself** explodes: its 1 kHz torque loop with 50 ms of latency oscillates (clipping 37–74%, 2 km final distance). The prediction (base tolerates, arm loses 1 cm) was wrong by an order of magnitude; **calibrating on the expert at 1 / 2 / 5 / 10 / 20 ms** before re-running |
+
+Predictions scored: gain (policies lose 1 cm arrivals) wrong, they gained; noise (K 144 keeps igniting, GRU suffers)
+inverted: the GRU is the robust one and the MLP's failure is not in the ignition but in the torque chatter; payload and
+delay: level mis-set, no policy result yet. The noise result is the one that changes the story: it is the first axis on
+which the pure GRU beats the device MLP outright, and it is the robustness axis the brief asks for.
+
+Second round queued (`chain_adv2.sh`, after the first chain finishes): payload 0.1 / 0.25 / 0.5 kg, observation noise at
+one tenth and one half of the above, and the delay levels the expert survives, each on K 144 ×3 and GRU patience 40 ×3
+(`experiment_specs/evaluation/validation_payload0p{1,25,5}kg.json`, `validation_obsnoise_{tenth,half}.json`).
+
+### 7.3 E14, GPU chain so far (4 Nov 04:40)
+
+Trained, evaluations at the end of the chain: transformer 28 on v2 (3 seeds, validation NRMSE 0.106 / 0.109 / 0.111, the
+best offline fit again); MLP on the 21 raw inputs + clock on v2 (0.169 / 0.151 / 0.158, the worst fit, as the chapter-1
+baseline should be); clean no-DART K 144 seed 0 done, seed 1 training.
