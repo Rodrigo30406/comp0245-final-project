@@ -1,8 +1,14 @@
 """Decompose a closed-loop evaluation into the two halves of the task (docs/BLACKBOX_PLAN_20261027.md §6c-6e).
 
-Per policy: base parked (stable pose arrival at the expert's goal), arm extended (end-effector displacement in the
-base frame > 10 cm between the first and the last trace sample), both, drift of the base after parking, held >= 10 s,
-and stable arrivals at 5 cm. Usage: python3 scripts/analysis/arm_base_decomposition.py runs/evaluation/<dir> [...]
+Per policy: base parked (stable pose arrival at the expert's goal), arm active (the arm leaves its home posture: the
+largest joint excursion max_t max_j |q_j(t) - q_j(0)| exceeds 0.1 rad), both, drift of the base after parking,
+held >= 10 s, and stable arrivals at 5 cm.
+
+The arm rule was changed on 4 Nov 2026 (REPORT_PLAN_20261103.md §7.5). Until then it was "end-effector displacement in
+the base frame > 10 cm between the first and the last sample", which under-counted the expert itself (151 of 205: its
+reach from the standoff moves the end effector as little as 2.8 cm) while a sleeping arm jostled by the base moves 3 cm.
+In joint space the two populations do not overlap: every expert episode exceeds 0.195 rad, every sleeping arm stays
+below 0.08 rad (the DART-trained hold wobbles 0.05 rad). Usage: python3 scripts/analysis/arm_base_decomposition.py runs/evaluation/<dir> [...]
 """
 import collections
 import glob
@@ -18,7 +24,7 @@ for d in sys.argv[1:]:
         if pol == 'expert' or not m or m.get('final_distance_m') is None:
             continue
         t = np.load(f.replace('/episodes/', '/traces/').replace('.json', '.npz'), allow_pickle=True)
-        eb = t['ee_position_base']; arm = bool(np.linalg.norm(eb[-1] - eb[0]) > 0.10)
+        q = t['observation'][:, 4:11]; arm = bool(np.abs(q - q[0]).max() > 0.10)
         b = e['subsystems']['base_navigation']; parked = bool(b['stable_pose_arrival'])
         tol = m['by_tolerance']['0.05']
         r = rows[pol]; r['n'] += 1; r['parked'] += parked; r['arm'] += arm; r['both'] += parked and arm
@@ -28,5 +34,5 @@ for d in sys.argv[1:]:
     print(f'== {d}')
     for pol, r in rows.items():
         drift = np.median(r['drift']) if r['drift'] else float('nan')
-        print(f"  {pol:28s} n={r['n']:3d}  base parked={r['parked']:3d}  arm extended={r['arm']:3d}  both={r['both']:3d}  "
+        print(f"  {pol:28s} n={r['n']:3d}  base parked={r['parked']:3d}  arm active={r['arm']:3d}  both={r['both']:3d}  "
               f"drift after parking (median)={drift:.2f} m  held>=10s={r['held']:3d}  stable 5cm={r['ok']:3d}")

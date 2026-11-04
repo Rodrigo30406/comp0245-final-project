@@ -195,3 +195,44 @@ The trainer latencies were measured on a loaded machine (the same MLP reads 35 �
 evaluators), so the in-loop column is the fair one: 80 µs for the MLP and the GRU, 150 µs for the transformer, all inside
 the 1 000 µs control period on one CPU core with NumPy. The MLP trains in 25–50 min on the 35 M rows; the sequence
 models in 15–25 min on 3 221 episodes. The full table over every v2 run: `python3 -I scripts/analysis/efficiency_table.py`.
+
+### 7.5 Two metric questions from Rodrigo (4 Nov 06:10): seed spread, and what "moving the arm" means
+
+**"Arm extended" was mis-defined and under-counted the expert.** The decomposition used the end-effector displacement in
+the base frame between the first and last trace sample, > 10 cm. Measured on the nominal validation: the expert's reach
+from its standoff moves the end effector as little as 2.8 cm (percentiles 0 / 1 / 5 / 25: 2.8 / 3.4 / 4.9 / 9.8 cm), so
+the expert itself counted 151 of 205; while a sleeping arm jostled by the base moves 3.0–3.2 cm, so the two populations
+overlap and a 10 cm threshold is arbitrary. In joint space they do not overlap: the largest joint excursion
+max_t max_j |q_j(t) − q_j(0)| is ≥ 0.195 rad in every expert episode (nominal and random banks) and ≤ 0.076 rad for every
+sleeping arm (the DART-trained hold wobbles 0.053–0.058 rad). New rule, now in `arm_base_decomposition.py`: **arm active
+= largest joint excursion > 0.1 rad** (about 6°, in the middle of the gap). Re-counts on the nominal validation:
+
+| policy | old rule (EE > 10 cm) | arm active (q > 0.1 rad) | base parked |
+|---|---|---|---|
+| expert | 151 | 205 | 205 |
+| MLP 28 + K 144 (3 seeds) | 189 / 199 / 180 | 204 / 204 / 203 | 145 / 175 / 150 |
+| MLP 28 + K 144 + band | 186 / 199 / 176 | 203 / 205 / 202 | 147 / 161 / 136 |
+| categorical + K 144 | | 205 / 205 / 205 | 112 / 137 / 142 |
+| GRU 28 patience 40 | 133 / 184 / 158 | 170 / 200 / 205 | 132 / 170 / 146 |
+| transformer 28 patience 20 | 147 / 103 / 149 | 174 / 109 / 155 | 169 / 184 / 171 |
+| MLP 28 control (no device) | 4 / 1 / 1 | 6 / 1 / 1 | 123 / 137 / 116 |
+| gated stop (E8a control) | | 164 / 149 / 202 | 22 / 114 / 70 |
+
+Consequences for the text: the device MLPs ignite in 203–205 of 205, not 180–199; the pure GRU's shortfall at 1 cm is
+split between ignition (35 asleep in seed 0, 5 in seed 1, 0 in seed 2) and parking (132–170), and the transformer's is
+ignition (109–174). One earlier reading changes: the gated-stop control was described as "closes before the zero but does
+not ignite the arm"; by the joint rule its arm does leave home in 149–202 episodes, and its failure is the base (parked
+22–114): the latch closes at the wrong place. The 1 cm counts, the metric that selects models, are unaffected. The
+`BEST_MODEL_REPORT` table is corrected; §6 tables of the blackbox plan keep the old column and say so.
+
+**Is the seed spread normal?** Yes, and it is a property of closed-loop imitation, not of our training. Offline the three
+K 144 seeds are within 4% of each other (NRMSE 0.135–0.141); closed loop they span 175–199 at 1 cm. The failures are not
+shared: of the 39 geometries where some K 144 seed fails, 31 fail in exactly one seed and 1 in all three (GRU: 134 / 78 /
+15; transformer: 158 / 75 / 19). So there is no "hard geometry" set; each seed draws its own stop and ignition boundary
+and a few episodes land on the wrong side of it, and once a decision is wrong the episode is lost (the error compounds,
+there is no recovery signal in the demonstrations). A regressor's 4% fit difference becomes a 12% arrival difference
+because the arrival hinges on two sharp events learned from one row per episode each. The sequence models spread more
+(GRU 59–74%, transformer 41–81%) because their decisions depend on a hidden state trained on 3 221 sequences rather than
+35 M rows. This is why every number is reported per seed, and why the final policy should be chosen on the validation
+geometries (seed included: that is model selection) and confirmed once on the reserved banks. Ensembling the three seeds
+(mean of the outputs) is the standard remedy and would be a one-line evaluator option; not done.

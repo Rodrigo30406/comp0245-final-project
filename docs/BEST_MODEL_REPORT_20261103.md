@@ -19,20 +19,20 @@ Black-box compliance: every input is a function of the lecturer's observations a
 two output groups are the arm and the wheel commands, and the one re-weighting device (trigger copies, §4) is derived from
 the demonstrated wheel labels alone: no expert phase, no `base_navigation_done`, no simulator state.
 
-## 2. The numbers (closed loop, 40 s episodes, 205 geometries each, stable arrival = inside the band for 0.5 s)
+## 2. The numbers (closed loop, 40 s episodes, 205 geometries each, stable arrival = inside the band for 0.5 s; arm active = largest joint excursion > 0.1 rad, rule of 4 Nov, REPORT_PLAN §7.5)
 
-| | 1 / 2 / 5 cm | held ≥ 10 s | arm extended | base parked | drift after parking | inside the expert's 8 cm box at 40 s |
+| | 1 / 2 / 5 cm | held ≥ 10 s | arm active | base parked | drift after parking | inside the expert's 8 cm box at 40 s |
 |---|---|---:|---:|---:|---:|---:|
 | **Nominal start (unchanged since 27 Oct)** | | | | | | |
-| seed 0 | **199 / 202 / 202** | 202 | 189 | 145 | 0.06 m | 30 |
-| seed 1 | 193 / 198 / 204 | 182 | 199 | 175 | 0.25 m | 3 |
-| seed 2 | 175 / 194 / 199 | 172 | 180 | 150 | 0.14 m | 52 |
-| expert | 205 / 205 / 205 | 204 | 154 | 205 | | 129 |
+| seed 0 | **199 / 202 / 202** | 202 | 204 | 145 | 0.06 m | 30 |
+| seed 1 | 193 / 198 / 204 | 182 | 204 | 175 | 0.25 m | 3 |
+| seed 2 | 175 / 194 / 199 | 172 | 203 | 150 | 0.14 m | 52 |
+| expert | 205 / 205 / 205 | 204 | 205 | 205 | | 129 |
 | **Random start pose (v2 bank, start-referenced goal)** | | | | | | |
-| seed 0 | **200 / 203 / 204** | 200 | 175 | 133 | 0.05 m | 38 |
-| seed 1 | 197 / 203 / 203 | 185 | 195 | 169 | 0.20 m | 17 |
-| seed 2 | 187 / 196 / 199 | 188 | 183 | 144 | 0.12 m | 53 |
-| expert | 200 / 200 / 200 | 198 | 159 | 200 | | 128 |
+| seed 0 | **200 / 203 / 204** | 200 | 204 | 133 | 0.05 m | 38 |
+| seed 1 | 197 / 203 / 203 | 185 | 204 | 169 | 0.20 m | 17 |
+| seed 2 | 187 / 196 / 199 | 188 | 204 | 144 | 0.12 m | 53 |
+| expert | 200 / 200 / 200 | 198 | 205 | 200 | | 128 |
 
 Under the teammate's protocol v1.1 (touch 10 mm, no dwell, 100 ms traces): success 97.6 / 94.1 / 86.3% nominal and 97.6 /
 96.6 / 91.7% random; reach 5 cm 97.6–99.5%; held 10 s 95.1 / 47.3 / 41.0% nominal. Their C3 reported 52–70% success.
@@ -96,8 +96,8 @@ alone gives 150 / 181 / 183: §6aa.2). It uses no information the dataset does n
 decision about which row matters, and the report should say so. The GRU 28 trained on v2 with no such device reaches
 73–78 at 1 cm with the arm igniting in all three seeds (§6aa.2) and 121–151 (5 cm 177–205) once trained to patience 40
 (§6ab.2, the best model of the programme with no device: seed 2 gives 151 / 198 / 205 and holds 10 s in 193). That is the
-reference for what the device buys: about 50 arrivals per seed at 1 cm, the ignition rate (arm extended 180–199 against
-133–184) and an arrival inside 1 cm rather than between 1 and 2 cm.
+reference for what the device buys: about 50 arrivals per seed at 1 cm, the ignition rate (arm active 203–204 against
+170–205, GRU seed 0 leaving the arm home in 35 episodes) and an arrival inside 1 cm rather than between 1 and 2 cm.
 
 ## 5. What did not matter, and what to be careful about
 
@@ -107,7 +107,7 @@ reference for what the device buys: about 50 arrivals per seed at 1 cm, the igni
 - **Action chunking, trigger weight without jitter, dead band on v1** were tried after K 144 and did not improve on it
   (§6aa.1, §6aa.2).
 - **Protocol differences with the teammate**: our 1 cm / 2 cm / 5 cm stable arrivals with 0.5 s dwell are stricter than their
-  10 mm touch; our arm-extended flag counts an arm leaving home (ours travels 30 cm more than the expert's); their metrics
+  10 mm touch; our arm-active flag counts an arm leaving its home posture by more than 0.1 rad in any joint (ours travels 30 cm more than the expert's end-effector path); their metrics
   from our traces are approximate at 100 ms (the end effector moves 0.18 mm median per 100 ms inside the 15 mm band).
 - **Reserved test banks** (`datasets/test_reserved/*`) have never been loaded by a trainer, a selection step or an analysis.
 
