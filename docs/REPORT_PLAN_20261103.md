@@ -236,3 +236,15 @@ because the arrival hinges on two sharp events learned from one row per episode 
 35 M rows. This is why every number is reported per seed, and why the final policy should be chosen on the validation
 geometries (seed included: that is model selection) and confirmed once on the reserved banks. Ensembling the three seeds
 (mean of the outputs) is the standard remedy and would be a one-line evaluator option; not done.
+
+**Gated stop re-read (4 Nov 06:30, `v2_gated_control` on the nominal validation).** With the joint rule the arm leaves home
+in 164 / 149 / 202 episodes, at 10–15 s median. The failure is where the latch fires. (a) Early and far: in 41 / 56 / 3
+episodes the arm stays asleep and the base is 0.36 / 1.43 / 0.31 m (median) from the expert's goal, so the arm never sees
+a stop state. (b) Slightly off: where the arm is active but the base is not "parked" (142 / 73 / 133 episodes) the base
+sits 8 / 12 / 5 cm from the goal and the arm, reaching from a pose it was not demonstrated at, lands 13 / 8 / 5 cm from the
+target; 5 cm arrivals among them 72 / 39 / 116, 1 cm almost none. Seed 2 shows the ceiling of this design: base within
+5 cm median (90th percentile 14 cm) gives 180 at 5 cm and 107 at 1 cm. Because the latch is irreversible there is no
+correction afterwards; the K 144 MLP, whose base ends 10–25 cm off in most episodes too, keeps a small wheel command and
+the arm converges with it (175–199 at 1 cm). So the earlier sentence "the gate closes the base but does not ignite the
+arm" becomes: the gate ignites the arm in 73–99% of episodes, but freezes the base at a point chosen once, and from the
+wrong point the arm cannot finish. The coupling diagnosis of §6w stands; its mechanism is the stop point, not the ignition.
