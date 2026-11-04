@@ -384,6 +384,28 @@ successes alone (721 episodes), 3 seeds, both banks. That is the one data ablati
 request (4 Nov): success-only training and the start-referenced goal are stated as conditions of the dataset, and the
 with / without random-start comparison is the ablation.
 
+### 7.8 Transformer at patience 40 (`chain_tf_p40.sh`, done 4 Nov 14:47)
+
+Same recipe as `v2_tf28_p20` (28 inputs, stride 20 ms, window 20 s, 8 episodes per batch, success filter), early
+stopping at patience 40 instead of 20, three seeds. Stable arrivals of 205, nominal validation / v2 random-start bank:
+
+| run | epochs | offline NRMSE | nominal 1 / 2 / 5 cm | random 1 / 2 / 5 cm | base parked / arm active (nominal) |
+|---|---|---|---|---|---|
+| `v2_tf28_p40_seed0` | 172 | 0.106 | 166 / 173 / 185 | 153 / 160 / 176 | 169 / 174 |
+| `v2_tf28_p40_seed1` | 128 | 0.109 | 85 / 100 / 137 | 73 / 103 / 128 | 184 / 109 |
+| `v2_tf28_p40_seed2` | 259 | 0.103 | 169 / 187 / 197 | 179 / 185 / 199 | 124 / 183 |
+| (patience 20, same seeds) | 47 / 52 / 61 | 0.106 / 0.109 / 0.111 | 166 / 85 / 104 | 153 / 73 / 113 | 169–184 / 103–149 |
+
+- Patience 40 is worth +0 / +0 / +65 at 1 cm: seeds 0 and 1 stopped at the same minimum (the patience-20 stop was
+  already the best offline fit), seed 2 trained 4× longer and gained 65 arrivals. Same picture as the GRU (+10 / +61 / +1):
+  the offline minimum is flat and which side of it the stop falls on decides the closed-loop result by 60 arrivals.
+- Ignition is still the limiting factor: seed 1 ignites the arm in 109 episodes and arrives in 85; seeds 0 and 2 ignite in
+  174 / 183 and arrive in 166 / 169. The base parks more often than the arm extends in seeds 0 and 1 (169 / 184 vs
+  174 / 109), the coupling failure of every model without the device.
+- Report: TF-Ego now means this run (patience 40, like GRU-Ego); Table II row 166 / 85 / 169 and 185 / 137 / 197;
+  §III-D updated. `final_table.py` registers `v2_tf28_p40_on_clean_validation_20261104`. Seeds 3 and 4 of the
+  transformer (`chain_seeds34.sh`, relaunched 14:55) also train at patience 40 so the five seeds share the recipe.
+
 **Rodrigo, 4 Nov 14:30.** (1) The start-referenced goal is not a "rule" of the dataset: the world-origin bearing was a
 mis-generalisation of the first random-start collector, and referencing the goal to the start pose is simply the
 correct expert. The report states three collection conditions (DART, successes only, random starts) and measures two
