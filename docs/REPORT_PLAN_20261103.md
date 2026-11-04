@@ -337,3 +337,15 @@ no-margin sentence. Payload: pending the link-7 re-run; until then only the arte
 round: "payload 0.1–0.5 kg graded" wrong (artefact); "lower noise helps the MLP" wrong except one seed; "GRU degrades
 monotonically with noise" wrong, it improves first; "delay 2 ms survivable for the policies because the expert is
 clean there" wrong, the expert is not clean there, it only looks so in the arrival count.
+
+**Gain 0.95, the expert's 23 failures re-read (4 Nov 12:30, `$S/gain_timeout.py`).** Rodrigo asked whether those
+failures are the 25 s navigation timeout, since the report blamed "stall and timeout logic". They are not. In the 23
+episodes the timeout fires with the base still 2–3 m from its goal (path 5.9 m, the drive curves under the asymmetric
+wheels), the arm then reaches from there and the expert declares "not reachable" at 28 s. Expert-only re-run of the
+same 23 scenarios (same seeds, gain 0.95) with `nav_timeout` raised to 38 s: parks in **0 of 23**, closest approach of
+the hand 0.09–0.46 m (identical minima to the 25 s run, which reproduced the original failures exactly), and the final
+distance gets worse, 2.4–3.9 m, because the drive keeps curving away after its closest pass. So the expert's navigation
+never satisfies its 8 cm / 0.05 rad parking test with a 5% wheel asymmetry on these geometries; the timeout only
+decides where it gives up. The policies win (180–203) because they have no parking test to satisfy. `nav_timeout`
+stays at 25 s everywhere (demonstrations and evaluation), as in `AGENTS.md`; raising it for evaluation would be a
+declared variant of the expert and, on this evidence, would not change the count.
