@@ -524,6 +524,49 @@ share the recipe). Stable arrivals at 1 / 2 / 5 cm of 205, both banks, pooled wi
   patience-40 transformers; `final_table.py` registers the `_s34_` evaluations.
 - Queue after this chain: empty. GPU and CPU free.
 
+## 8. Step 9: the obstacle task with a 2D lidar (Rodrigo, 4 Nov 20:30; night chain)
+
+Rodrigo: a teammate's branch `feature/step9-obstacle-lidar` adds a harder task and a new expert; re-collect data with
+that expert and train our most robust models on it, overnight. What the branch holds (`final/robotnik_arm_task/`,
+plan `STEP9_PLAN_PROMPT.md`): one static cylinder (r 0.25–0.35 m, 1.5 m tall) between the start and the docking point,
+start pose in a 2 m disc with any yaw, target 3.5–5 m from the start; the expert v2 drives two segments with the
+UNCHANGED template base controller (segment 0 to a waypoint beside the obstacle, segment 1 the A-to-B docking),
+nav_timeout 45 s, step cap 60 s, a robot-obstacle contact ends the episode; inside the ambiguous band (|lateral offset|
+< 0.2 m) the detour side is a fair coin (deliberately multimodal demonstrations). The sensor is an analytic 64-beam
+planar lidar in the base frame (beam 0 forward, ccw, clipped at 4 m), `obs["lidar"]`, the only obstacle information a
+learned policy gets. Their DART noise (v 0.02 m/s, w 0.05 rad/s, torque 2 N m, held 0.3 s, fading near the goals) on
+50 % of the episodes; sets train2 (seed 3, 2000 episodes), dev2 (seed 300, 300 clean episodes, every decision),
+confirm2, test2 (sealed). Their harness `obstacle_task/evaluate.py` (protocol v2.0: T_MAX 60 s, contact = failure,
+success = EE within 10 mm at some moment, docked_clean, collision, passed_obstacle, side_taken, and v1.1's stable
+arrivals) runs any policy with `reset(target, info)` / `act(obs)`. Their learners L0/L1/L2 (sklearn MLPs on
+ego + lidar features) reached success 60 % on dev2 (L2 seed 0; expert 100 %).
+
+Integration chosen (no edits to their code; worktree `~/repos/comp0245-step9`, robot models linked from RoboEnv):
+1. **Collection with their collector and expert** (`obstacle_task.collect`, 16 workers): train2 and dev2.
+   Smoke: 2 pilot2 episodes reached in 20–24 s simulated.
+2. **Conversion** to this project's dataset layout (`scripts/obstacle/convert_step9_dataset.py`): observation 21 =
+   base xyz, bearing, 7 arm q, 7 arm qd, target; action 11 = 4 wheels + 7 torques (clean expert labels, same-side
+   identity checked); plus a per-row `lidar` (N, 64) recomputed from the logged base pose and the episode's obstacles
+   with the vendored ray caster (checked equal to `obstacle_task/lidar.py` on 500 poses); `success` = reached, no
+   contact, navigation not timed out (their keep rule); explicit split 85 / 15 by episode, seed 20261104; expert
+   failures kept in the split and dropped by the trainers (success-only rule).
+3. **Lidar input variant** `raw21_targetpolar_clock_lidar64_v1` (92 inputs = MLP-Ego's 28 + 64 ranges) in
+   `learning/egocentric.py`, shared by the GRU and the transformer through `features_for`; `encode`, `predict`,
+   `predict_action` take `lidar=`; the trainers' live-vs-batch checks pass the scan through. 51 learning tests pass;
+   end-to-end smoke (convert 2 episodes, train 2 epochs of each model, run each in their harness) passes.
+4. **Harness adapter** `scripts/obstacle/rl_obstacle_policy.py`: our NumPy policies behind their interface, clock
+   reset per episode, commands clipped to the declared envelope (±5.27 rad/s, ±30 N m); policy step 0.12–0.14 ms.
+5. **Night chain** (`chain_step9_night.sh`): after the collection, convert train2; train MLP-Ego-IC (K 144), GRU-Ego
+   (patience 40) and TF-Ego (patience 40) with the lidar variant, clock horizon 60 s, seed 0 of each first, then
+   seeds 1 and 2 (one trainer on the GPU at a time); evaluate every model and the expert on dev2 (300 episodes) in
+   their harness as soon as trained (`runs/obstacle/step9_<tag>_dev2/`). Memory: ~40 M training rows × 92 inputs;
+   MLP peak ~60 GB RAM, sequence models ~18–54 GB (125 GB machine).
+
+Open points for the morning: the clock input runs to 60 s here (40 s on the A-to-B task); the ignition copies rule is
+unchanged (first row of the terminal zero-wheel run, i.e. the expert's dock); the ambiguous band is where a unimodal
+regressor should average left and right (their H-MM): our models have no side latch, so the band is the first thing to
+read in the dev2 rows (`ambiguous` column).
+
 **Seed reporting convention (Rodrigo, 4 Nov 19:00).** Tables II and III give stable arrivals as a percentage of the
 205 geometries, mean ± s.d. over the seeds with the min–max range in brackets (`scripts/analysis/seed_stats.py`
 computes the cells); single-seed rows are marked "seed 0". No cell reports the best seed alone. The prose keeps the
