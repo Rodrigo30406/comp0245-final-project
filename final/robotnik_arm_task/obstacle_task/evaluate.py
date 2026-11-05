@@ -61,6 +61,7 @@ from robotnik_arm_control import quaternion2bearing  # noqa: E402
 from obstacle_task.collect import check_sealed  # noqa: E402
 from obstacle_task.expert import ExpertPolicy  # noqa: E402
 from obstacle_task.lidar import scan  # noqa: E402
+from obstacle_task.multi_agent import is_multi_agent_scenario, run_multi_policy_episode  # noqa: E402
 from obstacle_task.scenario import Scenario, load_scenarios  # noqa: E402
 from obstacle_task.sim import link_name, min_clearance, robot_obstacle_contact, spawn_obstacles  # noqa: E402
 
@@ -187,8 +188,11 @@ def run_policy_episode(policy, episode, gui=False, keep_traj=False, early_stop=T
     and factory policies receive the same sanitized info as any learned policy.
     ``early_stop=False`` disables only the still/stalled rule, never contact stops.
     """
-    wall_start = time.time()
     scenario = _scenario(episode)
+    if is_multi_agent_scenario(scenario):
+        return run_multi_policy_episode(policy, episode, gui=gui, keep_traj=keep_traj,
+                                        early_stop=early_stop, verbose=verbose)
+    wall_start = time.time()
     target = np.array(episode["target"], dtype=float)
     sim, client, rid, info, obstacle_ids = setup_simulation(
         episode["init_xy"], episode["init_yaw"], gui=gui, target=target, obstacles=scenario.obstacles)

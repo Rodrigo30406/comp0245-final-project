@@ -52,6 +52,7 @@ from evaluate_policy import expert_base_goal, parse_episode_selection, setup_sim
 from robotnik_arm_control import StopCriteria, check_stop, quaternion2bearing  # noqa: E402
 from robotnik_arm_task import REACH_TOLERANCE  # noqa: E402
 from obstacle_task.expert import ExpertPolicy  # noqa: E402
+from obstacle_task.multi_agent import is_multi_agent_scenario, make_multi_agent_scenarios, run_multi_episode  # noqa: E402
 from obstacle_task.scenario import Scenario, load_scenarios, make_scenarios, save_scenarios  # noqa: E402
 from obstacle_task.sim import link_name, robot_obstacle_contact, spawn_obstacles  # noqa: E402
 
@@ -96,6 +97,11 @@ def run_episode(scenario, out_path, noise_std=None, noise_hold=0.3, noise_fade=(
     """
     if isinstance(scenario, dict):
         scenario = Scenario.from_dict(scenario)
+    if is_multi_agent_scenario(scenario):
+        return run_multi_episode(
+            scenario, out_path, noise_std=noise_std, noise_hold=noise_hold, noise_fade=noise_fade,
+            seed=seed, gui=gui, max_steps=max_steps, log_every=log_every, verbose=verbose,
+        )
     wall_start = time.time()
     target = np.asarray(scenario.target, dtype=float)
     no_obstacle = not scenario.obstacles
@@ -307,8 +313,8 @@ def plan_jobs(args, scenarios):
             "log_path": os.path.join(args.out_dir, "logs", name + ".log"), "info": info,
             "kwargs": {"scenario": sc, "out_path": path, "noise_std": noise_std if sc.noisy else None,
                        "noise_hold": args.noise_hold, "noise_fade": (args.noise_fade_base, args.noise_fade_arm),
-                       "seed": args.seed * 100_000 + sc.episode, "max_steps": args.max_steps,
-                       "log_every": args.log_every},
+                       "seed": args.seed * 100_000 + sc.episode, "gui": getattr(args, "gui", False),
+                       "max_steps": args.max_steps, "log_every": args.log_every},
         })
     return rows, jobs
 
@@ -338,8 +344,14 @@ def collect_batch(args):
     elif not args.resume and glob.glob(os.path.join(out_dir, "ep_*.npz")):
         # a fresh run must not mix with episodes of an earlier run (a later --resume would keep them)
         raise SystemExit(f"{out_dir} already holds episodes: use --resume, or a new / emptied folder")
-    scenarios = (make_no_obstacle_scenarios(args) if args.no_obstacle else
-                 make_scenarios(args.seed, args.n_episodes, args.noise_frac))
+    multi_agent = getattr(args, "multi_agent", False)
+    n_agents = getattr(args, "n_agents", 2)
+    if args.no_obstacle:
+        scenarios = make_no_obstacle_scenarios(args)
+    elif multi_agent:
+        scenarios = make_multi_agent_scenarios(args.seed, args.n_episodes, args.noise_frac, n_agents=n_agents)
+    else:
+        scenarios = make_scenarios(args.seed, args.n_episodes, args.noise_frac)
     if args.resume and os.path.exists(scenarios_path):
         previous, _ = load_scenarios(scenarios_path)
         if [s.to_dict() for s in previous] != [s.to_dict() for s in scenarios]:
@@ -347,7 +359,9 @@ def collect_batch(args):
     else:
         save_scenarios(scenarios_path, scenarios, extra={"set_name": args.set_name, "seed": args.seed,
                                                          "noise_frac": args.noise_frac,
-                                                         "no_obstacle": args.no_obstacle})
+                                                         "no_obstacle": args.no_obstacle,
+                                                         "multi_agent": multi_agent,
+                                                         "n_agents": n_agents if multi_agent else 1})
     with open(config_path, "w") as f:
         json.dump({**vars(args), "protocol": PROTOCOL_VERSION, "format": "obstacle_collection_v1"}, f, indent=2)
 
@@ -363,9 +377,9 @@ def collect_batch(args):
         writer.writerows(rows)
         f.flush()
         if jobs:
-            # One fresh process per episode (maxtasksperchild=1): each simulation starts from a clean pybullet state
-            with mp.get_context("spawn").Pool(args.workers, maxtasksperchild=1) as pool:
-                for k, row in enumerate(pool.imap_unordered(_worker, jobs), start=1):
+            if getattr(args, "gui", False):
+                for k, job in enumerate(jobs, start=1):
+                    row = {**job["info"], **run_episode(**job["kwargs"])}
                     rows.append(row)
                     writer.writerow(row)
                     f.flush()
@@ -374,6 +388,18 @@ def collect_batch(args):
                           f"err {row.get('final_error', float('nan')):.4f} m sim {row.get('duration', 0):.1f}s "
                           f"| elapsed {elapsed / 60:.1f} min, ETA {elapsed / k * (len(jobs) - k) / 60:.1f} min",
                           flush=True)
+            else:
+                # One fresh process per episode (maxtasksperchild=1): each simulation starts from a clean pybullet state
+                with mp.get_context("spawn").Pool(args.workers, maxtasksperchild=1) as pool:
+                    for k, row in enumerate(pool.imap_unordered(_worker, jobs), start=1):
+                        rows.append(row)
+                        writer.writerow(row)
+                        f.flush()
+                        elapsed = time.time() - start
+                        print(f"[{k}/{len(jobs)}] ep {row['episode']:04d} {row['status']:<11} "
+                              f"err {row.get('final_error', float('nan')):.4f} m sim {row.get('duration', 0):.1f}s "
+                              f"| elapsed {elapsed / 60:.1f} min, ETA {elapsed / k * (len(jobs) - k) / 60:.1f} min",
+                              flush=True)
     rows.sort(key=lambda row: row["episode"])
     write_index(index_path, rows)
     statuses = [row["status"] for row in rows]
@@ -400,6 +426,10 @@ def parse_args(argv=None):
     parser.add_argument("--episodes", help="subset to collect, e.g. '0-99' or '3,7,10' (scenarios.json has all)")
     parser.add_argument("--allow-test2", action="store_true", help="allow building the sealed test2 set")
     parser.add_argument("--no-obstacle", action="store_true", help="A-to-B equivalence mode (gate A2)")
+    parser.add_argument("--multi-agent", action="store_true",
+                        help="multi-agent obstacle task: each robot has its own target and collision-avoiding controller")
+    parser.add_argument("--n-agents", type=int, default=2, help="number of robots in --multi-agent mode (default 2)")
+    parser.add_argument("--gui", action="store_true", help="show PyBullet GUI while collecting")
     parser.add_argument("--noise-v", type=float, default=0.02, help="std of base linear speed noise (m/s)")
     parser.add_argument("--noise-w", type=float, default=0.05, help="std of base angular speed noise (rad/s)")
     parser.add_argument("--noise-torque", type=float, default=2.0, help="std of arm torque noise (N*m)")
@@ -427,6 +457,8 @@ def parse_args(argv=None):
         args.max_steps = 40000 if args.no_obstacle else STEP_CAP
     if args.seed < 0 or args.n_episodes < 1 or args.workers < 1 or args.log_every < 1 or args.max_steps < 0:
         parser.error("seed / max-steps must be nonnegative; n-episodes / workers / log-every must be positive")
+    if args.multi_agent and args.n_agents < 2:
+        parser.error("--n-agents must be >= 2 when --multi-agent is enabled")
     if not 0 <= args.noise_frac <= 1:
         parser.error("noise-frac must lie in [0, 1]")
     if min(args.noise_v, args.noise_w, args.noise_torque, args.noise_hold) < 0:
