@@ -606,6 +606,53 @@ unchanged (first row of the terminal zero-wheel run, i.e. the expert's dock); th
 regressor should average left and right (their H-MM): our models have no side latch, so the band is the first thing to
 read in the dev2 rows (`ambiguous` column).
 
+**5 Nov 04:30, dev2 results (MLP-Ego-IC + lidar and GRU-Ego + lidar, three seeds each; TF-Ego on the 700-episode
+cap training now).** Harness protocol v2.0 on dev2 (300 clean scenarios, seed 300; T_MAX 60 s; success = EE within
+10 mm at some moment with no contact). Percent of 300, mean ± s.d. over seeds 0–2 (min–max); `scripts/obstacle/dev2_table.py`.
+
+| policy | success | stable 1 cm | 2 cm | 5 cm | docked clean | collision | same side as expert | band / outside |
+|---|---|---|---|---|---|---|---|---|
+| expert v2 (clean) | 100 | 100 | 100 | 100 | 100 | 0 | 100 | 100 / 100 |
+| MLP-Ego-IC + lidar (K=144) | 54±6 (48–61) | 45±8 (39–53) | 71±12 (59–82) | 91±7 (83–97) | 93±5 (87–97) | 0 (0–1) | 70±2 | 55±7 / 53±6 |
+| GRU-Ego + lidar | 13±3 (9–15) | 7±2 (6–9) | 25±2 (23–27) | 67±11 (60–79) | 97±1 (96–98) | 8±8 (0–17) | 78±2 | 13±4 / 12±3 |
+| teammate's L2 (their table, seed 0) | 60.0 | 49.3 | 77.7 | 98.3 | 97.0 | 0 | 75.7 | 57.7 / 62.0 |
+
+Per seed: MLP success 182 / 159 / 144, stable 1 cm 160 / 127 / 116, collisions 0 / 2 / 0; GRU success 44 / 26 / 43,
+stable 1 cm 20 / 17 / 27, collisions 22 / 51 / 1. Every policy passes the obstacle in 300 / 300 episodes and docks
+clean in 87–98 %: navigation with the 64-beam scan is learnt, and the ambiguous band is not the problem (success inside
+the band equals success outside it for every seed, so the unimodal regressor does not average the two detours; it
+takes the expert's side in 70–78 % of the scenarios and the other side otherwise, both clear of the cylinder,
+min clearance median 0.37–0.38 m against the expert's 0.38 m).
+
+**What fails is the reach and, above all, the hold, and the cause is in the demonstrations.** The group's collector
+stops an episode the moment the end-effector is within the reach tolerance (`collect.py`, `StopCriteria(reach_tolerance
+...)`): the 2000 training episodes end at the expert's reach (last one at 29.5 s, median 23.6 s) and contain no
+holding at all, where the A-to-B episodes held the pose until 40 s. The harness, by contrast, runs on after the first
+reach: the expert holds 300 / 300 (EE < 15 mm for 10 s), our MLP holds in 33 / 30 / 10 of its 182 / 159 / 144 reaches
+and leaves the target a median 2.2–3.0 s after arriving (EE at the end of the 10 s window: median 22–28 mm), the GRU
+leaves after 0.7–2.1 s (35–92 mm). After its last demonstration the policy also runs with a clock input beyond anything
+in the training set (every episode is shorter than 30 s; T_MAX is 60 s): the GRU's 22 / 51 / 1 collisions all happen
+after a clean dock (49 of seed 1's 51, 22 of 22 for seed 0; collision at 38–48 s against a dock at 21–22 s), when the
+base leaves the dock and wanders into the cylinder (final ring distance 0.6–0.95 m, wheels and fingers the links in
+contact). Failures that never reach are the last centimetres as on the A-to-B task: among failures the closest
+approach is median 15.6 / 17.3 / 26.7 mm for the MLP (first quartile 11–15 mm) and 32–42 mm for the GRU, with the base
+docked in 95 % of them (ring distance 0.05–0.09 m); the harness's "stalled" stop (error no longer improving while the
+robot is still) accounts for 37–44 MLP and 112–166 GRU episodes. The GRU's obstacle result is far below its A-to-B
+one (73 ± 12 % at 1 cm) for the same reason the A-to-B GRU sleeps on nominal starts (section 7): its memory makes it
+the most sensitive model to a horizon it has never seen.
+
+Reading for the report: the obstacle experiment is the cleanest evidence that behaviour cloning copies the demonstration
+protocol, not the task. The same MLP-Ego-IC recipe that holds 1 cm for 15 s on 92 % of the A-to-B geometries reaches
+10 mm on 54 % of the obstacle scenarios and keeps the pose on 13 %, because nobody showed it what to do after the
+reach. Next step (not run; needs the user's go-ahead because it is a new collection of ~45 min plus ~3 h of
+training and evaluation): re-run the same expert on the same 2000 scenarios with a hold tail (keep stepping the
+expert for 10 s after the reach, as the harness itself does), convert, retrain the three MLP seeds and the three GRU
+seeds, and read the hold column. A cheaper control: train the same models without the clock input (variant without
+`clock`) to separate the clock extrapolation from the missing hold data.
+
+Transformer: the cap-700 chain was stalled from 23:27 to 04:08 by the same process-guard pattern as on 4 Nov (a shell
+wrapper whose text contained the trainer names); released at 04:08, seed 0 training.
+
 **Seed reporting convention (Rodrigo, 4 Nov 19:00).** Tables II and III give stable arrivals as a percentage of the
 205 geometries, mean ± s.d. over the seeds with the min–max range in brackets (`scripts/analysis/seed_stats.py`
 computes the cells); single-seed rows are marked "seed 0". No cell reports the best seed alone. The prose keeps the

@@ -353,6 +353,16 @@ step, training time, arrivals vs data).
 - Decision between the dead band and the categorical head for the final policy; then the reserved test banks, once, for
   the report.
 - Report (6 pages IEEE) and the in-person demonstration.
+- **Step 9, the obstacle task (5 Nov).** The teammates' obstacle expert (branch `feature/step9-obstacle-lidar`: a
+  cylinder between start and dock, a 64-beam lidar, protocol v2.0 harness) is used as a second black box: its 2000
+  recorded episodes are converted to this project's dataset layout (`scripts/obstacle/convert_step9_dataset.py`),
+  MLP-Ego-IC, GRU-Ego and TF-Ego are trained with the scan as 64 extra inputs (variant
+  `raw21_targetpolar_clock_lidar64_v1`) and run inside their harness through `scripts/obstacle/rl_obstacle_policy.py`.
+  On dev2 (300 scenarios, three seeds, mean ± s.d.): MLP-Ego-IC + lidar reaches 10 mm in 54 ± 6 % and docks clean in
+  93 ± 5 % with no collision; GRU-Ego + lidar 13 ± 3 % with 8 ± 8 % collisions; the expert 100 %. Every policy passes
+  the obstacle in 300 / 300 scenarios and the ambiguous band costs nothing. The failures are the hold: the recorded
+  demonstrations stop at the reach, so the policies leave the target 2–3 s after arriving (`scripts/obstacle/dev2_table.py`,
+  REPORT_PLAN §8).
 
 ## 9. The documents, in reading order
 
