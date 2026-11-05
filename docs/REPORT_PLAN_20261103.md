@@ -672,6 +672,26 @@ r 0.11 m and b 0.66 m), 1.0 N m on the torques, every sample held 50 ms, no fade
 converts it and, after the first hold chain, trains the same six models, tags `*lidarholdD_*` (D = our DART), each on
 dev2. The first hold collection (their DART) is at 1533 / 2000 after 32 min, all reached so far.
 
+**5 Nov 10:45, both hold collections done; every retrain killed for memory; fixed and relaunched 11:05.** Their-DART
+hold set: 2000 / 2000 reached, 47.8 min. Our-DART hold set: 1996 reached, 4 collisions (dropped as expert failures),
+57.2 min. Both converted (57.0 M and 57.1 M training rows, longest episode 39 021 steps; the recorded set had 40.0 M).
+All twelve trainers of the two chains were killed by the kernel within 2–5 min of starting (OOM, 116 GB anon RSS on a
+125 GB machine with nothing else running): the MLP loader held the float64 feature matrix twice (episode list, then
+concatenate; 42 GB each), then once more as `np.vstack` with the trigger copies, then a float64 standardised temporary;
+the GRU's `group_statistics` concatenated the episode list (another 42 GB). Fixed in `egocentric.py` (`load_group`
+writes into one preallocated array sized from the split's row counts; `standardised_float32` standardises in 1 M-row
+chunks straight into float32; element for element the same values as before) and `gru_policy.py` (two-pass
+statistics over the episode list, same values up to summation order); 51 tests pass. The no-clock control variant
+`raw21_targetpolar_lidar64_v1` (91 inputs, the clock column dropped; checked equal to the clock variant's first 91
+columns on a real episode) is in the same commit. `chain_step9_hold_train.sh` now runs, one trainer at a time with
+`/usr/bin/time -v` for the peak RSS: seed 0 of MLP-Ego-IC and GRU-Ego on each hold set and of the no-clock MLP on the
+recorded set, then seeds 1–2 of all five (15 trainings, each evaluated on dev2). Tags `*lidarhold_*` (their DART),
+`*lidarholdD_*` (ours), `*lidarnoclock_*`.
+
+TF-Ego + lidar seed 2 (full split): success 43 / 300 (14 %), stable 1 / 2 / 5 cm 22 / 74 / 173, docked clean 292,
+2 collisions, 23 min, NRMSE 0.107. Three seeds: success 12 ± 4 % (7–15), stable 1 cm 8 ± 3 % (5–12), docked clean
+97 ± 2 %, collisions 0–1 %.
+
 TF-Ego + lidar on the full split (streaming trainer): seed 0 success 22 / 300 (7 %), stable 1 / 2 / 5 cm 16 / 58 / 151,
 docked clean 295, 0 collisions, 30 min, validation NRMSE 0.106; seed 1 44 / 300 (15 %), 35 / 84 / 186, docked clean
 284, 1 collision, 24 min, NRMSE 0.106; seed 2 training. The transformer docks like the others and fails the reach even
