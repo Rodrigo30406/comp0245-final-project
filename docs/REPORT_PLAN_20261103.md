@@ -591,6 +591,16 @@ validation NRMSE 0.157) on dev2:
 - On their own scale (success 60.7 %) MLP-Ego-IC + lidar equals their best learner (L2 60 %) from the first seed, with
   one network and no side classifier. GRU-Ego and TF-Ego, and seeds 1–2, follow in the chain.
 
+**22:15, transformer memory.** GRU-Ego + lidar seed 0 trained (13 min, 267 epochs, validation NRMSE 0.103) and is on
+dev2. The transformer trainer on the full split was killed by the system for memory at 22:12: it pads every training
+episode to the longest (1700 × 29 021 steps × 92 inputs in float64 = 36 GB, then float32 copies) while the MLP seed 1
+trainer and a 16-worker evaluation were running on the same machine. No source edit is possible while trainers run
+(they hash `learning/*.py`), so TF-Ego trains after the night chain on a capped split: 700 of the 1700 training
+episodes (uniform, seed 20261104; 16.5 M rows), the same 300 validation episodes
+(`runs/splits/step9_train2_split_tfcap700.json`, `chain_step9_tf.sh`, seeds 0–2, each evaluated on dev2). The
+night chain skips its own transformer attempts (placeholder dirs). The data-size difference is declared in the table.
+Fix for later: stream the padded float32 episodes as `gru_policy.normalised_group` does.
+
 Open points for the morning: the clock input runs to 60 s here (40 s on the A-to-B task); the ignition copies rule is
 unchanged (first row of the terminal zero-wheel run, i.e. the expert's dock); the ambiguous band is where a unimodal
 regressor should average left and right (their H-MM): our models have no side latch, so the band is the first thing to
