@@ -731,6 +731,23 @@ GRU-Ego + lidar on the hold set, seed 0: success 15 / 300 (5 %), stable 1 / 2 / 
 3 collisions; worse than on the recorded set (44). Its offline error improved (0.079 against 0.103) while its closed
 loop got worse: the memory model fits the longer hold tail and still cannot act in it.
 
+**5 Nov 12:10, +DB on the obstacle task: half the answer.** Dead band 0.45 rad/s at evaluation, dev2, seed 0: the
+recorded-set MLP goes from 33 to 66 holds of 10 s (22 %), success 182 → 170 (the base, now still, leaves 96 episodes
+"stalled" at 12–23 mm), stable 1 / 2 / 5 cm 143 / 249 / 283; the hold-set MLP 29 → 34 holds, success 149. The wheels are
+exactly zero, the base still moves 1.7–1.8 cm (the arm's reaction, the expert 1.3 cm) and the arm does not follow: 31 of
+the 104 leavers moved less than 1 cm and still end at 23 mm. On A-to-B the same dead band holds 155–179 of ~195 reaches
+with the same 2 cm of base motion and 4 mm at the end. The offline fit is not the difference: the obstacle models'
+torque RMSE (0.16–0.34 N m) is lower than the A-to-B model's (0.29–0.43). What differs is the demonstrations near the
+target: the group's DART fades the arm noise to zero within 0.15 m of the target and turns the base noise off at the
+dock, so their hold rows contain no perturbation and no recovery; ours perturbs both throughout. The our-DART hold set
+(fade off, arm noise 1 N m during the hold, base still) tests the arm half: its MLP seed 0 trains next, evaluated plain
+and with +DB. A third collection with the base noise kept on during the hold (`STEP9_HOLD_WHEEL_NOISE=0.5` in the
+wrapper: held 50 ms noise on the executed wheels whenever the expert's wheel command is exactly zero, labels unchanged;
+smoke test: base moving in 78–80 % of the hold rows, 4–7 cm excursions, expert ends at 6–9 mm) is collecting
+(`datasets/step9/raw/train2_hold10_ourdart_basenoise`, 12 workers); its models are not queued yet.
+
+MLP-Ego-IC + lidar without the clock (recorded set, seed 0) trained: 25 min, peak RSS 66 GB; on dev2 now.
+
 TF-Ego + lidar on the full split (streaming trainer): seed 0 success 22 / 300 (7 %), stable 1 / 2 / 5 cm 16 / 58 / 151,
 docked clean 295, 0 collisions, 30 min, validation NRMSE 0.106; seed 1 44 / 300 (15 %), 35 / 84 / 186, docked clean
 284, 1 collision, 24 min, NRMSE 0.106; seed 2 training. The transformer docks like the others and fails the reach even

@@ -9,6 +9,16 @@ ignored) until HOLD_S have elapsed, then returns a "Target reached ... held" mes
 episode's meta reads as before; the step cap still ends an episode. The per-episode state resets at t = 0 (every episode
 starts there; the pool runs one episode per fresh process anyway).
 
+STEP9_HOLD_WHEEL_NOISE=<rad/s> (default 0 = off) adds this project's DART base perturbation during the hold: the
+group's collector switches its base noise off once navigation is done, so its hold rows show a still base, whereas our
+A-to-B demonstrations perturb the base throughout (0.5 rad/s per wheel side, right and left independent, each sample
+held 50 ms). The wrapper replaces `collect.MotorCommands` by a subclass whose SetControlCmd adds the held noise to the
+(executed) motor command, after the collector has logged wheel_cmds_exec, so that logged field omits this noise; the
+motion of the base in base_pos shows it. SetControlCmd adds the held noise to the
+four executed wheel speeds whenever the expert's wheel command is exactly zero (its latched stop: during navigation the
+executed wheels are never all exactly zero); the labels stay the clean zero. The noise stream is seeded from the
+episode's command-noise seed (seed * 100000 + episode, the collector's convention) plus 1.
+
 Same arguments as the group's collector. Example (same scenarios, noisy flags and noise seeds as their train2):
   cd <step9 worktree>/final/robotnik_arm_task && pixi run python <project>/scripts/obstacle/collect_step9_hold.py \
       --set-name train2 --workers 16 --out-dir <project>/datasets/step9/raw/train2_hold10
@@ -44,6 +54,37 @@ def check_stop_with_hold(criteria, current_time, time_step, ee_dist_error, base_
 
 
 collect.check_stop = check_stop_with_hold      # also applied in the spawned workers (they re-import this module)
+
+HOLD_WHEEL_NOISE = float(os.environ.get("STEP9_HOLD_WHEEL_NOISE", "0"))
+HOLD_WHEEL_NOISE_STEPS = 50                    # 50 ms per sample, as this project's collector
+_noise = {"held": None}
+
+if HOLD_WHEEL_NOISE > 0:
+    import numpy as np
+    from collect_data import HeldNoise
+
+    _template_run_episode = collect.run_episode
+    _template_motor_commands = collect.MotorCommands
+
+    class MotorCommandsWithHoldNoise(_template_motor_commands):
+        def SetControlCmd(self, values, control_modes):
+            values = np.array(values, dtype=float)
+            if _noise["held"] is not None and np.all(values[:4] == 0.0):
+                right, left = _noise["held"].sample()
+                values[:4] += np.array([right, left, left, right])
+            return super().SetControlCmd(values, control_modes)
+
+    def run_episode_with_hold_noise(*args, **kwargs):
+        seed = int(kwargs.get("seed", 0))
+        _noise["held"] = HeldNoise(np.random.default_rng(seed + 1), [HOLD_WHEEL_NOISE, HOLD_WHEEL_NOISE],
+                                   HOLD_WHEEL_NOISE_STEPS)
+        try:
+            return _template_run_episode(*args, **kwargs)
+        finally:
+            _noise["held"] = None
+
+    collect.MotorCommands = MotorCommandsWithHoldNoise
+    collect.run_episode = run_episode_with_hold_noise
 
 if __name__ == "__main__":
     raise SystemExit(collect.main())
