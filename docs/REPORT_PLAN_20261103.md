@@ -779,9 +779,25 @@ during navigation is the same in both DART sets (mean |qd| 0.028 against 0.031 r
 perturbed arm. Whether the weak orient is systematic or this seed is decided by seeds 1–2 (queued) and by the
 base-noise set (seed 0 training now, same navigation noise).
 
-GRU-Ego + lidar on the our-DART hold set, seed 0: success 150 / 300 (50 %), held 10 s 144, stable 1 / 2 / 5 cm
-149 / 161 / 170 (recorded set: 44 / 2 / 20 / 77 / 238; their-DART hold: 15 / 0 / 5 / 36 / 142). The recovery rows lift the
-memory model too; its 5 cm count falls the same way (170), i.e. the same orientation failure.
+GRU-Ego + lidar on the our-DART hold set, seed 0: success 88 / 300 (29 %), held 10 s 11, stable 1 / 2 / 5 cm
+76 / 154 / 226 (recorded set: 44 / 2 / 20 / 77 / 238; their-DART hold: 15 / 0 / 5 / 36 / 142), 183 stalled. The recovery
+rows double its reaches but the memory model still does not hold. (A first version of this note wrongly gave the GRU
+the +DB numbers of the MLP, 150 / 144; corrected 13:55.)
+
+**5 Nov 13:55, the base-noise hold set: 82 % success, 79 % held.** MLP-Ego-IC + lidar trained on set B (our DART with
+the base kept perturbed during the hold), seed 0 (24 min, peak RSS 94 GB): dev2 success **247 / 300 (82 %)**, **held 10 s
+237 / 300 (79 %)**, stable 1 / 2 / 5 cm 246 / 251 / 252, docked clean 279, 1 collision, obstacle passed 299 / 300, band
+118 / 137 against 129 / 163 outside, low targets 52 / 64 (were 15–27). The hold is now the expert's kind: the policy's
+base still moves 5.8 cm during the hold with 0.09 rad/s wheel residuals, and the arm tracks it (5.2 mm at the end of
+the window). The progression on one seed and the same 2000 scenarios: recorded set 182 / 33, their-DART hold 160 / 29,
+our-DART hold (arm perturbed) 211 / 184, our-DART hold with the base perturbed 247 / 237 (success / held 10 s). The
+53 failures: 4 last-centimetre, 1 at 2–5 cm, 48 with the arm never reaching, of which 50 parks face more than 15° off
+the target and 27 are more than 15 cm from the expert's spot: the final-orientation failure of set D again, now the
+only failure left. Both sets share our navigation noise without fade; the group's base noise fades within 0.5 m of
+each segment goal, so their final turn-in-place is demonstrated clean. Test launched 13:55: set F = set B with the base
+fade restored (`--noise-fade-base 0.5`, arm fade still off, base noise during the hold kept), collecting
+(`train2_hold10_ourdart_basenoise_fade`, ~50 min); its MLP seeds follow the queued ones. +DB on set B is being
+evaluated by the chain.
 
 TF-Ego + lidar on the full split (streaming trainer): seed 0 success 22 / 300 (7 %), stable 1 / 2 / 5 cm 16 / 58 / 151,
 docked clean 295, 0 collisions, 30 min, validation NRMSE 0.106; seed 1 44 / 300 (15 %), 35 / 84 / 186, docked clean
