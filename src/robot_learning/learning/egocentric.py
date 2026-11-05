@@ -71,9 +71,10 @@ VARIANTS = {VARIANT: list(FEATURE_NAMES),
             "raw21_targetpolar_clock_v1": list(INPUT_NAMES) + list(TARGET_NAMES) + POLAR_NAMES + [CLOCK_NAME],
             "raw21_targetpolar_vel_clock_v1": list(INPUT_NAMES) + list(TARGET_NAMES) + POLAR_NAMES + VELOCITY_NAMES + [CLOCK_NAME],
             "raw21_targetpolar_prevwheel_clock_v1": list(INPUT_NAMES) + list(TARGET_NAMES) + POLAR_NAMES + PREV_WHEEL_NAMES + [CLOCK_NAME],
-            "raw21_targetpolar_clock_lidar64_v1": list(INPUT_NAMES) + list(TARGET_NAMES) + POLAR_NAMES + LIDAR_NAMES + [CLOCK_NAME]}
+            "raw21_targetpolar_clock_lidar64_v1": list(INPUT_NAMES) + list(TARGET_NAMES) + POLAR_NAMES + LIDAR_NAMES + [CLOCK_NAME],
+            "raw21_targetpolar_lidar64_v1": list(INPUT_NAMES) + list(TARGET_NAMES) + POLAR_NAMES + LIDAR_NAMES}  # no clock (control)
 ACTION_INPUT_VARIANTS = {"raw21_targetpolar_prevwheel_clock_v1"}  # need the previous wheel command
-LIDAR_VARIANTS = {"raw21_targetpolar_clock_lidar64_v1"}  # need the lidar scan of every row (dataset key "lidar", obs["lidar"] live)
+LIDAR_VARIANTS = {"raw21_targetpolar_clock_lidar64_v1", "raw21_targetpolar_lidar64_v1"}  # need the lidar scan of every row (dataset key "lidar", obs["lidar"] live)
 STATEFUL_VARIANTS = {"raw21_targetpolar_vel_clock_v1", *ACTION_INPUT_VARIANTS}  # live inference keeps a previous step
 POLAR_VARIANTS = {"raw21_targetpolar_clock_v1", "raw21_targetpolar_vel_clock_v1", *ACTION_INPUT_VARIANTS, *LIDAR_VARIANTS}
 KIND = "egocentric_mlp_regressor"
@@ -279,7 +280,8 @@ def encode(observations, times, spec, previous=None, previous_wheels=None, lidar
             scan = np.asarray(lidar, dtype=np.float64)
             if scan.shape != (len(x), LIDAR_BEAMS) or not np.isfinite(scan).all() or (scan < 0).any():
                 raise ValueError(f"lidar must be finite non-negative ({len(x)}, {LIDAR_BEAMS}) ranges")
-            features = np.concatenate([x, geometry[:, 7:10], polar, scan, clock[:, None]], axis=1)
+            parts = [x, geometry[:, 7:10], polar, scan] + ([clock[:, None]] if CLOCK_NAME in VARIANTS[variant] else [])
+            features = np.concatenate(parts, axis=1)
         elif variant in ACTION_INPUT_VARIANTS:
             if previous_wheels is None:
                 raise ValueError(f"{variant} needs the previous wheel command of every row")
@@ -450,12 +452,36 @@ def load_episode_features(directory, record, spec):
 
 
 def load_group(directory, records, spec):
-    xs, ys = [], []
+    """Stacked features, nine controls and per-episode row ranges. The features are written episode by episode into one
+    preallocated array (the records' row counts give its size), never held twice: 57 M rows x 92 inputs are 42 GB in
+    float64, and the list-then-concatenate version needed that twice."""
+    if not all("rows" in r for r in records):
+        xs, ys = [], []
+        for record in records:
+            f, y = load_episode_features(directory, record, spec); xs.append(f); ys.append(y)
+        rows = [len(f) for f in xs]
+        return (np.concatenate(xs), np.concatenate(ys),
+                list(zip(np.r_[0, np.cumsum(rows)[:-1]].tolist(), np.cumsum(rows).tolist())))
+    total = int(sum(int(r["rows"]) for r in records)); x = None; ys = []; ranges = []; k = 0
     for record in records:
-        f, y = load_episode_features(directory, record, spec); xs.append(f); ys.append(y)
-    rows = [len(f) for f in xs]
-    return (np.concatenate(xs), np.concatenate(ys),
-            list(zip(np.r_[0, np.cumsum(rows)[:-1]].tolist(), np.cumsum(rows).tolist())))
+        f, y = load_episode_features(directory, record, spec)
+        if len(f) != int(record["rows"]):
+            raise ValueError(f"{record['episode_id']}: {len(f)} rows, the split says {record['rows']}")
+        if x is None:
+            x = np.empty((total, f.shape[1]), dtype=np.float64)
+        x[k:k + len(f)] = f; ys.append(np.asarray(y, dtype=np.float64)); ranges.append((k, k + len(f))); k += len(f)
+    return x, np.concatenate(ys), ranges
+
+
+def standardised_float32(blocks, mean, scale, chunk=1 << 20):
+    """((block - mean) / scale).astype(float32) of the stacked blocks, computed chunk by chunk into one preallocated
+    array: element for element the values of the full-array expression, without its float64 temporaries."""
+    out = np.empty((sum(len(b) for b in blocks), len(mean)), dtype=np.float32); k = 0
+    for b in blocks:
+        for s in range(0, len(b), chunk):
+            e = min(s + chunk, len(b)); out[k + s:k + e] = (b[s:e] - mean) / scale
+        k += len(b)
+    return out
 
 
 def train(dataset, split_path, config_path, output, horizon_s=40.0, device_name="cuda", variant=VARIANT, options=None):
@@ -547,10 +573,13 @@ def train(dataset, split_path, config_path, output, horizon_s=40.0, device_name=
                             "rule": "per training episode, the first row of the terminal run of exactly-zero wheel labels, copied with its "
                                     "recorded features and labels; N(0, sigma_j) added to the seven arm-velocity features only; "
                                     "input/output scaler computed from the recorded rows before the copies were appended"}
-            x = np.vstack([x, xc]); ychunk = np.vstack([ychunk, yc]); y = np.vstack([y, yc[:, :9]])
+            ychunk = np.vstack([ychunk, yc]); y = np.vstack([y, yc[:, :9]])
             row_weight = np.concatenate([row_weight, np.ones(len(xc), dtype=np.float32)])
-        xn = ((x - x_mean) / x_scale).astype(np.float32); yn = ((ychunk - y_mean_c) / y_scale_c).astype(np.float32)
-        vxn = ((vx - x_mean) / x_scale).astype(np.float32)
+        else:
+            xc = np.zeros((0, x.shape[1]))
+        xn = standardised_float32([x, xc], x_mean, x_scale); del x, xc   # the recorded rows, then the copies
+        yn = ((ychunk - y_mean_c) / y_scale_c).astype(np.float32)
+        vxn = standardised_float32([vx], x_mean, x_scale)
         tx = torch.from_numpy(xn).to(device); ty = torch.from_numpy(yn).to(device); tvx = torch.from_numpy(vxn).to(device)
         centres = None; tb = None; tw = None
         trw = torch.from_numpy(row_weight).to(device) if opts["trigger_weight"] != 1.0 else None
@@ -666,7 +695,7 @@ def train(dataset, split_path, config_path, output, horizon_s=40.0, device_name=
         policy.reset()
         # Free the training tensors before the final metric pass: on 4096-episode datasets the process otherwise
         # peaks above 100 GB RSS (three OOM kills on 27-29 Oct) while the metrics only need one group at a time.
-        del x, y, xn, yn, vx, vy, vxn, tx, ty, tvx
+        del y, xn, yn, vx, vy, vxn, tx, ty, tvx
         metrics = {}
         for name, group, ranges_ in [("training", split["training"], None), ("validation", split["validation"], vranges)]:
             feats, truth, ranges_ = load_group(dataset, group, spec)

@@ -220,9 +220,14 @@ def padded_group(directory, records, spec, mode):
 
 def group_statistics(feats, labels):
     """Mean and standard deviation of the valid rows (what `padded_group` under its mask gives); a zero scale becomes 1."""
-    fx = np.concatenate(feats); fy = np.concatenate(labels)
-    x_mean, x_scale = fx.mean(axis=0), fx.std(axis=0); x_scale[x_scale == 0] = 1.0
-    y_mean, y_scale = fy.mean(axis=0), fy.std(axis=0); y_scale[y_scale == 0] = 1.0
+    # Two passes over the episode list (mean, then squared deviations) in float64: no concatenated copy of the
+    # features (42 GB for 57 M rows x 92), the same statistics up to summation order.
+    def stats(arrays):
+        n = sum(len(a) for a in arrays)
+        mean = sum(a.sum(axis=0) for a in arrays) / n
+        scale = np.sqrt(sum(((a - mean) ** 2).sum(axis=0) for a in arrays) / n); scale[scale == 0] = 1.0
+        return mean, scale
+    x_mean, x_scale = stats(feats); y_mean, y_scale = stats(labels)
     return x_mean, x_scale, y_mean, y_scale
 
 
