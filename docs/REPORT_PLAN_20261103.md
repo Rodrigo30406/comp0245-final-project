@@ -664,6 +664,14 @@ seed) and `chain_step9_hold.sh` then trains MLP-Ego-IC + lidar and GRU-Ego + lid
 `mlp28lidarhold_trig144_seed*` / `gru28lidarhold_patience40_seed*`, each on dev2, after the transformer chain. The
 no-clock control needs a new input variant (a `src/` edit) and waits for the GPU gap after that chain.
 
+**06:00, second hold set with this project's DART (Rodrigo: "quería probar en el mío también").** Same 2000
+scenarios and 10 s hold, but the noise of our A-to-B collections instead of the group's: 0.5 rad/s on each wheel side
+(right and left independent, expressed through their skid-steer model as v 0.0389 m/s and w 0.1178 rad/s with
+r 0.11 m and b 0.66 m), 1.0 N m on the torques, every sample held 50 ms, no fade near the goal, every episode noisy
+(`datasets/step9/raw/train2_hold10_ourdart`, 12 workers alongside the first collection). `chain_step9_hold_ourdart.sh`
+converts it and, after the first hold chain, trains the same six models, tags `*lidarholdD_*` (D = our DART), each on
+dev2. The first hold collection (their DART) is at 1533 / 2000 after 32 min, all reached so far.
+
 TF-Ego + lidar on the full split (streaming trainer): seed 0 success 22 / 300 (7 %), stable 1 / 2 / 5 cm 16 / 58 / 151,
 docked clean 295, 0 collisions, 30 min, validation NRMSE 0.106; seed 1 44 / 300 (15 %), 35 / 84 / 186, docked clean
 284, 1 collision, 24 min, NRMSE 0.106; seed 2 training. The transformer docks like the others and fails the reach even
