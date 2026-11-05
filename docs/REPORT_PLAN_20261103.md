@@ -562,6 +562,35 @@ Integration chosen (no edits to their code; worktree `~/repos/comp0245-step9`, r
    their harness as soon as trained (`runs/obstacle/step9_<tag>_dev2/`). Memory: ~40 M training rows × 92 inputs;
    MLP peak ~60 GB RAM, sequence models ~18–54 GB (125 GB machine).
 
+**First results (4 Nov 22:05).** Collection: train2 2000 / 2000 reached (0 contacts, 0 navigation timeouts, 1000
+noisy), dev2 300 / 300; conversion 2000 episodes, 1700 / 300 split; the expert in their harness on dev2: success
+300 / 300, docked_clean 300, 0 collisions, side as planned 300 / 300. MLP-Ego-IC + lidar seed 0 (21 min, 27 epochs,
+validation NRMSE 0.157) on dev2:
+
+| metric (their harness, protocol v2.0) | MLP-Ego-IC + lidar, seed 0 | expert | their L2 seed 0 |
+|---|---|---|---|
+| success (EE within 10 mm at some moment, no contact) | 182 / 300 = 60.7 % | 300 | 180 / 300 |
+| stable arrival 1 / 2 / 5 cm (0.5 s, by 40 s) | 160 / 245 / 292 | 300 / 300 / 300 | 148 / 233 / 295 |
+| docked_clean (within 0.2 m of the ring, still 1 s, before any contact) | 291 / 300 | 300 | 291 |
+| collision / passed obstacle / no_pass | 0 / 300 / 0 | 0 / 300 / 0 | 0 / 300 / 0 |
+| side taken = scenario side | 207 / 300 | 300 | 227 |
+| min clearance (min / median) | 0.10 / 0.38 m | 0.17 / 0.38 m | 0.06 / 0.39 m |
+| inside the ambiguous band: success / docked_clean | 62.0 % / 99.3 % | 100 / 100 | 57.7 % / 97.8 % |
+| outside the band | 59.5 % / 95.1 % | 100 / 100 | 62.0 % / 96.3 % |
+
+- **The obstacle is not the problem.** 0 contacts in 300 episodes, the obstacle passed in every one, min clearance
+  10 cm, docked_clean 97 %; inside the ambiguous band (the multimodal demonstrations, their hypothesis H-MM) the policy
+  docks in 136 / 137 and succeeds as often as outside. A unimodal regressor with the lidar in its inputs does not
+  average the two detours into the obstacle here; it commits to one side (its side differs from the recorded coin in
+  93 episodes, which is what a coin looks like from the outside).
+- **The failures are the last centimetre, as on the A-to-B task.** 118 failures: closest approach of the hand median
+  1.6 cm (78 within 2 cm, 33 in 2–5 cm, 7 beyond 5 cm); 113 of them docked (ring distance at the arm's extension 5 cm,
+  bearing error 2.6°), the arm extends at 22.4 s, the same time the expert docks (22.6 s), and the episode ends by their
+  stall rule (41) or the 60 s cap (77). Stable 1 cm 160 / 300 against 189 / 205 on the A-to-B nominal bank: a longer
+  drive (3.7 m, two segments) and a wider start distribution, with the same parking residual.
+- On their own scale (success 60.7 %) MLP-Ego-IC + lidar equals their best learner (L2 60 %) from the first seed, with
+  one network and no side classifier. GRU-Ego and TF-Ego, and seeds 1–2, follow in the chain.
+
 Open points for the morning: the clock input runs to 60 s here (40 s on the A-to-B task); the ignition copies rule is
 unchanged (first row of the terminal zero-wheel run, i.e. the expert's dock); the ambiguous band is where a unimodal
 regressor should average left and right (their H-MM): our models have no side latch, so the band is the first thing to
