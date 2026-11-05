@@ -692,6 +692,24 @@ TF-Ego + lidar seed 2 (full split): success 43 / 300 (14 %), stable 1 / 2 / 5 cm
 2 collisions, 23 min, NRMSE 0.107. Three seeds: success 12 ± 4 % (7–15), stable 1 cm 8 ± 3 % (5–12), docked clean
 97 ± 2 %, collisions 0–1 %.
 
+**5 Nov 11:40, first hold result: the hold data alone does not fix the hold; the base creeps.** MLP-Ego-IC + lidar
+trained on the their-DART hold set, seed 0 (29 min, peak RSS 94.8 GB, validation NRMSE median 0.109 against 0.139 on
+the recorded set): dev2 success 160 / 300 (53 %), stable 1 / 2 / 5 cm 134 / 213 / 273, docked clean 273, 4 collisions,
+held 10 s 29 / 300, i.e. the same as the recorded-set model (182, 160 / 245 / 292, 33 held). Offline the new model
+reproduces the demonstrated hold exactly (on the last 10 s of 20 validation episodes: mean |wheel| 0.009 rad/s against
+labels of exactly 0, mean torque error 0.05 N m). In closed loop it does not, and the rows say why: among the 131
+reaches it then leaves (median 1.7 s after arriving), the base moves 2.6 cm (median; 4.6 cm for the recorded-set
+model) with wheel commands up to 0.11 rad/s median and 0.8 rad/s at the third quartile, and the end-effector error at
+the end of the window is 25 mm. The expert's wheels are exactly zero during the hold (base displacement 1.3 cm, from
+the arm's reaction). The 29 holds that succeed have wheel commands under 0.035 rad/s. So the mechanism is the A-to-B
+parking residual of section 5.4: a regressor never outputs an exact zero, the base creeps during the hold, the hold
+rows the policy faces are not the demonstrated ones, and the arm, which sees the target move in its own frame, does
+not compensate fast enough. The hold data cannot teach what the stop latch does, because the latch is not a function
+the regressor can represent exactly. Test running now: the +DB variant (0.45 rad/s dead band on the wheel output at
+evaluation, as in Table II) on the obstacle harness through `rl_obstacle_policy.py` (`--policy-arg <run>,db=0.45`),
+for the recorded-set and the hold seed-0 MLPs (`chain_step9_db.sh`). GRU-Ego + lidar on the hold set trained (17 min,
+peak RSS 69.6 GB, NRMSE 0.079 against 0.103) and is on dev2.
+
 TF-Ego + lidar on the full split (streaming trainer): seed 0 success 22 / 300 (7 %), stable 1 / 2 / 5 cm 16 / 58 / 151,
 docked clean 295, 0 collisions, 30 min, validation NRMSE 0.106; seed 1 44 / 300 (15 %), 35 / 84 / 186, docked clean
 284, 1 collision, 24 min, NRMSE 0.106; seed 2 training. The transformer docks like the others and fails the reach even

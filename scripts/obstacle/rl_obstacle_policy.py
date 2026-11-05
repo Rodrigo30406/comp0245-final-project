@@ -10,7 +10,9 @@ step; the scenario (obstacles, waypoint, side) is never seen.
 
   PYTHONPATH=<project>/src python -m obstacle_task.evaluate \
       --policy <project>/scripts/obstacle/rl_obstacle_policy.py:make_policy --policy-arg runs/training/<run> ...
---policy-arg: a training run directory (model.npz + model_info.json) or a model.npz path next to its model_info.json.
+--policy-arg: a training run directory (model.npz + model_info.json) or a model.npz path next to its model_info.json,
+optionally followed by ",db=<rad/s>": the +DB parking variant of this project's evaluator (make_action_filter): when
+every wheel command is below the band in magnitude, all four are set to exactly zero (the expert's latched stop).
 """
 import json
 import os
@@ -51,8 +53,9 @@ def load_policy(path):
 class ProjectPolicy:
     """One of this project's policies behind the harness interface."""
 
-    def __init__(self, path):
+    def __init__(self, path, dead_band=0.0):
         self.path = os.path.abspath(path)
+        self.dead_band = float(dead_band)
         self.policy, self.info = load_policy(self.path)
         self.uses_lidar = "lidar" in str(self.info.get("variant", self.info.get("input_mode", "")))
         self.dt = None
@@ -67,10 +70,19 @@ class ProjectPolicy:
                                       q[ARM], qd[ARM], np.asarray(obs["target"], dtype=np.float64)])
         lidar = np.asarray(obs["lidar"], dtype=np.float64) if self.uses_lidar else None
         action = np.clip(self.policy.predict_action(observation, lidar=lidar), -LIMITS, LIMITS)
+        if self.dead_band > 0 and np.abs(action[:4]).max() < self.dead_band:
+            action[:4] = 0.0
         return action[:4], action[4:11]
 
 
 def make_policy(arg):
     if not arg:
         raise ValueError("--policy-arg must give a training run directory or a model.npz path")
-    return ProjectPolicy(arg)
+    path, *options = [part.strip() for part in arg.split(",")]
+    dead_band = 0.0
+    for option in options:
+        key, _, value = option.partition("=")
+        if key != "db":
+            raise ValueError(f"unknown --policy-arg option {option!r} (only db=<rad/s>)")
+        dead_band = float(value)
+    return ProjectPolicy(path, dead_band)
