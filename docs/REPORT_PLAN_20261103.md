@@ -500,6 +500,30 @@ long-range test plus the novel start pose. The report said "planar range up to 4
 the Fig. 2 caption ranges corrected (starts 3.5–4.8 m, not 2.3–3.5). The GRU's loss on far targets, where the drive
 length is demonstrated, says its loss is not the length alone (its state also reads the raw world pose).
 
+### 7.12 Seeds 3 and 4 of the three main models (`chain_seeds34.sh`, done 4 Nov 19:52)
+
+Same recipes as seeds 0–2 (MLP-Ego-IC K 144; GRU-Ego patience 40; TF-Ego patience 40, so the five transformer seeds
+share the recipe). Stable arrivals at 1 / 2 / 5 cm of 205, both banks, pooled with `seed_stats.py`:
+
+| policy | bank | seeds 0 / 1 / 2 / 3 / 4 at 1 cm | 1 cm mean ± sd (range) | 5 cm mean ± sd (range) |
+|---|---|---|---|---|
+| MLP-Ego-IC | nominal | 199 / 193 / 175 / 193 / 185 | 189.0 ± 9.3 (175–199) = 92 ± 5 % | 201.0 ± 2.0 (199–204) |
+| MLP-Ego-IC | random start | 200 / 197 / 187 / 199 / 180 | 192.6 ± 8.7 (180–200) = 94 ± 4 % | 202.0 ± 2.0 (199–204) |
+| GRU-Ego | nominal | 138 / 121 / 151 / 150 / 186 | 149.2 ± 23.9 (121–186) = 73 ± 12 % | 196.8 ± 12.2 (177–205) |
+| GRU-Ego | random start | 118 / 103 / 140 / 133 / 168 | 132.4 ± 24.5 (103–168) | 194.4 ± 13.6 (172–205) |
+| TF-Ego | nominal | 166 / 85 / 169 / 172 / 200 | 158.4 ± 43.2 (85–200) = 77 ± 21 % | 185.0 ± 27.9 (137–205) |
+| TF-Ego | random start | 153 / 73 / 179 / 179 / 197 | 156.2 ± 49.1 (73–197) | 181.6 ± 31.9 (128–203) |
+
+- Offline NRMSE of the new seeds: MLP 0.134 / 0.140, GRU 0.108 / 0.105, TF 0.104 / 0.103, all inside the ranges of
+  seeds 0–2. The new seeds did not change the MLP's picture (sd 9 of 205) and widened the memory models' upward: GRU seed
+  4 reaches 186 and TF seed 4 reaches 200 at 1 cm (arm active 205, base parked 142; its parking is the MLP's), so a
+  transformer seed can equal the device. The seed spread of the sequence models (sd 24 and 43) is 3–5× the MLP's.
+- Report: Table II rows marked "(5 seeds)"; abstract (GRU 59–91 %), §III-D (ranges over five seeds; the device is
+  worth 30–40 arrivals per seed on top of memory, not 50), conclusion. Table III and Fig. 2 stay at seeds 0–2
+  (the adversity and bank evaluations were run on those). `weights/v2/` gains the six new runs and the five
+  patience-40 transformers; `final_table.py` registers the `_s34_` evaluations.
+- Queue after this chain: empty. GPU and CPU free.
+
 **Seed reporting convention (Rodrigo, 4 Nov 19:00).** Tables II and III give stable arrivals as a percentage of the
 205 geometries, mean ± s.d. over the seeds with the min–max range in brackets (`scripts/analysis/seed_stats.py`
 computes the cells); single-seed rows are marked "seed 0". No cell reports the best seed alone. The prose keeps the

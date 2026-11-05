@@ -12,14 +12,15 @@ it; the hash in `run.json` matches).
 Mixture v2: 3 221 expert successes (nominal start + random start, goal referenced to the start pose), DART noise at
 collection, 802 validation episodes. "clean" = the same mixture collected without DART (4 000 episodes). Stable
 arrivals at 1 cm (0.5 s dwell) on the 205 held-out nominal geometries / the 205 random-start geometries, seeds 0 / 1 / 2;
-the expert scores 205 / 200.
+the expert scores 205 / 200. Seeds 3 and 4 of the three main models were added on 4 Nov (evening).
 
 | directory | model | parameters | nominal | random start |
 |---|---|---|---|---|
-| `v2_mlp28_trig144_seed{0,1,2}` | MLP, 28 inputs, 144 ignition copies (the report's main policy) | 21 385 | 199 / 193 / 175 | 200 / 197 / 187 |
-| `v2_mlp28_control_seed{0,1,2}` | same MLP without the ignition copies | 21 385 | 1 / 0 / 2 | 1 / 0 / 1 |
-| `v2_gru28_patience40_seed{0,1,2}` | GRU, 28 inputs, 20 ms memory stride, no device | 81 929 | 138 / 121 / 151 | 118 / 103 / 140 |
-| `v2_tf28_p20_seed{0,1,2}` | causal transformer, 28 inputs, 20 ms stride, 20 s window, no device | 81 993 | 166 / 85 / 104 | 153 / 73 / 113 |
+| `v2_mlp28_trig144_seed{0..4}` | MLP, 28 inputs, 144 ignition copies (the report's MLP-Ego-IC) | 21 385 | 199 / 193 / 175 / 193 / 185 | 200 / 197 / 187 / 199 / 180 |
+| `v2_mlp28_control_seed{0,1,2}` | same MLP without the ignition copies (MLP-Ego) | 21 385 | 1 / 0 / 2 | 1 / 0 / 1 |
+| `v2_gru28_patience40_seed{0..4}` | GRU, 28 inputs, 20 ms memory stride, no device (GRU-Ego) | 81 929 | 138 / 121 / 151 / 150 / 186 | 118 / 103 / 140 / 133 / 168 |
+| `v2_tf28_p40_seed{0..4}` | causal transformer, 28 inputs, 20 ms stride, 20 s window, patience 40 (TF-Ego) | 81 993 | 166 / 85 / 169 / 172 / 200 | 153 / 73 / 179 / 179 / 197 |
+| `v2_tf28_p20_seed{0,1,2}` | the same transformer at patience 20 (superseded) | 81 993 | 166 / 85 / 104 | 153 / 73 / 113 |
 | `v2_mlp28clean_trig144_seed{0,1,2}` | MLP + 144 copies trained on the clean (no-DART) mixture | 21 385 | 0 / 0 / 0 | 0 / 0 / 0 |
 | `v2_mlp28clean_control_seed{0,1,2}` | MLP without copies, clean mixture | 21 385 | 0 / 0 / 0 | 0 / 0 / 0 |
 
