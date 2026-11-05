@@ -363,6 +363,10 @@ step, training time, arrivals vs data).
   the obstacle in 300 / 300 scenarios and the ambiguous band costs nothing. The failures are the hold: the recorded
   demonstrations stop at the reach, so the policies leave the target 2–3 s after arriving (`scripts/obstacle/dev2_table.py`,
   REPORT_PLAN §8).
+  Re-collecting the same 2000 scenarios with the expert held 10 s after the reach (`scripts/obstacle/collect_step9_hold.py`,
+  a wrapper around the group's collector) does not help by itself (held 10 s 29 / 300); keeping this project's DART arm
+  noise on during the hold does: 184 / 300 held, 70 % success, seed 0. What the hold needs is not hold rows but
+  recovery rows near the target (REPORT_PLAN §8, 5 Nov).
 
 ## 9. The documents, in reading order
 

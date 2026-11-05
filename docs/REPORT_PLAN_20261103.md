@@ -748,6 +748,23 @@ smoke test: base moving in 78–80 % of the hold rows, 4–7 cm excursions, expe
 
 MLP-Ego-IC + lidar without the clock (recorded set, seed 0) trained: 25 min, peak RSS 66 GB; on dev2 now.
 
+**5 Nov 13:15, the arm perturbation during the hold restores the hold.** MLP-Ego-IC + lidar trained on the our-DART
+hold set (arm noise 1 N m kept on during the hold, base noise off at the dock as in the group's collector), seed 0,
+dev2: success 211 / 300 (70 %), **held 10 s 184 / 300 (61 %)**, stable 1 / 2 / 5 cm 204 / 231 / 246, 2 collisions. The
+same recipe on the their-DART hold set gave 160 / 29 / 134 and on the recorded set 182 / 33 / 160. So the recorded
+hold rows were not what was missing; the recovery rows were: demonstrations of the expert's arm correcting a perturbed
+end effector near the target, which the group's fading noise removes exactly where they matter. The stable 5 cm count
+is lower (246 against 273–292): the base-and-arm perturbation makes the approach noisier, and 89 scenarios never reach
+10 mm (closest approach to be read). No-clock control (recorded set, seed 0): success 143, held 40; with +DB 129 / 46:
+the clock is not the cause. Training time of this seed was 64 min (3810 s) because the base-noise collection shared the
+CPU; peak RSS 92 GB.
+
+Base-noise hold set (our DART with the base kept perturbed during the hold): 1994 reached, 4 collisions, 2 unreachable
+(dropped), 49 min; converted (`train2_hold10_ourdart_basenoise_obstacle_lidar`, tags `*lidarholdB_*`). The training
+chain was replaced at 13:15 by `chain_step9_hold_train2.sh`, reprioritised: GRU our-DART seed 0 (left training),
+MLP base-noise 0, our-DART 1, base-noise 1, our-DART 2, base-noise 2, then the GRUs of both sets, then the low-value
+rest (their-DART seeds 1–2, no-clock seeds 1–2). Every our-DART and base-noise MLP is also evaluated with +DB.
+
 TF-Ego + lidar on the full split (streaming trainer): seed 0 success 22 / 300 (7 %), stable 1 / 2 / 5 cm 16 / 58 / 151,
 docked clean 295, 0 collisions, 30 min, validation NRMSE 0.106; seed 1 44 / 300 (15 %), 35 / 84 / 186, docked clean
 284, 1 collision, 24 min, NRMSE 0.106; seed 2 training. The transformer docks like the others and fails the reach even
