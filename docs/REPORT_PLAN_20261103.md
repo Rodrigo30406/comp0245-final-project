@@ -468,6 +468,27 @@ training geometries, 721 expert successes kept, same 205 validation geometries a
 - Report: Table II row "MLP-Ego-IC, nominal starts only" 178 / 115 / 170 and 199 / 195 / 193; §III-C paragraph.
   `final_table.py` registers `v2_mlp28nom_trig144_on_clean_validation_20261104`.
 
+### 7.11 The expert's 129 nominal failures are not the timeout (4 Nov 19:03, `scripts/analysis/expert_failures_timeout.py`)
+
+Rodrigo: the data section still said the expert "times out at 25 s". Measured on the 129 failures of the nominal DART
+collection (12.6 % of 1 024), re-run with the same DART noise realisation (same `(noise seed, scenario seed)` stream,
+same `np.random.seed`) and `nav_timeout` 38 s instead of 25 s; three 25 s controls reproduce the recorded minimum
+distance exactly.
+
+| group (from the metadata) | n | at 25 s (collection) | at 38 s |
+|---|---|---|---|
+| navigation timed out: base circling 10–50 cm from its goal, arm then "closest pose reached" from ~2 m | 110 | min distance median 0.28 m, final 2.0 m | parks in **0**, min distance unchanged in all 110 (|Δ| < 5 mm), final distance median 4.5 m |
+| navigation done in 0–3 s (target within reach of the start), hand 1–6 mm away, expert's stop test declares "closest pose reached" | 19 | min distance median 3 mm | unchanged (independent of the timeout); 14 of 19 hold 1 cm for 0.5 s by our metric |
+
+- The timeout decides when the expert gives up, not why it fails: the base never satisfies its 8 cm / 0.05 rad parking
+  test on these geometries under the DART wheel noise (it circles at a fixed radius, so more time only adds distance),
+  the same mechanism as the gain-0.95 failures (§7.6). A successful drive takes at most 11 s (99th percentile), so 25 s
+  was already 2.3× that and 38 s changes nothing.
+- The 19 arm cases are the expert's own termination under torque noise, a label failure at 1–6 mm; they are also dropped
+  by the success filter (they would teach "closest pose reached" as a stop 1 cm short).
+- Report: data section (ii) rewritten with these numbers; no sentence attributes a failure to the timeout.
+  `nav_timeout` stays 25 s everywhere (AGENTS.md).
+
 **Seed reporting convention (Rodrigo, 4 Nov 19:00).** Tables II and III give stable arrivals as a percentage of the
 205 geometries, mean ± s.d. over the seeds with the min–max range in brackets (`scripts/analysis/seed_stats.py`
 computes the cells); single-seed rows are marked "seed 0". No cell reports the best seed alone. The prose keeps the
