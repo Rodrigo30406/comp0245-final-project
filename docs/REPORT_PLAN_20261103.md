@@ -653,6 +653,28 @@ seeds, and read the hold column. A cheaper control: train the same models withou
 Transformer: the cap-700 chain was stalled from 23:27 to 04:08 by the same process-guard pattern as on 4 Nov (a shell wrapper whose text contained the trainer names), and its capped split then failed the trainer's partition check (a split must cover the whole inventory). Instead the trainer was fixed to stream normalised float32 episodes (gru_policy.normalised_group), so TF-Ego + lidar trains on the full split like the other two models (04:45, three seeds, each evaluated on dev2). Original note: (a shell
 wrapper whose text contained the trainer names); released at 04:08, seed 0 training.
 
+**5 Nov 05:30, hold-tail collection launched; transformer seeds 0–1.** Rodrigo approved the re-collection. The
+group's collector is not edited: `scripts/obstacle/collect_step9_hold.py` imports `obstacle_task.collect` and wraps its
+`check_stop` so the expert keeps running 10 s after the first reach (the harness's own hold window), then the episode
+ends with status "reached"; before the reach the template rule is unchanged. Smoke test on two scenarios: episodes end
+exactly 10 s after the reach (29.5 and 31.9 s), the expert holds at 1.6–2.0 mm with zero wheel commands. The full set
+(train2's 2000 scenarios, same noisy flags and noise seeds, `datasets/step9/raw/train2_hold10`, ~70 min with 16
+workers) is converted to `datasets/step9/train2_hold10_obstacle_lidar` (split `step9_train2_hold10_split.json`, same
+seed) and `chain_step9_hold.sh` then trains MLP-Ego-IC + lidar and GRU-Ego + lidar, seeds 0–2, tags
+`mlp28lidarhold_trig144_seed*` / `gru28lidarhold_patience40_seed*`, each on dev2, after the transformer chain. The
+no-clock control needs a new input variant (a `src/` edit) and waits for the GPU gap after that chain.
+
+TF-Ego + lidar on the full split (streaming trainer): seed 0 success 22 / 300 (7 %), stable 1 / 2 / 5 cm 16 / 58 / 151,
+docked clean 295, 0 collisions, 30 min, validation NRMSE 0.106; seed 1 44 / 300 (15 %), 35 / 84 / 186, docked clean
+284, 1 collision, 24 min, NRMSE 0.106; seed 2 training. The transformer docks like the others and fails the reach even
+more than the GRU: the same pattern as section 7 (the memory models are the ones that cannot survive a horizon they
+never saw), now with no hold data at all.
+
+The group's L2 (side classifier latched at the first step + side-conditioned base network + arm network, no clock,
+`obstacle_task/policies.py`; their seed 0 on dev2): success 180 / 300 = 60.0 %, stable 1 cm 148, docked clean 291,
+0 collisions, held 10 s only 27 / 300 = 9 %. It has exactly the hold failure of our models (its demonstrations are
+the same recorded set), and its 60 % is one seed against our 54 ± 6 (48–61): seed 0 of our MLP is 60.7 %.
+
 **Seed reporting convention (Rodrigo, 4 Nov 19:00).** Tables II and III give stable arrivals as a percentage of the
 205 geometries, mean ± s.d. over the seeds with the min–max range in brackets (`scripts/analysis/seed_stats.py`
 computes the cells); single-seed rows are marked "seed 0". No cell reports the best seed alone. The prose keeps the
