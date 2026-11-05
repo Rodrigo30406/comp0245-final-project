@@ -710,6 +710,27 @@ evaluation, as in Table II) on the obstacle harness through `rl_obstacle_policy.
 for the recorded-set and the hold seed-0 MLPs (`chain_step9_db.sh`). GRU-Ego + lidar on the hold set trained (17 min,
 peak RSS 69.6 GB, NRMSE 0.079 against 0.103) and is on dev2.
 
+**5 Nov 11:50, why A-to-B holds and the obstacle task does not: the demonstrations' hold is perturbed in one and
+still in the other.** Rodrigo's question. Measured on the demonstrations (30 episodes each, rows of the terminal
+zero-wheel run): in our A-to-B DART-low set the base is moving faster than 1 cm/s in 83 % of the hold rows (our wheel
+noise, 0.5 rad/s, stays on during the hold and kicks the base; max displacement during the hold median 1.8 cm), so the
+expert's arm is seen compensating a moving base tens of thousands of times per episode. In both step-9 hold sets the
+base moves in 0.9 % of the hold rows (the group's collector switches the base noise off once navigation is done, with
+their parameters and with ours alike): the arm is never seen compensating anything. Closed loop on A-to-B (traces of
+`v2_mlp28_trig144_on_clean_validation`, 100 ms sampling, the 10 s after the first sample within 10 mm): the MLP's base
+creeps there too, 2.6 / 4.6 / 5.7 cm (median per seed) with wheel commands of 0.04–0.06 rad/s, but the arm absorbs it:
+seed 0 ends the window at 4 mm and holds 15 mm for 10 s in 195 of 200 reaches (seeds 1 and 2 only 99 / 192 and 86 /
+176, ending at 13–15 mm; the expert 205 / 205 with zero wheels and 0.2 cm displacement). On the obstacle task the same
+2.6 cm of creep ends at 25 mm because the arm does not track the moving base. So the difficulty is not the obstacle
+and not the lidar: it is that the hold robustness of A-to-B came from DART perturbing the base *during* the hold, and
+the obstacle demonstrations lack exactly that. Two fixes follow, one on each side: the device (+DB, zero wheels, running
+now) and the data (a third hold collection with wheel noise kept on during the hold, which the wrapper can add without
+touching the group's code; not launched, ~1 h collection + ~1.5 h for three MLP seeds).
+
+GRU-Ego + lidar on the hold set, seed 0: success 15 / 300 (5 %), stable 1 / 2 / 5 cm 5 / 36 / 142, held 10 s 0 / 300,
+3 collisions; worse than on the recorded set (44). Its offline error improved (0.079 against 0.103) while its closed
+loop got worse: the memory model fits the longer hold tail and still cannot act in it.
+
 TF-Ego + lidar on the full split (streaming trainer): seed 0 success 22 / 300 (7 %), stable 1 / 2 / 5 cm 16 / 58 / 151,
 docked clean 295, 0 collisions, 30 min, validation NRMSE 0.106; seed 1 44 / 300 (15 %), 35 / 84 / 186, docked clean
 284, 1 collision, 24 min, NRMSE 0.106; seed 2 training. The transformer docks like the others and fails the reach even
