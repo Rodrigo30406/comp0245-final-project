@@ -103,6 +103,12 @@ TRAIN_CHUNK = 200 * 512   # rows per partial_fit call (a multiple of the batch s
 VAL_CHUNK = 65536         # rows per feature build of the validation pass and of the standardisation pass
 FWD_CHUNK = tp.FWD_CHUNK  # rows per forward pass inside a chunk
 
+# Per-config overrides of the training recipe (keys of a CONFIGS entry, all optional; absent = the defaults above):
+#   hidden      hidden layer sizes (default: MLP_PARAMS / CLS_PARAMS)
+#   lr_decay    (factor, every): the Adam learning rate is multiplied by `factor` after every `every` epochs
+#   patience    early-stopping patience in epochs;  max_epochs  epoch cap (when the command line keeps the default)
+MAZE_NET = {"hidden": (256, 256, 128), "lr_decay": (0.5, 8), "patience": 12, "max_epochs": 200}
+
 CONFIGS = {  # network name -> kind, feature set, output group (features.OUTPUTS), copies K, rows
     "L0": {"kind": "regressor", "features": "single84", "outputs": "all", "copies": TRIGGER_COPIES, "rows": "all"},
     "L1base": {"kind": "regressor", "features": "base70", "outputs": "vw", "copies": TRIGGER_COPIES, "rows": "all"},
@@ -111,6 +117,15 @@ CONFIGS = {  # network name -> kind, feature set, output group (features.OUTPUTS
     "L2cls": {"kind": "classifier", "features": "base70", "outputs": "side", "copies": 0, "rows": "t<1"},
     "L2base": {"kind": "regressor", "features": "base70_side", "outputs": "vw", "copies": TRIGGER_COPIES,
                "rows": "all"},
+    # Maze networks (obstacle_task/maze.py): the same recipes with a deeper base network, a learning-rate decay and a
+    # longer patience, because the base network has to learn a multi-step route from the lidar alone. The arm
+    # network is the unchanged L1arm (policies.POLICY_MODELS: M1 = M1base + L1arm, M2 = M2cls + M2base + L1arm).
+    "M1base": {"kind": "regressor", "features": "base70", "outputs": "vw", "copies": TRIGGER_COPIES, "rows": "all",
+               **MAZE_NET},
+    "M2cls": {"kind": "classifier", "features": "base70", "outputs": "side", "copies": 0, "rows": "t<1",
+              "hidden": (128, 128), "patience": 12, "max_epochs": 200},
+    "M2base": {"kind": "regressor", "features": "base70_side", "outputs": "vw", "copies": TRIGGER_COPIES,
+               "rows": "all", **MAZE_NET},
 }
 ROW_RULES = {"all": "every cached row of the part",
              "t<1": f"the cached rows with recorded t < {CLS_T_MAX} s (float32 column t)"}
@@ -686,10 +701,13 @@ class NetData:
 # ==============================================================================
 # Fitting
 # ==============================================================================
-def make_net(kind, seed):
-    """sklearn MLP of a network kind; a RandomState instance (not an int), as train_policy.make_mlp."""
+def make_net(kind, seed, hidden=None):
+    """sklearn MLP of a network kind; a RandomState instance (not an int), as train_policy.make_mlp.
+    hidden: optional hidden layer sizes replacing the default ones."""
     from sklearn.neural_network import MLPClassifier, MLPRegressor
     cls, params = (MLPClassifier, CLS_PARAMS) if kind == "classifier" else (MLPRegressor, MLP_PARAMS)
+    if hidden:
+        params = {**params, "hidden_layer_sizes": tuple(hidden)}
     return cls(**params, random_state=np.random.RandomState(seed))
 
 
@@ -714,7 +732,12 @@ def fit_epoch(net, data, perm, chunk=TRAIN_CHUNK):
 def train_net(data, seed, max_epochs=MAX_EPOCHS, patience=PATIENCE, rel_tol=REL_TOL, log=None):
     """Fit one network with early stopping on its own validation loss. Returns (best coefs, best intercepts, history,
     the sklearn net with its last-epoch weights)."""
-    net = make_net(data.kind, seed)
+    spec = getattr(data, "spec", {})
+    net = make_net(data.kind, seed, spec.get("hidden"))
+    patience = spec.get("patience", patience)
+    if max_epochs == MAX_EPOCHS:
+        max_epochs = spec.get("max_epochs", max_epochs)
+    decay = spec.get("lr_decay")
     stopper = tp.EarlyStopping(patience, rel_tol)
     rng = np.random.default_rng([int(seed), SHUFFLE_STREAM])
     best_w = best_b = None
@@ -724,6 +747,8 @@ def train_net(data, seed, max_epochs=MAX_EPOCHS, patience=PATIENCE, rel_tol=REL_
     with tp.single_thread():
         for epoch in range(1, max_epochs + 1):
             t0 = time.time()
+            if decay and epoch > 1:   # sklearn's Adam recomputes its step size from learning_rate_init at every update
+                net._optimizer.learning_rate_init = MLP_PARAMS["learning_rate_init"] * decay[0] ** ((epoch - 1) // decay[1])
             train_loss = fit_epoch(net, data, rng.permutation(data.n_train))
             t1 = time.time()
             # exactly one pass per epoch, with the batches of one partial_fit call (Adam step count)
@@ -802,6 +827,8 @@ def run_train(config, seed, out_dir=TRAINED_DIR, cache_dir=CACHE_DIR, split_path
     assert abs(check - hist["best_val_loss"]) <= 1e-12 * max(1.0, abs(check)), "best weights do not match"
     net.coefs_, net.intercepts_ = w, b   # the returned net carries the saved (best-epoch) weights
     params = CLS_PARAMS if data.kind == "classifier" else MLP_PARAMS
+    if spec.get("hidden"):
+        params = {**params, "hidden_layer_sizes": tuple(spec["hidden"])}
     meta = {
         "config": config, "kind": data.kind, "feature_set": data.feature_set,
         "feature_names": obf.FEATURE_SETS[data.feature_set], "output_group": data.outputs,
@@ -825,7 +852,8 @@ def run_train(config, seed, out_dir=TRAINED_DIR, cache_dir=CACHE_DIR, split_path
                                  "batches + the L2 penalty (alpha)",
         "hyperparameters": {**params, "hidden_layer_sizes": list(params["hidden_layer_sizes"]),
                             "random_state": f"np.random.RandomState({seed})", "max_epochs": max_epochs,
-                            "patience": PATIENCE, "rel_tol": REL_TOL, "dtype": "float64",
+                            "patience": spec.get("patience", PATIENCE), "rel_tol": REL_TOL, "dtype": "float64",
+                            "lr_decay": list(spec["lr_decay"]) if spec.get("lr_decay") else None,
                             "epoch": f"one pass over a numpy default_rng([seed, {SHUFFLE_STREAM}]).permutation of "
                                      f"the training rows (one per epoch), partial_fit in chunks of {TRAIN_CHUNK} rows "
                                      f"(sklearn shuffle off; same batches as one partial_fit call)"},
@@ -888,7 +916,21 @@ def main(argv=None):
     p.add_argument("--max-epochs", type=int, default=MAX_EPOCHS, help="smoke tests only (needs --out-dir)")
     p.add_argument("--force", action="store_true", help="retrain finished models")
 
+    for sp in sub.choices.values():
+        sp.add_argument("--tag", default="", help="named experiment, e.g. 'maze': split trained/<tag>/data_split.json, "
+                        "cache results/<tag>/train_cache, models trained/<tag>/, split data data/obstacle/<tag>_train "
+                        "(each only where the option is not given), so a new task never touches trained/step9")
+
     args = ap.parse_args(argv)
+    if args.tag:
+        tag_dir = os.path.join(TASK_DIR, "trained", args.tag)
+        defaults = {"split": os.path.join(tag_dir, "data_split.json"),
+                    "out": os.path.join(tag_dir, "data_split.json"),
+                    "cache": os.path.join(TASK_DIR, "results", args.tag, "train_cache"),
+                    "out_dir": tag_dir, "data": os.path.join(TASK_DIR, "data", "obstacle", f"{args.tag}_train")}
+        for key, value in defaults.items():
+            if hasattr(args, key) and getattr(args, key) in (None, SPLIT_PATH, CACHE_DIR, TRAINED_DIR, DATA_DIR):
+                setattr(args, key, value)
     if args.cmd == "split":
         split = write_split(args.out, force=args.force, data_dir=args.data,
                             exclude_nav_timeout=args.exclude_nav_timeout)

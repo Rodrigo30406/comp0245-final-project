@@ -169,8 +169,12 @@ def sample_scenario(seed, episode):
 
 def make_scenarios(seed, n_episodes, noise_frac=0.0, course=False):
     """Scenarios 0..n-1 of a set; the noisy flag of each comes from its own stream.
-    course=True draws multi-obstacle courses (obstacle_task/course.py) instead of the single obstacle."""
-    if course:
+    course=True draws multi-obstacle courses (obstacle_task/course.py), course="maze" planned obstacle mazes
+    (obstacle_task/maze.py), instead of the single obstacle."""
+    if course == "maze":
+        from obstacle_task.maze import sample_maze         # lazy: maze.py imports this module
+        draw = sample_maze
+    elif course:
         from obstacle_task.course import sample_course     # lazy: course.py imports this module
         draw = sample_course
     else:

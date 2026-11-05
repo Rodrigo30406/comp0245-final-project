@@ -146,11 +146,14 @@ def estimate_nav_time(init_xy, init_yaw, route, dock_xy, dock_bearing):
     return float(sum(l / V_EFF + LEG_OVERHEAD for l in lengths) + sum(t / TURN_EFF + TURN_OVERHEAD for t in turns))
 
 
-def course_violations(init_xy, init_yaw, dock_xy, dock_bearing, target, obstacles, route, blocking=None):
+def course_violations(init_xy, init_yaw, dock_xy, dock_bearing, target, obstacles, route, blocking=None,
+                      nav_budget=None):
     """Every rule of the module docstring; returns the list of violated rules (empty = the expert cannot fail).
 
     blocking: indices of the obstacles that must block the straight start->dock line (default: all non-gate ones are
-    chosen by the sampler; pass [] to skip the rule)."""
+    chosen by the sampler; pass [] to skip the rule). nav_budget: largest accepted navigation-time estimate (s),
+    default NAV_BUDGET (the mazes of maze.py pass their own)."""
+    nav_budget = NAV_BUDGET if nav_budget is None else nav_budget
     init_xy, dock_xy = np.asarray(init_xy, dtype=float), np.asarray(dock_xy, dtype=float)
     route = [np.asarray(w, dtype=float) for w in route]
     target_xy = np.asarray(target[:2], dtype=float)
@@ -181,8 +184,8 @@ def course_violations(init_xy, init_yaw, dock_xy, dock_bearing, target, obstacle
         if segment_obstacle_distance(init_xy, dock_xy, obstacles[i]) >= CHASSIS_HALF_WIDTH:
             bad.append(f"obstacle {i} does not block the straight path")
     est = estimate_nav_time(init_xy, init_yaw, route, dock_xy, dock_bearing)
-    if est > NAV_BUDGET:
-        bad.append(f"estimated navigation time {est:.1f} s above {NAV_BUDGET} s")
+    if est > nav_budget:
+        bad.append(f"estimated navigation time {est:.1f} s above {nav_budget} s")
     return bad
 
 

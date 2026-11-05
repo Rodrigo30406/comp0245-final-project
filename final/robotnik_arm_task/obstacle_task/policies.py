@@ -48,6 +48,9 @@ POLICY_MODELS = {
     "L1": {"base": "L1base", "arm": "L1arm"},
     "L1-K0": {"base": "L1base", "arm": "L1armK0"},
     "L2": {"cls": "L2cls", "base": "L2base", "arm": "L1arm"},
+    # maze networks (train.py CONFIGS M*): deeper base networks, same policy classes
+    "M1": {"base": "M1base", "arm": "L1arm"},
+    "M2": {"cls": "M2cls", "base": "M2base", "arm": "L1arm"},
 }
 
 
@@ -206,6 +209,6 @@ def make_config(arg):
     paths = config_paths(name.strip(), opts["seed"], opts.get("dir", TRAINED_DIR))
     if name.strip() == "L0":
         return SinglePolicy(paths["model"])
-    if name.strip() == "L2":
+    if name.strip() in ("L2", "M2"):
         return SideLatchedPolicy(paths["cls"], paths["base"], paths["arm"])
     return TwoNetPolicy(paths["base"], paths["arm"])
