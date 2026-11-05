@@ -599,7 +599,7 @@ trainer and a 16-worker evaluation were running on the same machine. No source e
 episodes (uniform, seed 20261104; 16.5 M rows), the same 300 validation episodes
 (`runs/splits/step9_train2_split_tfcap700.json`, `chain_step9_tf.sh`, seeds 0–2, each evaluated on dev2). The
 night chain skips its own transformer attempts (placeholder dirs). The data-size difference is declared in the table.
-Fix for later: stream the padded float32 episodes as `gru_policy.normalised_group` does.
+Fixed 5 Nov 04:40 (`transformer_policy.train` now uses `normalised_group`; 18 tests pass): TF-Ego + lidar seeds 0–2 retrain on the full split (`chain_step9_tf_full.sh`), the 700-episode cap is dropped.
 
 Open points for the morning: the clock input runs to 60 s here (40 s on the A-to-B task); the ignition copies rule is
 unchanged (first row of the terminal zero-wheel run, i.e. the expert's dock); the ambiguous band is where a unimodal
@@ -650,7 +650,7 @@ expert for 10 s after the reach, as the harness itself does), convert, retrain t
 seeds, and read the hold column. A cheaper control: train the same models without the clock input (variant without
 `clock`) to separate the clock extrapolation from the missing hold data.
 
-Transformer: the cap-700 chain was stalled from 23:27 to 04:08 by the same process-guard pattern as on 4 Nov (a shell
+Transformer: the cap-700 chain was stalled from 23:27 to 04:08 by the same process-guard pattern as on 4 Nov (a shell wrapper whose text contained the trainer names), and its capped split then failed the trainer's partition check (a split must cover the whole inventory). Instead the trainer was fixed to stream normalised float32 episodes (gru_policy.normalised_group), so TF-Ego + lidar trains on the full split like the other two models (04:45, three seeds, each evaluated on dev2). Original note: (a shell
 wrapper whose text contained the trainer names); released at 04:08, seed 0 training.
 
 **Seed reporting convention (Rodrigo, 4 Nov 19:00).** Tables II and III give stable arrivals as a percentage of the

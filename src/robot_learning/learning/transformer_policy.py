@@ -26,7 +26,7 @@ from robot_learning.settings import PROJECT_ROOT
 from robot_learning.simulation.config import episode_defaults, resolve_episode_config
 from .dataset import inventory, load_episode, validate_partition, extra_inventory, drop_expert_failures
 from .egocentric import validate_spec, spec_from_episode_config, VARIANT, x_check
-from .gru_policy import MODES, input_names, features_for, padded_group
+from .gru_policy import MODES, input_names, features_for, normalised_group, episode_group
 from .metrics import errors, aggregate
 from .model import INPUT_NAMES, OUTPUT_NAMES, expand_actions
 
@@ -295,18 +295,15 @@ def train(dataset, split_path, config_path, output, horizon_s=40.0, device_name=
     write_json(output / "run.json", manifest)
     started = time.perf_counter()
     try:
-        X, Y, L = padded_group(dataset, split["training"], spec, mode)
-        VX, VY, VL = padded_group(dataset, split["validation"], spec, mode)
+        # Normalised float32 episodes padded one at a time (gru_policy.normalised_group): the padded float64 arrays and
+        # their normalised copies never exist (1700 obstacle episodes x 29 021 steps x 92 inputs cost 36 GB that way).
+        X, Y, L, stats, _ = normalised_group(dataset, split["training"], spec, mode)
+        x_mean, x_scale, y_mean, y_scale = stats
         mask = np.arange(X.shape[1])[None, :] < L[:, None]
-        flat_x = X[mask]; flat_y = Y[mask]
-        x_mean, x_scale = flat_x.mean(axis=0), flat_x.std(axis=0); x_scale[x_scale == 0] = 1.0
-        y_mean, y_scale = flat_y.mean(axis=0), flat_y.std(axis=0); y_scale[y_scale == 0] = 1.0
-        stats = (x_mean, x_scale, y_mean, y_scale); del flat_x, flat_y
-        tx = torch.from_numpy(((X - x_mean) / x_scale).astype(np.float32)).to(device)
-        ty = torch.from_numpy(((Y - y_mean) / y_scale).astype(np.float32)).to(device)
-        tmask = torch.from_numpy(mask).to(device)
-        tvx = torch.from_numpy(((VX - x_mean) / x_scale).astype(np.float32)).to(device)
+        tx = torch.from_numpy(X).to(device); ty = torch.from_numpy(Y).to(device); tmask = torch.from_numpy(mask).to(device)
         del X, Y
+        VX, _, VL, _, VYS = normalised_group(dataset, split["validation"], spec, mode, stats)  # training statistics
+        tvx = torch.from_numpy(VX).to(device); T_val = VX.shape[1]; del VX
         network = build_network(torch, len(names), d_model, layers, heads, ffn, head_width, window).to(device)
         optimizer = torch.optim.Adam(network.parameters(), lr=hp["learning_rate"], betas=(.9, .999), eps=1e-8)
         rng = np.random.RandomState(hp["seed"]); n = len(tx)
@@ -318,7 +315,7 @@ def train(dataset, split_path, config_path, output, horizon_s=40.0, device_name=
                          for s in range(0, len(tvx), validation_episodes_per_batch)]
             network.train()
             pred = np.concatenate(preds) * y_scale + y_mean
-            per = [errors(VY[i, :VL[i]], pred[i, :VL[i]], y_scale) for i in range(len(VL))]
+            per = [errors(VYS[i], pred[i, :VL[i]], y_scale) for i in range(len(VL))]
             return float(np.mean([e["balanced_nrmse"] for e in per])), pred, per
 
         best = math.inf; patience_score = math.inf; stale = 0; best_epoch = 0; history = []; epoch = 0; updates = 0
@@ -355,18 +352,19 @@ def train(dataset, split_path, config_path, output, horizon_s=40.0, device_name=
         check = build_network(torch, len(names), d_model, layers, heads, ffn, head_width, window).double()
         load_params(torch, check, policy.p)
         rows_check = min(400, int(VL[0]))
+        vx0 = episode_group(dataset, split["validation"][:1], spec, mode)[0][0][:rows_check]  # raw float64 features
         with torch.no_grad():
-            ref = check(torch.from_numpy(((VX[:1, :rows_check] - x_mean) / x_scale)), stride)
+            ref = check(torch.from_numpy(((vx0[None] - x_mean) / x_scale)), stride)
         ref = ref[0].numpy() * y_scale + y_mean
-        np.testing.assert_allclose(policy.predict_features(VX[0, :rows_check]), ref, rtol=1e-7, atol=1e-7)
+        np.testing.assert_allclose(policy.predict_features(vx0), ref, rtol=1e-7, atol=1e-7)
         raw, raw_lidar = x_check(dataset, split["validation"][0], rows_check)
         policy.reset(dt); live = np.stack([policy.predict_action(o, lidar=None if raw_lidar is None else raw_lidar[i]) for i, o in enumerate(raw)]); policy.reset()
         np.testing.assert_allclose(live, expand_actions(policy.predict(raw, lidar=raw_lidar)), rtol=1e-8, atol=1e-8)
         score, pred, per = validation_score()
-        vmask = np.arange(VX.shape[1])[None, :] < VL[:, None]
+        vmask = np.arange(T_val)[None, :] < VL[:, None]
         metrics = {"validation": {"model": aggregate(per),
-                                  "mean_baseline": aggregate([errors(VY[i, :VL[i]], np.broadcast_to(y_mean, (VL[i], 9)), y_scale) for i in range(len(VL))]),
-                                  "pooled_transitions": {"model": errors(VY[vmask], pred[vmask], y_scale)}}}
+                                  "mean_baseline": aggregate([errors(VYS[i], np.broadcast_to(y_mean, (VL[i], 9)), y_scale) for i in range(len(VL))]),
+                                  "pooled_transitions": {"model": errors(np.concatenate(VYS), pred[vmask], y_scale)}}}
         timings = []; obs, obs_lidar = raw[0], (None if raw_lidar is None else raw_lidar[0]); policy.reset(dt)
         for _ in range(100): policy.predict_action(obs, lidar=obs_lidar)
         for _ in range(2000):
