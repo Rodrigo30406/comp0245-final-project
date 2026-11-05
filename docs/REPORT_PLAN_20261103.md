@@ -765,6 +765,24 @@ chain was replaced at 13:15 by `chain_step9_hold_train2.sh`, reprioritised: GRU 
 MLP base-noise 0, our-DART 1, base-noise 1, our-DART 2, base-noise 2, then the GRUs of both sets, then the low-value
 rest (their-DART seeds 1–2, no-clock seeds 1–2). Every our-DART and base-noise MLP is also evaluated with +DB.
 
+**5 Nov 13:45, what the 70 % model still misses (our-DART hold MLP, seed 0, 89 failures).** Not the band: success
+100 / 137 inside (73 %) against 111 / 163 outside (68 %), and 17 / 26 with |d| < 5 cm, all 26 passing. Three groups:
+21 last-centimetre failures (closest approach < 2 cm), 14 at 2–5 cm, and 54 where the arm never leaves its travel
+posture after docking (end effector moves < 5 cm in the base frame; 34 "stalled", 16 timeouts, 4 tipped over). Of
+those 54, 32 parked facing 15–30° away from the target (successes 1–3°; 31 of 54 rotated short towards the detour
+side), 19 parked more than 15 cm from the expert's spot; the recorded-set and their-DART-hold models have 0–2 such
+parks. So the new dominant failure is the final orientation: the base's slow turn-in-place ends early, the target is
+outside the arm's demonstrated reach cone, and the arm, correctly, does not reach. Consistent with that, the dead band
+hurts this model (+DB: success 150, held 144 against 211 / 184 without): zeroing wheel commands under 0.45 rad/s cuts
+the slow final turn. Low targets (z 0.20–0.45 m) are hard for every model (15–27 / 64; expert 64 / 64); the arm motion
+during navigation is the same in both DART sets (mean |qd| 0.028 against 0.031 rad/s), so the cause is not a less
+perturbed arm. Whether the weak orient is systematic or this seed is decided by seeds 1–2 (queued) and by the
+base-noise set (seed 0 training now, same navigation noise).
+
+GRU-Ego + lidar on the our-DART hold set, seed 0: success 150 / 300 (50 %), held 10 s 144, stable 1 / 2 / 5 cm
+149 / 161 / 170 (recorded set: 44 / 2 / 20 / 77 / 238; their-DART hold: 15 / 0 / 5 / 36 / 142). The recovery rows lift the
+memory model too; its 5 cm count falls the same way (170), i.e. the same orientation failure.
+
 TF-Ego + lidar on the full split (streaming trainer): seed 0 success 22 / 300 (7 %), stable 1 / 2 / 5 cm 16 / 58 / 151,
 docked clean 295, 0 collisions, 30 min, validation NRMSE 0.106; seed 1 44 / 300 (15 %), 35 / 84 / 186, docked clean
 284, 1 collision, 24 min, NRMSE 0.106; seed 2 training. The transformer docks like the others and fails the reach even
