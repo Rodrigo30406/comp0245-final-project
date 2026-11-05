@@ -489,6 +489,17 @@ distance exactly.
 - Report: data section (ii) rewritten with these numbers; no sentence attributes a failure to the timeout.
   `nav_timeout` stays 25 s everywhere (AGENTS.md).
 
+**Far targets vs far starts (Rodrigo, 4 Nov 19:20): are they the same axis?** Measured on the bank metadata, base-frame
+range start→target: training successes (nominal + random starts, 3 701) median 2.0 m, max 4.9 m, 594 above 3 m, 81
+above 4 m; `ood_far_targets` 2.3–4.1 m (median 3.0; 104 of 210 above 3 m), start at the origin; `ood_far_start`
+0.8–6.7 m (median 3.7; 88 above 4 m, **32 beyond anything demonstrated**), start 3.5–4.8 m from the origin, any yaw.
+So far targets is **not** out of distribution in the base frame (the random-start repeats already cover it); it is a
+world-frame test (parking 2.3–4.1 m from the origin, raw pose inputs outside the trained box). Far starts is the true
+long-range test plus the novel start pose. The report said "planar range up to 4.2 m against 2.8" for far targets: that
+2.8 was the nominal set's maximum, wrong once the random-start repeats are in the training set; paragraph rewritten and
+the Fig. 2 caption ranges corrected (starts 3.5–4.8 m, not 2.3–3.5). The GRU's loss on far targets, where the drive
+length is demonstrated, says its loss is not the length alone (its state also reads the raw world pose).
+
 **Seed reporting convention (Rodrigo, 4 Nov 19:00).** Tables II and III give stable arrivals as a percentage of the
 205 geometries, mean ± s.d. over the seeds with the min–max range in brackets (`scripts/analysis/seed_stats.py`
 computes the cells); single-seed rows are marked "seed 0". No cell reports the best seed alone. The prose keeps the
