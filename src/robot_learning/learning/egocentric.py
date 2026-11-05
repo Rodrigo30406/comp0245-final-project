@@ -38,6 +38,8 @@ TARGET_NAMES = FEATURE_NAMES[7:10]  # target in the base frame: no expert goal c
 POLAR_NAMES = ["target_distance_xy", "cos_heading_error_to_target", "sin_heading_error_to_target"]
 VELOCITY_NAMES = ["base_forward_speed_fd", "base_lateral_speed_fd", "base_yaw_rate_fd"]
 PREV_WHEEL_NAMES = ["prev_wheel_right_cmd", "prev_wheel_left_cmd"]
+LIDAR_BEAMS = 64
+LIDAR_NAMES = [f"lidar_{k:02d}" for k in range(LIDAR_BEAMS)]  # planar ranges in the base frame, beam 0 forward, ccw
 CLOCK_NAME = "episode_clock_fraction"
 # Input layouts. The lecturer's 21 explicit inputs may be kept and extended (not replaced):
 #   egocentric_clock_v1       : 10 relative geometry + 14 joint + clock (25); replaces the 7 absolute pose/target inputs
@@ -57,16 +59,23 @@ CLOCK_NAME = "episode_clock_fraction"
 #                               step (30). In training it is the demonstrated command of the previous row (teacher
 #                               forcing), in closed loop the policy's previous output; zero on the first step. No expert
 #                               state is read: a controller always knows what it commanded a millisecond ago.
+#   raw21_targetpolar_clock_lidar64_v1: raw21_targetpolar_clock_v1 plus a 64-beam planar lidar scan (92). The scan is the
+#                               obstacle task's added sensor (step 9, obstacle_task/lidar.py of the group repository):
+#                               ranges to the nearest obstacle in the base frame, beam 0 forward, counter-clockwise,
+#                               clipped at 4 m. It is stored per row in the dataset (key "lidar") and given to the live
+#                               policy by the harness (obs["lidar"]); the A-to-B datasets have no scan and cannot train it.
 VARIANTS = {VARIANT: list(FEATURE_NAMES),
             "raw21_clock_v1": list(INPUT_NAMES) + [CLOCK_NAME],
             "raw21_egocentric_clock_v1": list(INPUT_NAMES) + list(GEOMETRY_NAMES) + [CLOCK_NAME],
             "raw21_target_clock_v1": list(INPUT_NAMES) + list(TARGET_NAMES) + [CLOCK_NAME],
             "raw21_targetpolar_clock_v1": list(INPUT_NAMES) + list(TARGET_NAMES) + POLAR_NAMES + [CLOCK_NAME],
             "raw21_targetpolar_vel_clock_v1": list(INPUT_NAMES) + list(TARGET_NAMES) + POLAR_NAMES + VELOCITY_NAMES + [CLOCK_NAME],
-            "raw21_targetpolar_prevwheel_clock_v1": list(INPUT_NAMES) + list(TARGET_NAMES) + POLAR_NAMES + PREV_WHEEL_NAMES + [CLOCK_NAME]}
+            "raw21_targetpolar_prevwheel_clock_v1": list(INPUT_NAMES) + list(TARGET_NAMES) + POLAR_NAMES + PREV_WHEEL_NAMES + [CLOCK_NAME],
+            "raw21_targetpolar_clock_lidar64_v1": list(INPUT_NAMES) + list(TARGET_NAMES) + POLAR_NAMES + LIDAR_NAMES + [CLOCK_NAME]}
 ACTION_INPUT_VARIANTS = {"raw21_targetpolar_prevwheel_clock_v1"}  # need the previous wheel command
+LIDAR_VARIANTS = {"raw21_targetpolar_clock_lidar64_v1"}  # need the lidar scan of every row (dataset key "lidar", obs["lidar"] live)
 STATEFUL_VARIANTS = {"raw21_targetpolar_vel_clock_v1", *ACTION_INPUT_VARIANTS}  # live inference keeps a previous step
-POLAR_VARIANTS = {"raw21_targetpolar_clock_v1", "raw21_targetpolar_vel_clock_v1", *ACTION_INPUT_VARIANTS}
+POLAR_VARIANTS = {"raw21_targetpolar_clock_v1", "raw21_targetpolar_vel_clock_v1", *ACTION_INPUT_VARIANTS, *LIDAR_VARIANTS}
 KIND = "egocentric_mlp_regressor"
 # Training options (config block "egocentric_options", overridable with --option KEY=VALUE). Defaults reproduce the
 # lecturer's MLP recipe exactly: L2 on all nine outputs, uniform rows, continuous wheel outputs.
@@ -208,11 +217,12 @@ def wrap(angle):
     return (angle + np.pi) % (2 * np.pi) - np.pi
 
 
-def encode(observations, times, spec, previous=None, previous_wheels=None):
+def encode(observations, times, spec, previous=None, previous_wheels=None, lidar=None):
     """(N, 21) raw observations and (N,) seconds since episode start -> (N, F) features of spec["variant"].
 
     `previous` is the observation before the first row (stateful velocity variant); `previous_wheels` the (N, 2) wheel
-    command issued before each row (action-input variants: demonstrated in training, the policy's own in closed loop).
+    command issued before each row (action-input variants: demonstrated in training, the policy's own in closed loop);
+    `lidar` the (N, 64) scan of each row (lidar variants only; ignored by the others).
 
     Reproduces the expert's goal construction from `Episode._initialize`: bearing from the
     world origin to the target, standoff interpolated on target height, goal behind the
@@ -263,6 +273,13 @@ def encode(observations, times, spec, previous=None, previous_wheels=None):
         polar = np.stack([target_distance, np.cos(heading_to_target), np.sin(heading_to_target)], axis=1)
         if variant == "raw21_targetpolar_clock_v1":
             features = np.concatenate([x, geometry[:, 7:10], polar, clock[:, None]], axis=1)
+        elif variant in LIDAR_VARIANTS:
+            if lidar is None:
+                raise ValueError(f"{variant} needs the lidar scan of every row")
+            scan = np.asarray(lidar, dtype=np.float64)
+            if scan.shape != (len(x), LIDAR_BEAMS) or not np.isfinite(scan).all() or (scan < 0).any():
+                raise ValueError(f"lidar must be finite non-negative ({len(x)}, {LIDAR_BEAMS}) ranges")
+            features = np.concatenate([x, geometry[:, 7:10], polar, scan, clock[:, None]], axis=1)
         elif variant in ACTION_INPUT_VARIANTS:
             if previous_wheels is None:
                 raise ValueError(f"{variant} needs the previous wheel command of every row")
@@ -363,8 +380,8 @@ class EgocentricPolicy:
                 np.maximum(hidden, 0, out=hidden)
         return decode_outputs(hidden, self.y_mean, self.y_scale, self.wheel_bin_centres)
 
-    def predict(self, observations, times=None):
-        """Batch inference for ONE episode in order; times default to step*dt from zero.
+    def predict(self, observations, times=None, lidar=None):
+        """Batch inference for ONE episode in order; times default to step*dt from zero; `lidar` (N, 64) for lidar variants.
 
         Action-input variants run sequentially on their own previous outputs (what closed loop does); their
         teacher-forced features come from `load_episode_features`.
@@ -372,19 +389,21 @@ class EgocentricPolicy:
         x = np.atleast_2d(np.asarray(observations, dtype=np.float64))
         t = np.arange(len(x)) * self.spec["dt_s"] if times is None else np.asarray(times, dtype=np.float64)
         if self.spec["variant"] not in ACTION_INPUT_VARIANTS:
-            return self.predict_features(encode(x, t, self.spec))
+            return self.predict_features(encode(x, t, self.spec, lidar=lidar))
         out = np.empty((len(x), 9)); prev = np.zeros((1, 2))
         for i in range(len(x)):
-            out[i] = self.predict_features(encode(x[i:i + 1], t[i:i + 1], self.spec, previous_wheels=prev))[0]
+            out[i] = self.predict_features(encode(x[i:i + 1], t[i:i + 1], self.spec, previous_wheels=prev,
+                                                  lidar=None if lidar is None else np.asarray(lidar)[i:i + 1]))[0]
             prev = out[i:i + 1, :2]
         return out
 
-    def predict_action(self, observation):
+    def predict_action(self, observation, lidar=None):
         x = np.asarray(observation, dtype=np.float64)
         if x.shape != (21,):
             raise ValueError("Live inference takes one 21D observation")
         t = self._count * self._dt; self._count += 1
-        features = encode(x[None], np.array([t]), self.spec, previous=self._prev, previous_wheels=self._prev_wheels[None])
+        features = encode(x[None], np.array([t]), self.spec, previous=self._prev, previous_wheels=self._prev_wheels[None],
+                          lidar=None if lidar is None else np.asarray(lidar, dtype=np.float64)[None])
         action = self.predict_features(features)[0]
         self._prev = x; self._prev_wheels = action[:2].copy()
         return expand_actions(action)
@@ -419,10 +438,15 @@ def load_episode_features(directory, record, spec):
     with np.load(path, allow_pickle=False) as data:
         validate_episode_sampling(data, read_json(path.with_suffix(".json")), {"dt_s": spec["dt_s"]})
         times = data["time"].astype(np.float64)
+        lidar = None
+        if spec["variant"] in LIDAR_VARIANTS:
+            if "lidar" not in data.files:
+                raise ValueError(f"{path}: {spec['variant']} needs the per-row lidar scan (key 'lidar') of the dataset")
+            lidar = data["lidar"].astype(np.float64)
     previous_wheels = None
     if spec["variant"] in ACTION_INPUT_VARIANTS:  # the demonstrated command of the previous row; none before the first
         previous_wheels = np.vstack([np.zeros((1, 2)), np.asarray(y, dtype=np.float64)[:-1, :2]])
-    return encode(x, times, spec, previous_wheels=previous_wheels), y
+    return encode(x, times, spec, previous_wheels=previous_wheels, lidar=lidar), y
 
 
 def load_group(directory, records, spec):
@@ -635,8 +659,9 @@ def train(dataset, split_path, config_path, output, horizon_s=40.0, device_name=
             print(f"Epoch {epoch}: loss={total / n:.6f}, validation NRMSE={current:.6f}, best={best:.6f}", flush=True)
         policy = EgocentricPolicy.load(output / "model.npz")
         # Live path (clock counter) must agree with the batch path used for metrics.
-        policy.reset(dt); live = np.stack([policy.predict_action(o) for o in x_check(dataset, split["validation"][0])])
-        batch = expand_actions(policy.predict(x_check(dataset, split["validation"][0])))
+        xc, lc = x_check(dataset, split["validation"][0])
+        policy.reset(dt); live = np.stack([policy.predict_action(o, lidar=None if lc is None else lc[i]) for i, o in enumerate(xc)])
+        batch = expand_actions(policy.predict(xc, lidar=lc))
         np.testing.assert_allclose(live, batch, rtol=1e-6, atol=1e-6)
         policy.reset()
         # Free the training tensors before the final metric pass: on 4096-episode datasets the process otherwise
@@ -651,11 +676,11 @@ def train(dataset, split_path, config_path, output, horizon_s=40.0, device_name=
                              "mean_baseline": aggregate([errors(truth[a:b], np.broadcast_to(y_mean, (b - a, 9)), y_scale) for a, b in ranges_]),
                              "pooled_transitions": {"model": errors(truth, pred, y_scale)}}
         timings = []
-        obs = x_check(dataset, split["validation"][0])[0]
+        obs, obs_lidar = xc[0], (None if lc is None else lc[0])
         policy.reset(dt)
-        for _ in range(100): policy.predict_action(obs)
+        for _ in range(100): policy.predict_action(obs, lidar=obs_lidar)
         for _ in range(2000):
-            start = time.perf_counter_ns(); policy.predict_action(obs); timings.append(time.perf_counter_ns() - start)
+            start = time.perf_counter_ns(); policy.predict_action(obs, lidar=obs_lidar); timings.append(time.perf_counter_ns() - start)
         policy.reset()
         if any(sha256(PROJECT_ROOT / p) != d for p, d in source_hashes.items()):
             raise ValueError("Training source changed during execution")
@@ -703,8 +728,12 @@ def train(dataset, split_path, config_path, output, horizon_s=40.0, device_name=
 
 
 def x_check(dataset, record, rows=256):
+    """First `rows` raw observations of an episode and, when the dataset stores one, their lidar scans (else None)."""
     x, _, _ = load_episode(dataset, record)
-    return x[:rows]
+    path = Path(dataset) / "episodes" / f"{record['episode_id']}.npz"
+    with np.load(path, allow_pickle=False) as data:
+        lidar = data["lidar"].astype(np.float64)[:rows] if "lidar" in data.files else None
+    return x[:rows], lidar
 
 
 def main(argv=None):

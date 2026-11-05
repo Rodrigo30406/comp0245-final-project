@@ -25,7 +25,7 @@ from robot_learning.data.storage import read_json, write_json, sha256, utc_now, 
 from robot_learning.settings import PROJECT_ROOT
 from robot_learning.simulation.config import episode_defaults, resolve_episode_config
 from .dataset import inventory, load_episode, validate_partition, extra_inventory, drop_expert_failures
-from .egocentric import validate_spec, spec_from_episode_config, VARIANT
+from .egocentric import validate_spec, spec_from_episode_config, VARIANT, x_check
 from .gru_policy import MODES, input_names, features_for, padded_group
 from .metrics import errors, aggregate
 from .model import INPUT_NAMES, OUTPUT_NAMES, expand_actions
@@ -123,17 +123,18 @@ class TransformerPolicy:
         self._k, self._v, self._n, self._m, self._count = saved
         return out
 
-    def predict(self, observations, times=None):
+    def predict(self, observations, times=None, lidar=None):
         x = np.atleast_2d(np.asarray(observations, dtype=np.float64))
         t = np.arange(len(x)) * self.spec["dt_s"] if times is None else np.asarray(times, dtype=np.float64)
-        return self.predict_features(features_for(self.mode, x, t, self.spec))
+        return self.predict_features(features_for(self.mode, x, t, self.spec, lidar=lidar))
 
-    def predict_action(self, observation):
+    def predict_action(self, observation, lidar=None):
         x = np.asarray(observation, dtype=np.float64)
         if x.shape != (21,):
             raise ValueError("Live inference takes one 21D observation")
         t = self._count * self._dt
-        f = (features_for(self.mode, x[None], np.array([t]), self.spec)[0] - self.x_mean) / self.x_scale
+        scan = None if lidar is None else np.asarray(lidar, dtype=np.float64)[None]
+        f = (features_for(self.mode, x[None], np.array([t]), self.spec, lidar=scan)[0] - self.x_mean) / self.x_scale
         if self._count % self.stride == 0:
             self._m = self._token(f)
         self._count += 1
@@ -358,18 +359,18 @@ def train(dataset, split_path, config_path, output, horizon_s=40.0, device_name=
             ref = check(torch.from_numpy(((VX[:1, :rows_check] - x_mean) / x_scale)), stride)
         ref = ref[0].numpy() * y_scale + y_mean
         np.testing.assert_allclose(policy.predict_features(VX[0, :rows_check]), ref, rtol=1e-7, atol=1e-7)
-        raw = load_episode(dataset, split["validation"][0])[0][:rows_check]
-        policy.reset(dt); live = np.stack([policy.predict_action(o) for o in raw]); policy.reset()
-        np.testing.assert_allclose(live, expand_actions(policy.predict(raw)), rtol=1e-8, atol=1e-8)
+        raw, raw_lidar = x_check(dataset, split["validation"][0], rows_check)
+        policy.reset(dt); live = np.stack([policy.predict_action(o, lidar=None if raw_lidar is None else raw_lidar[i]) for i, o in enumerate(raw)]); policy.reset()
+        np.testing.assert_allclose(live, expand_actions(policy.predict(raw, lidar=raw_lidar)), rtol=1e-8, atol=1e-8)
         score, pred, per = validation_score()
         vmask = np.arange(VX.shape[1])[None, :] < VL[:, None]
         metrics = {"validation": {"model": aggregate(per),
                                   "mean_baseline": aggregate([errors(VY[i, :VL[i]], np.broadcast_to(y_mean, (VL[i], 9)), y_scale) for i in range(len(VL))]),
                                   "pooled_transitions": {"model": errors(VY[vmask], pred[vmask], y_scale)}}}
-        timings = []; obs = raw[0]; policy.reset(dt)
-        for _ in range(100): policy.predict_action(obs)
+        timings = []; obs, obs_lidar = raw[0], (None if raw_lidar is None else raw_lidar[0]); policy.reset(dt)
+        for _ in range(100): policy.predict_action(obs, lidar=obs_lidar)
         for _ in range(2000):
-            t1 = time.perf_counter_ns(); policy.predict_action(obs); timings.append(time.perf_counter_ns() - t1)
+            t1 = time.perf_counter_ns(); policy.predict_action(obs, lidar=obs_lidar); timings.append(time.perf_counter_ns() - t1)
         policy.reset()
         if any(sha256(PROJECT_ROOT / p) != d for p, d in source_hashes.items()):
             raise ValueError("Training source changed during execution")
