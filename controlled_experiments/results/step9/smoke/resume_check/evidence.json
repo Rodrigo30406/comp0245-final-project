@@ -1,0 +1,19 @@
+{
+  "check": "collector resume + determinism",
+  "kept_saved_episodes_unchanged": true,
+  "index_episodes": [
+    0,
+    1,
+    2,
+    3
+  ],
+  "identical_to_pilot2n": {
+    "0": true,
+    "1": true,
+    "2": true,
+    "3": true
+  },
+  "changed_setting_exit_code": 1,
+  "fresh_into_nonempty_exit_code": 1,
+  "passed": true
+}

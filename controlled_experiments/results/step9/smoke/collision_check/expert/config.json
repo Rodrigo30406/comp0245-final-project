@@ -1,0 +1,93 @@
+{
+  "args": {
+    "policy": "expert",
+    "policy_arg": null,
+    "name": null,
+    "eval_set": "/home/w/comp0245/LAB_SESSION_COMP_0245_2026_PUBLIC/.claude/worktrees/eval-protocol/final/robotnik_arm_task/results/step9/smoke/collision_check/set",
+    "workers": 4,
+    "out_dir": "/home/w/comp0245/LAB_SESSION_COMP_0245_2026_PUBLIC/.claude/worktrees/eval-protocol/final/robotnik_arm_task/results/step9/smoke/collision_check/expert",
+    "no_early_stop": false,
+    "episodes": null,
+    "limit": null,
+    "compare_recorded": true,
+    "save_traj": false,
+    "traj_every": 10,
+    "gui": false,
+    "allow_test2": false
+  },
+  "protocol": {
+    "PROTOCOL_VERSION": "v2.0",
+    "T_MAX": 60.0,
+    "REACH_TOL": 0.01,
+    "HOLD_TIME": 1.0,
+    "SETTLE_TOL": 0.015,
+    "STALL_TIME": 5.0,
+    "STALL_IMPROVEMENT": 0.001,
+    "STALL_MIN_ERROR": 0.03,
+    "STILL_LIN": 0.01,
+    "STILL_ANG": 0.02,
+    "STILL_ARM": 0.05,
+    "TIP_ANGLE": 0.5,
+    "ARM_MOVE_ANGLE": 0.05,
+    "TORQUE_LIMIT": 30.0,
+    "HOLD_EXT_TIME": 10.0,
+    "ARM_EXTEND_DIST": 0.1,
+    "PARK_RING_TOL": 0.2,
+    "PARK_TIME": 1.0,
+    "STABLE_TOLS": [
+      0.01,
+      0.02,
+      0.05
+    ],
+    "STABLE_TIME": 0.5,
+    "STABLE_HORIZON": 40.0,
+    "WHEEL_ENVELOPE": 3.6,
+    "CLEARANCE_INTERVAL": 0.05
+  },
+  "eval_set_config": {
+    "set_name": "collision_check",
+    "seed": 3000,
+    "n_episodes": 4,
+    "noise_frac": 0.0,
+    "workers": 4,
+    "out_dir": "/home/w/comp0245/LAB_SESSION_COMP_0245_2026_PUBLIC/.claude/worktrees/eval-protocol/final/robotnik_arm_task/results/step9/smoke/collision_check/set",
+    "resume": false,
+    "episodes": null,
+    "allow_test2": false,
+    "no_obstacle": false,
+    "noise_v": 0.02,
+    "noise_w": 0.05,
+    "noise_torque": 2.0,
+    "noise_hold": 0.3,
+    "noise_fade_base": 0.5,
+    "noise_fade_arm": 0.15,
+    "max_steps": 60000,
+    "log_every": 1,
+    "r_range": [
+      0.1,
+      3.0
+    ],
+    "theta_range": [
+      -180.0,
+      180.0
+    ],
+    "z_range": [
+      0.2,
+      1.2
+    ],
+    "init_radius": 0.0,
+    "init_yaw_range": [
+      0.0,
+      0.0
+    ],
+    "protocol": "v2.0",
+    "format": "obstacle_collection_v1"
+  },
+  "date": "2026-11-04 01:44:36",
+  "episodes": [
+    0,
+    1,
+    2,
+    3
+  ]
+}

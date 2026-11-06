@@ -1,0 +1,28 @@
+== Experiment B: base / arm 2x2 split, ego-novw dev seeds [0, 1, 2, 3, 4], 5 seeds, 300 common episodes ==
+EE = B-EE_dev; EM = expert base + model arm; ME = model base + expert arm; MM = full model. Coupling by construction: the expert arm extends at the shadow FSM's nav_done (a 'parked' signal to the model base); the expert base commands exactly 0 after nav_done (a perfect stillness signal to the model arm): the single-swap cells overestimate their half.
+Seed-mean success (two-level bootstrap 95% CI): EE 99.3 [98.3, 100.0]%; EM 0.1 [0.0, 0.4]%; ME 96.7 [93.0, 99.3]%; MM 0.3 [0.0, 1.0]%
+  per seed: EM 0/0/0/0/0; ME 100/90/99/96/99; MM 0/0/0/0/1
+ME cell by the shadow FSM's nav_done trigger (seed x episode): threshold 1284 (success 1248, failure 36, 97.2% success); timeout 215 (success 201, failure 14, 93.5% success); never 1 (success 1, failure 0, 100.0% success)
+  NOTE: a timeout-triggered ME success does not show the model base parked: the expert arm reaches from wherever the base is after the shadow FSM's 25 s timeout (e.g. an M0-like start already within reach); only a threshold trigger means the base matched the expert's parking pose
+Attribution of the 1495 MM failures (seed x episode; base cause = ME fails, arm cause = EM fails, interaction = ME and EM both succeed):
+  base_only        0  0.0% [0.0, 0.0]
+  arm_only      1444  96.6% [92.9, 99.2]
+  both            50  3.3% [0.7, 7.0]
+  interaction      1  0.1% [0.0, 0.4]
+  base cause (base_only + both) 3.3%, arm cause (arm_only + both) 99.9%
+Attribution without the 20 M0-like episodes (|d0| < 0.15 m, where an unmoved base can let the expert arm reach after the timeout): 1395 MM failures on 280 episodes:
+  base_only        0  0.0% [0.0, 0.0]
+  arm_only      1364  97.8% [95.0, 99.6]
+  both            30  2.2% [0.3, 4.9]
+  interaction      1  0.1% [0.0, 0.4]
+  base cause (base_only + both) 2.2%, arm cause (arm_only + both) 99.9%
+  of the MM failures, 10 are on episodes the expert (EE) also fails
+Independence reference p_ME x p_EM = 0.1% vs observed MM 0.3% (seed means); per seed: 0/0, 0/0, 0/0, 0/0, 0/1
+Cell - EE (paired, same episodes): two-level bootstrap and one-sample t on the per-seed differences (cell rate - EE rate, 4 df); Holm over the 3 contrasts on max(bootstrap p, t p), reject at p_adj <= 0.05:
+  ME - EE: bootstrap -2.7 [-6.5, +0.1] pp, p 0.073; t -2.7 [-7.4, +2.0] pp, p 0.19; p used 0.19, Holm 0.19
+  EM - EE: bootstrap -99.3 [-100.0, -98.2] pp, p 1.0e-04; t -99.3 [-99.5, -99.1] pp, p 1.2e-12; p used 1.0e-04, Holm 3.0e-04 (significant)
+  MM - EE: bootstrap -99.0 [-99.9, -97.8] pp, p 1.0e-04; t -99.0 [-99.5, -98.5] pp, p 6.9e-11; p used 1.0e-04, Holm 3.0e-04 (significant)
+Verdict category (Holm-adjusted max(bootstrap p, t p) <= 0.05 of ME - EE and EM - EE): only arm
+Hybrid log diagnostics:
+  EM: never extended 1500, no nav_done in the log 0
+  EE check: B-EE_dev and expert_v11_dev have the same outcome on 300/300 episodes

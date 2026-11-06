@@ -1,0 +1,62 @@
+{
+  "check": "contact path, collector vs harness",
+  "passed": true,
+  "episodes": [
+    {
+      "episode": 0,
+      "collector_status": "collision",
+      "harness_stop_reason": "collision",
+      "collector_collision_time": 0.17500000000000002,
+      "harness_collision_time": "0.17500000000000002",
+      "collector_link": "robot_j2s7s300_link_finger_tip_3",
+      "harness_link": "robot_j2s7s300_link_finger_tip_3",
+      "recorded_steps": 175,
+      "cmp_steps": 175,
+      "cmp_identical": "True",
+      "harness_min_clearance": 5.824867643555633e-05,
+      "harness_success": "False"
+    },
+    {
+      "episode": 1,
+      "collector_status": "collision",
+      "harness_stop_reason": "collision",
+      "collector_collision_time": 3.869,
+      "harness_collision_time": "3.869",
+      "collector_link": "robot_front_left_wheel",
+      "harness_link": "robot_front_left_wheel",
+      "recorded_steps": 3869,
+      "cmp_steps": 3869,
+      "cmp_identical": "True",
+      "harness_min_clearance": 0.0032099586098231683,
+      "harness_success": "False"
+    },
+    {
+      "episode": 2,
+      "collector_status": "reached",
+      "harness_stop_reason": "reached",
+      "collector_collision_time": null,
+      "harness_collision_time": "nan",
+      "collector_link": null,
+      "harness_link": "",
+      "recorded_steps": 25859,
+      "cmp_steps": 25859,
+      "cmp_identical": "True",
+      "harness_min_clearance": 0.3969594893983068,
+      "harness_success": "True"
+    },
+    {
+      "episode": 3,
+      "collector_status": "collision",
+      "harness_stop_reason": "collision",
+      "collector_collision_time": 11.852,
+      "harness_collision_time": "11.852",
+      "collector_link": "robot_j2s7s300_link_finger_tip_1",
+      "harness_link": "robot_j2s7s300_link_finger_tip_1",
+      "recorded_steps": 11852,
+      "cmp_steps": 11852,
+      "cmp_identical": "True",
+      "harness_min_clearance": 0.00017602194312113344,
+      "harness_success": "False"
+    }
+  ]
+}

@@ -1,0 +1,39 @@
+{
+  "set_name": "a2",
+  "seed": 909,
+  "n_episodes": 3,
+  "noise_frac": 1.0,
+  "workers": 3,
+  "out_dir": "/home/w/comp0245/LAB_SESSION_COMP_0245_2026_PUBLIC/.claude/worktrees/eval-protocol/final/robotnik_arm_task/results/step9/smoke/a2/obstacle",
+  "resume": false,
+  "episodes": null,
+  "allow_test2": false,
+  "no_obstacle": true,
+  "noise_v": 0.02,
+  "noise_w": 0.05,
+  "noise_torque": 2.0,
+  "noise_hold": 0.3,
+  "noise_fade_base": 0.5,
+  "noise_fade_arm": 0.15,
+  "max_steps": 40000,
+  "log_every": 1,
+  "r_range": [
+    0.1,
+    3.0
+  ],
+  "theta_range": [
+    -180.0,
+    180.0
+  ],
+  "z_range": [
+    0.2,
+    1.2
+  ],
+  "init_radius": 2.0,
+  "init_yaw_range": [
+    -180.0,
+    180.0
+  ],
+  "protocol": "v2.0",
+  "format": "obstacle_collection_v1"
+}

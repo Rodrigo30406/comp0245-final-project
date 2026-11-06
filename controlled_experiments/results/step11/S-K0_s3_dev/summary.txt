@@ -1,0 +1,7 @@
+Policy split_policy.py on data/dev: success 4/300 = 1.3% [0.5, 3.4] (95% Wilson), settled 4/300
+Stop reasons: reached 4, stalled 295, timeout 1
+Policy step time: mean 0.225 ms, p99 0.274 ms (median over episodes; control period 1 ms)
+Recorded clean expert reached / this policy succeeded (300 episodes): both 4, expert only 294, policy only 0, neither 2
+v1.1 held_10s (EE < 15 mm for 10 s after the first reach): 2/300 = 0.7% [0.2, 2.4]; extended hold ended: completed 4, not reached 296
+v1.1 stable arrival (EE within tol for >= 0.5 s, ending by 40 s): 5cm 25/300 = 8.3% [5.7, 12.0], 2cm 4, 1cm 4
+v1.1 parked (ring distance < 0.2 m and base still for >= 1.0 s): 299/300 = 99.7% [98.1, 99.9]; arm extended (EE > 0.1 m from its start in the base frame): 2/300 = 0.7% [0.2, 2.4] (both up to the v1 stop point)

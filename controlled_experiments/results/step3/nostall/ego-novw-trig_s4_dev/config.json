@@ -1,0 +1,113 @@
+{
+  "args": {
+    "policy": "policies/bc_policy.py:make_policy",
+    "policy_arg": "trained/ego-novw-trig_s4.npz",
+    "name": null,
+    "eval_set": "data/dev",
+    "episodes": "0,15,16,31,39,40,51,62,71,79,82,87,92,104,119,126,148,155,169,194,201,233",
+    "limit": null,
+    "out_dir": "results/step3/nostall/ego-novw-trig_s4_dev",
+    "workers": 20,
+    "compare_recorded": false,
+    "no_early_stop": true,
+    "save_traj": false,
+    "traj_every": 10,
+    "gui": false
+  },
+  "protocol": {
+    "PROTOCOL_VERSION": "v1.1",
+    "T_MAX": 40.0,
+    "REACH_TOL": 0.01,
+    "HOLD_TIME": 1.0,
+    "SETTLE_TOL": 0.015,
+    "STALL_TIME": 5.0,
+    "STALL_IMPROVEMENT": 0.001,
+    "STALL_MIN_ERROR": 0.03,
+    "STILL_LIN": 0.01,
+    "STILL_ANG": 0.02,
+    "STILL_ARM": 0.05,
+    "TIP_ANGLE": 0.5,
+    "ARM_MOVE_ANGLE": 0.05,
+    "TORQUE_LIMIT": 30.0,
+    "HOLD_EXT_TIME": 10.0,
+    "ARM_EXTEND_DIST": 0.1,
+    "PARK_RING_TOL": 0.2,
+    "PARK_TIME": 1.0,
+    "STABLE_TOLS": [
+      0.01,
+      0.02,
+      0.05
+    ],
+    "STABLE_TIME": 0.5,
+    "STABLE_HORIZON": 40.0,
+    "WHEEL_ENVELOPE": 3.6
+  },
+  "eval_set_config": {
+    "out_dir": "data/dev",
+    "target": null,
+    "name": "single",
+    "gui": false,
+    "noisy": false,
+    "init_pose": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "n_episodes": 300,
+    "workers": 20,
+    "seed": 200,
+    "r_range": [
+      0.1,
+      3.0
+    ],
+    "theta_range": [
+      -180.0,
+      180.0
+    ],
+    "z_range": [
+      0.2,
+      1.2
+    ],
+    "init_radius": 2.0,
+    "init_yaw_range": [
+      -180.0,
+      180.0
+    ],
+    "noise_frac": 0.0,
+    "noise_v": 0.02,
+    "noise_w": 0.05,
+    "noise_torque": 2.0,
+    "noise_hold": 0.3,
+    "noise_fade_base": 0.5,
+    "noise_fade_arm": 0.15,
+    "resume": false,
+    "max_steps": 40000,
+    "log_every": 1
+  },
+  "git_commit": "a0acdc3e0e18975466294ea7aa90adb616a271fd",
+  "date": "2026-10-31 03:29:36",
+  "episodes": [
+    0,
+    15,
+    16,
+    31,
+    39,
+    40,
+    51,
+    62,
+    71,
+    79,
+    82,
+    87,
+    92,
+    104,
+    119,
+    126,
+    148,
+    155,
+    169,
+    194,
+    201,
+    233
+  ]
+}

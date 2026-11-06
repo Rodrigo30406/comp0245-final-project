@@ -1,0 +1,7 @@
+Policy bc_policy.py on data/confirm: success 180/300 = 60.0% [54.4, 65.4] (95% Wilson), settled 135/300
+Stop reasons: reached 180, stalled 6, timeout 113, tipped 1
+Policy step time: mean 0.125 ms, p99 0.161 ms (median over episodes; control period 1 ms)
+Recorded clean expert reached / this policy succeeded (300 episodes): both 176, expert only 118, policy only 4, neither 2
+v1.1 held_10s (EE < 15 mm for 10 s after the first reach): 66/300 = 22.0% [17.7, 27.0]; extended hold ended: completed 180, not reached 120
+v1.1 stable arrival (EE within tol for >= 0.5 s, ending by 40 s): 5cm 282/300 = 94.0% [90.7, 96.2], 2cm 214, 1cm 162
+v1.1 parked (ring distance < 0.2 m and base still for >= 1.0 s): 262/300 = 87.3% [83.1, 90.6]; arm extended (EE > 0.1 m from its start in the base frame): 242/300 = 80.7% [75.8, 84.7] (both up to the v1 stop point)

@@ -1,0 +1,7 @@
+Policy rodrigo-k144_s0_hard on data/hard: success 115/200 = 57.5% [50.6, 64.1] (95% Wilson), settled 112/200
+Stop reasons: reached 115, timeout 45, tipped 40
+Policy step time: mean 0.091 ms, p99 0.122 ms (median over episodes; control period 1 ms)
+Recorded clean expert reached / this policy succeeded (200 episodes): both 110, expert only 84, policy only 5, neither 1
+v1.1 held_10s (EE < 15 mm for 10 s after the first reach): 103/200 = 51.5% [44.6, 58.3]; extended hold ended: completed 114, not reached 85, tipped 1
+v1.1 stable arrival (EE within tol for >= 0.5 s, ending by 40 s): 5cm 162/200 = 81.0% [75.0, 85.8], 2cm 130, 1cm 112
+v1.1 parked (ring distance < 0.2 m and base still for >= 1.0 s): 152/200 = 76.0% [69.6, 81.4]; arm extended (EE > 0.1 m from its start in the base frame): 169/200 = 84.5% [78.8, 88.9] (both up to the v1 stop point)

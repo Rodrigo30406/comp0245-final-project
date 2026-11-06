@@ -1,0 +1,24 @@
+step 11 pre-registration FROZEN 2026-11-06T01:43:40+00:00
+No DEV run of any step-11 model (R, S-*, W-*) existed at this time; trainings were in progress (not outcome data).
+
+sha256 (local):
+119c55f30a675a998d29f363eaa8134f0ab6a69272f9bb59f374b451a34a274d  results/step11/prereg_step11_draft.md
+f7378f28c3147d5f9d9b720df7ed4bbeb65f6e102216103519fc35aa416c09e6  results/step11/step11.py
+bcf300e25ee14cbfdc658c1408f98ce2dcd859c6cfd3a4c6e49e80a702c69a1d  policies/split_policy.py
+fd4514382d9e8d739e965d0d479d8e15ce014dbfe7bbfada0cc75f5d5cae10b9  results/step11/run_step11_local.sh
+372784923069f16fa7e85ed9e09878507d7083284ee60a8a7d18607582bcd411  results/step11/run_step11_W.sh
+441df4894b64cf5dbca595e258bd6068ad7d6f66c715c99681234381cfac6e86  train_policy.py
+e96bd3a2c6133dec19fd87c0d1e3107b6a4b4ed7aace5d0e74369cd9208f0dc8  bc_features.py
+505d48720962b89f41a78a45cfa90e30b73eea94992db1f1131961859bcaf0c2  evaluate_policy.py
+41b9bc1d3e8ec9f7e14adbccbe00f582df9b8cc5443981b3f0bc02098511ddd4  analyze_rollouts.py
+7fd1505d593c681a46bca9da418bd656f075d15a87c80af30ba888e18018a38a  policies/bc_policy.py
+b3da0f4ee3131c404566fee5d4f5658989b9f725dd9edec53c5e77d5b78b44e5  trained/data_split.json
+5e59b4f7044f5dc18c51fb84a9c000139a4a505842e29491b31ec02d8f607f42  results/step11/cache/placebo/manifest.json
+8d7691746df964aca858d56a8f6a2296e81d33c8fdab24954f8c4cb7fb3a308e  results/step3/cache/trigger/manifest.json
+
+sha256 (windcharger, used by W training):
+8553fd8d4deebec52d4b4844504d85919b231d2cb3e8e0480fc84f68d96f1071  results/step11/step11.py
+372784923069f16fa7e85ed9e09878507d7083284ee60a8a7d18607582bcd411  results/step11/run_step11_W.sh
+441df4894b64cf5dbca595e258bd6068ad7d6f66c715c99681234381cfac6e86  train_policy.py
+e96bd3a2c6133dec19fd87c0d1e3107b6a4b4ed7aace5d0e74369cd9208f0dc8  bc_features.py
+505d48720962b89f41a78a45cfa90e30b73eea94992db1f1131961859bcaf0c2  evaluate_policy.py

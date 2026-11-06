@@ -1,0 +1,146 @@
+{
+  "amendment": 1,
+  "started": "2026-11-02T01:42:26.668058+00:00",
+  "finished": "2026-11-02T01:42:33.202380+00:00",
+  "absolute_tolerance": 1e-09,
+  "relative_tolerance": 0,
+  "nav_done_check": "First shadow nav_done <= harness arm_move_time; nav_done is not saved.",
+  "episodes": [
+    {
+      "episode": 0,
+      "n_steps": 20849,
+      "trajectory_sha256": "47e147ac3f6e0aa377075eeb546aee4aef2e03fbfd81a86b0edf9a2ad4194179",
+      "dtypes": {
+        "t": "float64",
+        "base_pos": "float64",
+        "base_ori": "float64",
+        "base_bearing": "float64",
+        "q_mes": "float64",
+        "qd_mes": "float64",
+        "ee_pos": "float64",
+        "wheel_cmds": "float64",
+        "torque_arm": "float64"
+      },
+      "first_nav_done": 7.169000000000729,
+      "arm_move_time": 0.5850000000000004,
+      "nav_done_arm_move_consistent": false,
+      "stop_reason": "reached",
+      "wheel_cmds": {
+        "max_abs_error": 0.0
+      },
+      "torque_arm": {
+        "max_abs_error": 0.0
+      },
+      "passed": false
+    },
+    {
+      "episode": 1,
+      "n_steps": 18370,
+      "trajectory_sha256": "ec019e825016a74a240a57eee164793eda7b5103626cf301834466b932a35835",
+      "dtypes": {
+        "t": "float64",
+        "base_pos": "float64",
+        "base_ori": "float64",
+        "base_bearing": "float64",
+        "q_mes": "float64",
+        "qd_mes": "float64",
+        "ee_pos": "float64",
+        "wheel_cmds": "float64",
+        "torque_arm": "float64"
+      },
+      "first_nav_done": 5.690000000000235,
+      "arm_move_time": 0.6030000000000004,
+      "nav_done_arm_move_consistent": false,
+      "stop_reason": "reached",
+      "wheel_cmds": {
+        "max_abs_error": 0.0
+      },
+      "torque_arm": {
+        "max_abs_error": 0.0
+      },
+      "passed": false
+    },
+    {
+      "episode": 2,
+      "n_steps": 18610,
+      "trajectory_sha256": "e39f2ec62f8b10df1e184d1a89e3b84001ea5de18c36553449cb44e30de7b250",
+      "dtypes": {
+        "t": "float64",
+        "base_pos": "float64",
+        "base_ori": "float64",
+        "base_bearing": "float64",
+        "q_mes": "float64",
+        "qd_mes": "float64",
+        "ee_pos": "float64",
+        "wheel_cmds": "float64",
+        "torque_arm": "float64"
+      },
+      "first_nav_done": 6.197000000000404,
+      "arm_move_time": 0.5840000000000004,
+      "nav_done_arm_move_consistent": false,
+      "stop_reason": "reached",
+      "wheel_cmds": {
+        "max_abs_error": 0.0
+      },
+      "torque_arm": {
+        "max_abs_error": 0.0
+      },
+      "passed": false
+    },
+    {
+      "episode": 3,
+      "n_steps": 13013,
+      "trajectory_sha256": "73a3bab0c3cf1ff699ccf921c1b5741bfa35ad329eabb7684c4daf7bb4977561",
+      "dtypes": {
+        "t": "float64",
+        "base_pos": "float64",
+        "base_ori": "float64",
+        "base_bearing": "float64",
+        "q_mes": "float64",
+        "qd_mes": "float64",
+        "ee_pos": "float64",
+        "wheel_cmds": "float64",
+        "torque_arm": "float64"
+      },
+      "first_nav_done": 0.8240000000000006,
+      "arm_move_time": 0.5810000000000004,
+      "nav_done_arm_move_consistent": false,
+      "stop_reason": "reached",
+      "wheel_cmds": {
+        "max_abs_error": 0.0
+      },
+      "torque_arm": {
+        "max_abs_error": 0.0
+      },
+      "passed": false
+    },
+    {
+      "episode": 4,
+      "n_steps": 20160,
+      "trajectory_sha256": "721de41b0ccc23e0ced9089c7b6121f01e892861b40a13422e5e4dfe2de3bfdc",
+      "dtypes": {
+        "t": "float64",
+        "base_pos": "float64",
+        "base_ori": "float64",
+        "base_bearing": "float64",
+        "q_mes": "float64",
+        "qd_mes": "float64",
+        "ee_pos": "float64",
+        "wheel_cmds": "float64",
+        "torque_arm": "float64"
+      },
+      "first_nav_done": 7.346000000000788,
+      "arm_move_time": 0.5850000000000004,
+      "nav_done_arm_move_consistent": false,
+      "stop_reason": "reached",
+      "wheel_cmds": {
+        "max_abs_error": 0.0
+      },
+      "torque_arm": {
+        "max_abs_error": 0.0
+      },
+      "passed": false
+    }
+  ],
+  "passed": false
+}
