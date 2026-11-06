@@ -72,13 +72,14 @@ from obstacle_task.sim import link_name, min_clearance, robot_obstacle_contact, 
 STREAM = 23                        # per-episode SeedSequence entry (step 9 uses 9, multi-agent 19)
 ALONG = (0.35, 0.65)               # crossing point as a fraction of the start->dock segment
 CROSS_ANGLE_DEG = (60.0, 120.0)    # angle between the cylinder's line and the start->dock segment
-OBST_SPEED = (0.15, 0.45)          # m/s
+OBST_SPEED = (0.10, 0.25)          # m/s (<= the base's 0.25 m/s: a faster body coming from behind cannot be escaped; v1-v4 used 0.15-0.45)
 MEET_JITTER_S = (-2.0, 2.0)        # s, obstacle arrival at the crossing point relative to the robot's nominal one
 ROBOT_NOMINAL_SPEED = 0.25         # m/s, base_controller max_lin_vel: nominal arrival time = distance / speed
 ALIGN_TIME_S = 1.5                 # s, allowance for the initial in-place turn in the nominal arrival time
 END_CLEAR = 1.0                    # m, the cylinder's path (surface) to the start and to the dock
 OBST_RUN_IN = 2.5                  # m, the cylinder starts this far from the crossing point at least
-STEP_CAP = 60000                   # 60 s at 1 kHz
+STEP_CAP = 75000                   # 75 s at 1 kHz
+DYN_NAV_TIMEOUT = 60.0             # s, navigation timeout (step 9: 45 s; the avoidance and the recovery take longer)
 HOLD_S = 10.0                      # hold tail after the first reach (as our hold sets), 0 = stop at the reach
 
 # Reactive layer (all from the scan)
@@ -241,7 +242,7 @@ class ReactiveExpert:
         self.ee_frame_id, self.shoulder_frame_id = info["ee_frame_id"], info["shoulder_frame_id"]
         self.arm_lower, self.arm_upper = info["joint_lower"][4:11], info["joint_upper"][4:11]
         self.time_step = info["time_step"]
-        self.params = BaseControllerParams(nav_timeout=NAV_TIMEOUT)
+        self.params = BaseControllerParams(nav_timeout=DYN_NAV_TIMEOUT)
         self.arm_params = ArmControllerParams(reach_limit=ARM_REACH_LIMIT)
         self.state = BaseNavState()
         self.dock_xy = np.asarray(scenario["dock_xy"], float)

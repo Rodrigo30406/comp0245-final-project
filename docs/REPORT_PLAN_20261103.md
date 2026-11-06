@@ -906,3 +906,20 @@ position and velocity (two consecutive scans; the learner needs a scan history o
 plan. Known physics caveat: a sustained turn while driving (v 0.25 m/s, w 0.3 rad/s for > 10 s, which the
 template's drive phase does when it starts far from the goal heading) makes the base slide sideways with growing
 speed (1.5 m/s at t = 45 s, wheels at 0.24 m/s): the re-align rule avoids that regime.
+
+**5 Nov 20:50 — set F seed 0 and dynamic expert v4/v5.**
+- **Set F (our DART + base noise in the hold + their 0.5 m base fade), MLP seed 0: success 258/300 (86.0 %), held 10 s
+  221 (73.7 %), stable 1/2/5 cm see table script, collisions 4.** Best success of any step-9 model so far (B seed 0:
+  247/237). Failure anatomy vs B seed 0: failures 42 vs 53; failures with the base parked within 20 cm of the dock
+  (the misaligned-park family) 12 vs 34 → the fade hypothesis holds: the unfaded base noise during the orient phase
+  was weakening the final turn. The remaining failures moved: 30 end with the base > 20 cm from the dock (median
+  1.55 m; stop reason timeout 32 of 42) although the EE came close first (failures' min EE error median 57 mm vs
+  358 mm in B): the base leaves the dock during the hold and does not come back. Seeds 1–2 running (chain 3).
+- **Dynamic expert v4 (turn-then-drive candidates, hysteresis): 8/10, 1 collision, 1 timeout.**
+- **v5 (cylinder 0.10–0.25 m/s instead of 0.15–0.45, navigation timeout 60 s), 12 scenarios: 9/12, 1 collision
+  (ep 0, rear wheel, a cylinder arriving obliquely from behind), 2 timeouts; blind control on the same scenarios
+  6/12 (6 collisions). The clean episodes cross or wait with 0.3–0.6 m clearance in 25 s; 5 of 12 need the whole
+  60 s because the recovery after the manoeuvre alternates between re-align and avoidance (5 re-aligns).**
+  GIFs: `docs/figures/dynamic_proto/vo5_ep01_clean_cross.gif`, `vo5_ep08_wait_and_pass.gif`, `vo5_ep00_collision.gif`.
+  Verdict for the report: a working proof of concept (75 % vs 50 % blind), not yet a data-collection expert (needs
+  ≥ 95 % and short manoeuvres); the recovery phase is the blocker. Left as future work with these numbers.
