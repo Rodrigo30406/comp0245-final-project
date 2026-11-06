@@ -1056,3 +1056,16 @@ after an in-place turn), so a parked base can leave the dock with no command at 
 - DAgger on the parking states: the most direct fix, but the step-9 expert is a state machine (segment, waypoint)
   that has to be re-entered at states it did not generate; future work;
 - seeds 3–4 of B and F (the five-seed convention): B and F stay at three seeds in the report, marked as such.
+- **05:41, GRU result: the clone fails.** Collection 1600 / 1600 expert successes with --dart (0 contacts); converted
+  1360 training / 240 validation episodes. GRU-Ego + lidar seed 0: 10 min, best epoch 114, peak RSS 66 GB, validation
+  NRMSE **0.200** (step-9 GRUs 0.079–0.103: the fit itself is poor). Closed loop on the 100 seed-4 scenes:
+
+  | policy | success | contacts | not reached | median closest EE approach | median duration |
+  |---|---|---|---|---|---|
+  | expert v9 (clean) | **100** | 0 | 0 | 0.8 mm | 37 s |
+  | blind A-to-B template | 46 | 54 | 0 | (contact or reach) | 11 s |
+  | GRU-Ego + lidar | **0** | 33 | 66 (+1 left the target) | 27 cm | 75 s (step cap) |
+
+  The GRU avoids some of the conflicts the blind template hits (contacts in 25 of the 54 blind-contact scenes) but
+  also hits 8 scenes the blind template passes; its contacts come at 10.9 s median (the meeting) and on the wheels.
+  Without a contact it never finishes: the base ends 0.87 m from the dock (median; p10–p90 0.22–3.0 m) after 75 s.
