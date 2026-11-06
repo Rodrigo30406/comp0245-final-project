@@ -1,0 +1,4 @@
+Step 9 confirmation on confirm2, seeds [100, 101, 102, 103, 104], 154 in-band episodes
+  docked_clean in the band: L1 81.3% [75.8, 86.4], L2 97.1% [94.2, 99.2]
+  L2 - L1: +15.8 pp, bootstrap [+10.0, +21.8], Welch [+12.9, +18.8] -> CONFIRMED (rule: point estimate > 0 and bootstrap 95% lower bound > 0)
+  overall docked_clean: L1 83.3% [79.4, 87.0], L2 96.1% [93.9, 98.1]
