@@ -1,0 +1,38 @@
+[Results] 第 11 步：R / S / W 结果（2026-11-06 01:43 冻结后运行，05:00 读出；全部只用 DEV）
+分析：results/step11/step11_analysis.sh r|s|w（analyze_rollouts.py compare，两级 bootstrap 10 000 次 + seed 层 Welch），
+输出 results/step11/analysis/*.txt|json；P(从未伸出 | parked) 由 step11_cond.py；类别份额的 Welch 区间在
+analysis/welch_classes.txt。对照：C3 = ego-novw-trig s0-4，joint-K0 = ego-novw s0-4（已有本机运行，未重跑）。
+
+1) R（安慰剂拷贝）：H-R 支持（R1-R3 全部成立）。
+   success 0.3%（每 seed 0.3/0.0/0.0/1.0/0.3），arm_extended 0.1%；R - C3 = -60.1 pp，bootstrap [-66.9, -53.7]，
+   Welch [-68.5, -51.8]（上界均 < -40）。R - joint-K0 = +0.0 [-0.7, +0.7]：同样数量、同样抖动的拷贝换成随机的
+   底座运动行，与不加拷贝无法区分。失败类：parked_no_arm 63.9%（C3 0%）。竞争假设 H-R'（正则化）不成立。
+   旁证（冻结前已见、不用于判断）：R 的验证损失 0.026-0.029，接近 ego-novw（0.026-0.027），C3 为 0.055-0.062。
+
+2) S（A-to-B 上的两网络拆分）：H-S-COPY 支持（S1、S2 成立）。
+   S-K0：success 0.4%，底座停车 298-300/300（每 seed），P(手臂从未伸出 | parked) 99.8%（专家同一指标 18.2%，
+   即短距离 episode 本不需伸出 0.1 m 的底数；C3 15.2%）。S-K16 - S-K0 = +62.9 pp，bootstrap [+53.5, +72.0]，
+   Welch [+49.8, +76.0]。
+   次要 H-S-FACT（双侧）：S-K16 63.3% vs C3 60.5%，+2.8 pp [-7.9, +13.4]，Welch [-10.5, +16.1]：成功率无差别。
+   circling 12.1% -> 0.3%，-11.9 pp，bootstrap [-16.7, -7.4]，Welch [-18.1, -5.6]（两者都不含 0：拆分消除了转圈）；
+   代价：parked_no_arm 0 -> 5.5%（[+2.5, +9.2]，Welch [+0.9, +10.2]），arm_extended 81.7 -> 74.6%（-7.1 [-11.8, -2.8]）。
+   描述性 2x2 success：joint-K0 0.3 / joint-K16 60.5 / split-K0 0.4 / split-K16 63.3%。读法：拆分改的是底座
+   （看不到手臂的底座不再把静止的手臂读成"继续开"，S-K0 转圈 0%、joint-K0 32%；注意 split 底座带 K16 拷贝而
+   joint-K0 没有，这一比较有混杂），手臂是否启动只取决于手臂网络是否有起始行拷贝。第 9 步 H-COPY 在主任务上复现。
+
+3) W（容量，windcharger，机内比较）：
+   框架：windcharger 机内确定（C3 s0 两次运行逐位一致）；C3 在该机复现：60.6% vs 本机 60.5%，+0.1 [-9.0, +9.6]。
+   H-W-onset 支持：W-K0 success 2.4%（5.7/1.0/3.0/1.7/0.7），arm_extended 2.6%；vs wc ego-novw +1.9 pp
+   [+0.3, +4.1]，Welch [-0.6, +4.5]。大网络底座转圈更少（32.3 -> 3.7%，Welch [-56.5, -0.6]），手臂仍不启动。
+   H-W-floor 按冻结规则不成立，H-W-cap 被否定 -> 规则下"未定"：W-K16 33.5%（42.3/16.3/28.7/43.3/37.0）vs
+   wc_C3 60.6%，-27.1 pp，bootstrap [-39.3, -15.7]，Welch [-41.9, -12.2]；ENR 19.4 -> 36.5%，+17.1 pp [+3.8, +29.2]，
+   Welch [+1.1, +33.0]。即更大的网络没有推动最后一厘米，反而更差（预注册的"不变"预测在相反方向失败）。
+   事后描述（未检验）：W-K16 早停在第 2-3 个 epoch，验证损失 0.054-0.067 与 C3（0.055-0.062）相当；W-K0 验证损失
+   0.024-0.025 低于 ego-novw 0.026-0.027。离线误差再次没有预测闭环结果。每步耗时 0.19-0.21 ms（< 1 ms）。
+
+报告用法：S 替换 IV-C 里以障碍任务为主证据的两网络段落（障碍任务降为复现）；R 加入 IV-D 的"一行"论断；
+W 改写结论 "not for lack of data or capacity" 与 IV-F "(capacity was not tested)"：容量既不启动手臂，也不推动
+最后一厘米（大网更差，机制未检验）。
+分析记录：S 的比较用了 --allow-incomplete：analyze_rollouts.is_hybrid() 把任何含 "base=" 的 policy-arg 判为实验 B
+的 hybrid 并要求 --no-early-stop；split_policy 无状态、不用时间，冻结的预注册规定 S 与 C3 s0-4 同参数评估；
+S 的 10 次运行均 300/300、0 个 harness 错误，故该选项只跳过这条检查。

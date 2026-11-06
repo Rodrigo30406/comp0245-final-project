@@ -1,3 +1,48 @@
+# COMP0245 final project: experimental line (Yudi Wang)
+
+Behaviour cloning of the course's Robotnik + Kinova expert (A-to-B reaching), and an obstacle extension. This folder
+is the *experimental line* of the group report: the diagnosis (experiments A, B), the triggering copies (C3), the
+negative results (D, E, F, G, P, PC), the obstacle task (step 9), the cross-evaluation with the final recipe (step 10)
+and the controls R, S, W (step 11). The *final recipe* of the report (Rodrigo Jesus Rodriguez Montes) is on the team
+branch `rodrigo`; the multi-obstacle courses and mazes (Akshat Rana) are on `obstacle-akshat` / `obstacla-language`.
+
+## What is from the course template, what is modified, what is new
+
+| status | files |
+|---|---|
+| course template, **unchanged** | `robotnik_arm_task.py`, `robotnik_arm_control.py` (the expert: base state machine + arm controller), `configs/` (from RoboEnv); `models/` (robot descriptions from RoboEnv, not in git) |
+| course template, **modified** | `README.md` (this overview added on top; the course text is kept below) |
+| **written from scratch** | data: `collect_data.py` (DART-style held noise, per-episode `.npz`), `analyze_dataset.py`, `analyze_index.py`, `DATA_COLLECTION.md`; evaluation: `evaluate_policy.py` (closed-loop harness, protocol v1.1, verified step by step against the recordings), `analyze_rollouts.py` (failure taxonomy, two-level bootstrap, Welch), `EVALUATION.md`; learning: `bc_features.py`, `train_policy.py`, `train_step4e.py`, `dagger_relabel.py`, `policies/` (`bc_policy.py`, `hybrid.py`, `pd_layer.py`, `split_policy.py`, `rodrigo_policy.py` = adapter for the final recipe's weights); obstacle task: `obstacle_task/`; per-experiment scripts and read-outs: `results/step*/`; tests: `tests/`; lab notebook with every pre-registration and result: `report.txt`; experiment plans: `STEP*_PLAN_PROMPT.md` |
+
+The only change to the expert's behaviour is the base goal: the standoff pose lies on the line from the robot's start
+to the target instead of from the world origin (`evaluate_policy.expert_base_goal`, used by `collect_data.py`); it is
+implemented in our code, and the two template files are byte-identical to the course repository.
+
+## Running it
+Environment: the course's RoboEnv pixi environment
+(`pixi run --manifest-path <RoboEnv>/pixi.toml python ...`), run from this folder; `data/` and `models/` must be
+present (models from RoboEnv; data regenerated with the commands in `DATA_COLLECTION.md` and `EVALUATION.md`:
+train seed 1, pilot 1000, DEV 200, HARD 201, CONFIRM 202, test 100 (sealed, never opened); obstacle sets with
+`results/step9/run_step9_sets.sh`).
+
+| step | experiments | scripts / outputs |
+|---|---|---|
+| 1-2 | protocol, data analysis | `EVALUATION.md`, `evaluate_policy.py`, `analyze_dataset.py`, `results/data_analysis/` |
+| 3 | A (wheel speed), B (base/arm swap), C3 (triggering copies), D (EE features), E (learning curve) | `results/step3/run_exp{A,B,C3,D}.sh`, `run_step4E.sh` |
+| 5 | F0 tolerance curve, F (one DAgger round) | `results/step5/run_expF.sh` |
+| 6-7 | G (chunking), P (PD output layer), PC (P confirmation) | `results/step6/run_exp{G,P}.sh`, `results/step7/run_expPC.sh` |
+| 9 | obstacle task: L0, L1, L1-K0, L2; H-MM, H-FACT, H-COPY; dev2, confirm2, test2 (opened once) | `obstacle_task/`, `results/step9/` |
+| 10 | cross-evaluation of the final recipe in this harness | `results/step10_cross/` (README there) |
+| 11 | controls R (placebo row), S (two networks), W (capacity) | `results/step11/` (README there) |
+
+Main models: C3 = `trained/ego-novw-trig_s{0..4}.npz` (DEV seeds) and `_s{100..104}` (CONFIRM seeds); obstacle L2 =
+`trained/step9/L1arm_s*`, `L2cls_s*`, `L2base_s*`. Not in git (regenerable): `data/`, `models/`, feature caches,
+1 kHz trajectories, per-episode and console logs.
+
+---
+
+# Course instructions (original README)
+
 1) Make sure the folders "/models", "/configs" from RoboEnv are accessible (easiest is to copy them to this folder)
 2) Use your RoboEnv environent (in whichever way you have been running the labs: pixi, uv, conda, etc)
 3) Run robotnik_arm_task.py

@@ -1,0 +1,8 @@
+Policy expert on data/dev: success 298/300 = 99.3% [97.6, 99.8] (95% Wilson), settled 296/300
+Stop reasons: reached 298, stalled 1, timeout 1
+Policy step time: mean 0.082 ms, p99 0.206 ms (median over episodes; control period 1 ms)
+Recorded clean expert reached / this policy succeeded (300 episodes): both 298, expert only 0, policy only 0, neither 2
+Recorded comparison: 0/300 episodes identical over the common length (float32), max differences: base_pos 0.0221, q_mes 0.724, qd_mes 8.22, wheel_cmds 4.61, torque_arm 60
+v1.1 held_10s (EE < 15 mm for 10 s after the first reach): 296/300 = 98.7% [96.6, 99.5]; extended hold ended: completed 298, not reached 2
+v1.1 stable arrival (EE within tol for >= 0.5 s, ending by 40 s): 5cm 298/300 = 99.3% [97.6, 99.8], 2cm 298, 1cm 298
+v1.1 parked (ring distance < 0.2 m and base still for >= 1.0 s): 297/300 = 99.0% [97.1, 99.7]; arm extended (EE > 0.1 m from its start in the base frame): 245/300 = 81.7% [76.9, 85.6] (both up to the v1 stop point)

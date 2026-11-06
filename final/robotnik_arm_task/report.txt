@@ -1838,6 +1838,270 @@ P_MM_compare_dev.*、P_offline_table.*、tolerance_curve_GP.*、fig_tolerance_GP
    冻结时没有任何学习器的闭环运行（dev2 / confirm2 / test2 上都没有）。整合时的决定（在看到上述任何训练结果之前）：稳定到达时限 60 s、接触判定为
    接触流形非空、训练集排除导航超时（实际 0 个）、H-COPY 读数改为"停好的单元中机械臂从不启动的比例"。
 
+[Results] 第 9 步：障碍任务 B1 + 两网络分解 E1 的结果（2026-11-04 dev2，2026-11-05 confirm2，H-MM 已确认，2026-11-05 test2 打开一次；按冻结的预注册运行；
+results/step9/step9_dev2.txt/.json、step9_confirm2.txt/.json、step9_test2_final.txt/.json/.png、fig_step9_dev2_{bifurcation,classes,traj}.*）
+------------------------------------------------------------------------------------------------------------------------
+0) 运行：专家 dev2 / confirm2 各 300/300 成功、0 碰撞、与录制逐位相同。学习器 dev2：L1、L2、L1-K0、L0 各 seed 0-4（20 次运行，
+   --no-early-stop，WORKERS=22；11-04 07:34 开始，中间两次因重启暂停并续跑，18:48 完成）。confirm2：L1、L2 各 seed 100-104
+   （新训练的 20 个网络，sha256 记在 confirm2_models_sha256.txt；11-04 19:18 开始，20:56 暂停，11-05 03:03 续跑，冻结哈希
+   复核通过）。分析 results/step9/step9_analysis.py（两层 bootstrap 10 000 次，按 seed 的 Welch；模糊带 = ambiguous 列）。
+1) H-MM（主假设，dev2，L2 减 L1，模糊带内 docked_clean，137 个 episode x 5 个 seed）：
+   - L1 83.5% [77.7, 89.1]，L2 98.1% [96.2, 99.6]；差值 +14.6 pp，bootstrap [+9.2, +20.4]，Welch [+11.0, +18.2] -> 支持。
+   - M1 成立：L1 带内 113 个失败单元中 87.6% 是 collision 或 no_pass（no_pass 97、collision 2；>= 60%）。即 MSE 底盘在
+     岔路口前停住，不是撞上去。
+   - M2 不成立：带外 L2 - L1 = +9.8 pp [+5.3, +14.6]（预测在 ±7 pp 内）。L1 的低谷在带边缘（|d| 约 0.15-0.3 m，约 74%），
+     不在 d = 0（约 87%）：MSE 平均的危害范围比"公平硬币"区域宽（分岔图 fig_step9_dev2_bifurcation）。
+   - M3 成立：L1 带内比带外低 2.9 pp。M4 成立：L2 越过障碍时 1500/1500 次走锁定的一侧。
+   - 次要量（Holm）：带内 no_pass -14.2 pp [-19.6, -8.9]（显著）；整体 docked_clean +12.0 pp [+8.3, +15.9]（显著）；带内
+     collision -0.6、带内 success +12.6、整体 success +13.0 pp（Holm 后不显著）。
+   - 竞争假设：C1（闭环对称性破缺挽救 MSE）不成立（带内 L1 83.5% 对专家 100%，失败是停住）；C2（感知是瓶颈）不成立
+     （L2 带内 98.1%）；C3（侧分类器 / 条件回归器在分布外失败）不成立（L2 带外 96.2%，高于 L1）。
+2) H-FACT（教授的拆分，dev2，L1 减 L0，整体 docked_clean）：-2.0 pp，bootstrap [-8.7, +4.8]，Welch [-10.4, +6.4]：没有差别
+   （预测 L1 >= L0 不成立，也没有变差）。次要量（Holm）：success +15.9 pp [+6.4, +25.2]（显著）、circling -5.3 pp（显著）、
+   collision -2.7、parked_no_arm -2.2（不显著）。L0 的失败形态：left_or_overshot 18.3%、approached_other 15.7%（L1 4.3 / 2.1%），
+   带中部（d 0-0.2）有一个碰撞鼓包（平均化的特征）；L0 success 16.7%。
+3) H-COPY（dev2，L1-K0 对 L1）："底盘停好的单元中机械臂从不启动"的比例：L1-K0 80.6%（每个 seed 77.7 / 78.1 / 76.1 / 86.0 /
+   85.3%），L1 0.0% -> 预注册的预测成立（L1-K0 >= 50%、L1 <= 10%）：单靠拆分不能让机械臂启动，启动来自触发拷贝。无条件的
+   parked_no_arm：L1-K0 70.1% [65.1, 74.9]，L1 0.0%；success L1 - L1-K0 +32.5 pp [+25.3, +40.1]。L1-K0 与 L1 共用底盘网络，
+   停靠曲线相同。
+4) 各配置（dev2，seed 平均 [两层 bootstrap 95% CI]）：
+   配置    docked_clean         success@10mm         reach_20mm   reach_50mm   collision  no_pass  held_10s  policy_ms
+   L0      87.1 [81.0, 92.7]    16.7 [10.5, 22.7]    35.7         62.1         3.5        3.3      1.2       0.246
+   L1      85.1 [81.4, 88.5]    32.6 [25.3, 40.3]    59.5         85.3         0.8        11.7     3.3       0.246
+   L1-K0   86.5 [82.9, 89.8]     0.1 [0.0, 0.4]       1.9          5.6         0.7        12.1     0.0       0.428
+   L2      97.1 [95.3, 98.5]    45.6 [36.4, 55.1]    76.9         98.1         0.1        0.0      4.9       0.276
+   专家    100                  100                  100          100          0          0        100
+   - 10 mm 精度的瓶颈与 A-to-B 相同：extended_not_reached L1 47.8%、L2 49.8%；ENR 约 48-50%；held_10s 3-5%。事后：停靠后残余
+     轮速指令 0.06-0.08 rad/s，末端在触到之后约 1.5 s 离开 15 mm（底盘蠕动）。
+5) confirm2（L1 对 L2，seed 100-104，300 个 episode，154 个在模糊带内；11-05 04:59 跑完，05:00 分析）：
+   - 带内 docked_clean：L1 81.3% [75.8, 86.4]（每个 seed 82.5 / 82.5 / 81.2 / 79.2 / 81.2%），L2 97.1% [94.2, 99.2]
+     （97.4 / 96.8 / 98.1 / 100 / 93.5%）；L2 - L1 = +15.8 pp，bootstrap [+10.0, +21.8]（p 1e-4），Welch [+12.9, +18.8]。
+     按预注册的确认规则（点估计 > 0 且 bootstrap 95% 下界 > 0）：H-MM 得到确认。整体 docked_clean L1 83.3% [79.4, 87.0]，
+     L2 96.1% [93.9, 98.1]（dev2 上 85.1% 对 97.1%，幅度一致）。
+   - success@10 mm（描述性，每个 seed）：L1 34.7 / 31.7 / 31.7 / 27.0 / 39.0%（平均 32.8%），L2 59.3 / 52.7 / 46.7 / 26.3 / 39.7%
+     （平均 44.9%）；与 dev2 的 32.6% / 45.6% 相同量级，L2 的 seed 间差异大（26-59%），10 mm 精度仍是机械臂的问题。
+   - 按预注册第 7) 条，最终冻结模型取 L2；test2 只为它构建并打开一次（11-05 12:50 打开，结果见 8)）。
+6) 局限（预注册第 8 条之外）：M2 不成立说明 H-MM 的"特异性"预测过窄；5 个 seed；一个静止圆柱；激光雷达理想化；专家用特权
+   信息规划；10 mm 成功率不是主指标；test2 只打开了一次（8)），它的数字不参与任何决定。
+7) 用于报告：图 fig_step9_dev2_bifurcation（docked_clean 与 collision 对横向偏移 d）、fig_step9_dev2_classes、fig_step9_dev2_traj。
+8) test2（封存集，seed 301，300 个 episode，135 个在模糊带内）：只为最终冻结模型 L2 构建并打开一次。11-05 12:50 构建
+   （run_step9_sets.sh --set test2 --allow-test2，300/300 专家到达），12:57-14:46 运行专家与 L2 seed 0-4（results/step9/run_step9_test2.sh：
+   与 run_step9_eval.sh 相同的参数加 --allow-test2，WORKERS=22，--no-early-stop）。读数 results/step9/step9_test2.py 只调用冻结的
+   step9_analysis 模块（同样的 METRICS、两层 bootstrap），先在 confirm2 上核对过与 step9_confirm2 的数字相同（step9_confirm2_wrapcheck.*）。
+   打开前复核：54 个冻结依赖与 20 个 confirm2 模型 0 个改动（report.txt 只按计划在 [References] 之前追加了结果）；test2 此前没有任何运行；
+   L2 seed 0-4 就是冻结记录里的那 10 个网络（L2base / L2cls）。描述性，不做检验，不做任何决定：
+   - 专家：300/300 成功、0 碰撞、与录制逐位相同（float32）、越障侧别 300/300 与场景一致、min_clearance 0.180 m。
+   - L2（seed 平均 [两层 bootstrap 95% CI]，整体 | 带内 | 带外）：docked_clean 97.3 [95.7, 98.5] | 97.6 [95.7, 99.3] | 97.0 [94.7, 98.8]
+     （每个 seed 97.0 / 97.7 / 96.3 / 98.7 / 96.7%）；success@10 mm 42.0 [33.3, 50.8] | 41.3 [31.6, 51.6] | 42.5 [33.2, 51.4]（每个 seed
+     50.7 / 29.3 / 38.3 / 54.0 / 37.7%）；reach_20mm 76.4 [69.1, 82.1]；reach_50mm 97.1 [94.7, 98.9]；collision 0.5 [0.0, 1.4]；no_pass 0.0；
+     crash 0.1；circling 0.4；parked_no_arm 0.0；extended_not_reached 51.3 [41.7, 60.7]；held_10s 5.5 [3.5, 7.7]；policy_ms 0.278；
+     越过障碍时 1500/1500 次走锁定的一侧。失败类（全部单元的份额）：ENR 51.3、left_or_overshot 3.1、approached_other 2.7、collision 0.5、
+     circling 0.4、crash 0.1%。
+   - 与 dev2 / confirm2 的 L2 对照（dev2 与 test2 是同一批模型 seed 0-4，confirm2 是 seed 100-104）：docked_clean 97.1 / 96.1 / 97.3%，
+     带内 98.1 / 97.1 / 97.6%，success 45.6 / 44.9 / 42.0%，ENR 49.8 / 49.2 / 51.3%：三个集上一致，从 dev2 到封存集没有退化；
+     带内 97.6 与带外 97.0 一样好。
+   - 读法：最终模型在封存集上的数字与开发集相同，说明 dev2 上的判定没有过拟合到那 300 个场景；10 mm 成功率仍由机械臂最后 1-2 cm 决定
+     （ENR 51%），seed 间 29-54%。图 step9_test2_final.png：L2 的 docked_clean 与 collision 对横向偏移 d（seed 均值与范围）。
+
+[Results] 第 10 步：两条线的交叉评估（2026-11-05 夜，描述性；Rodrigo 的 v2 模型在本任务的 v1.1 协议下跑 DEV 与 HARD；
+results/step10_cross/cross_dev.txt/.json、cross_hard.txt/.json；适配器 policies/rodrigo_policy.py；README 在 results/step10_cross/）
+------------------------------------------------------------------------------------------------------------------------
+0) 做法：Rodrigo 分支 weights/v2 的 MLP-Ego-IC（v2_mlp28_trig144，K 144，seed 0-4）、GRU-Ego（patience 40，seed 0-4）与无拷贝对照
+   （v2_mlp28_control seed 0）复制到 trained/rodrigo_v2/（commit 5b4fa44），由 policies/rodrigo_policy.py 在本任务的 harness 里运行：
+   重新实现他的 28 维特征（raw 21 + 车体系 target + 极坐标 + 时钟 t/40 s，时钟从 reset 起计数）、MLP / GRU 的 NumPy 前向、
+   (右, 左) 轮速到 4 轮的映射、他的评估器的限幅（轮速 ±5.27 rad/s、力矩 ±30 N·m）。核对：离线（clean pilot 录制 -> 适配器 ->
+   与干净标签比）MLP 轮速 NRMSE 0.146、GRU 0.083（他报的验证 NRMSE 0.13-0.14 / 0.105-0.108）；pilot 闭环冒烟 12 个 episode
+   7 成功、无报错。运行：DEV 11 次、HARD 10 次，--no-early-stop，05:00-07:33。没有采纳规则（两条线的数据不同，不是单变量实验）；
+   CONFIRM 与 test 没有打开。子集在任何交叉运行之前定好（STEP8_IDEAS_MEMO.md）：band = target z 在 [0.30, 0.80] m（他的训练高度范围；
+   DEV 155、HARD 95 个），band_box = band 且 |target x|, |target y| <= 2 m（他的 target 盒子；DEV 103、HARD 85 个）。
+   统计同 analyze_rollouts.py：seed 平均、两层 bootstrap 95% CI（10 000 次）、与 C3 的配对差（bootstrap 与按 seed 的 Welch）。
+1) DEV，全部 300 个 episode（seed 平均 [95% CI]；success = 10 mm）：
+   模型          success                每个 seed                      reach_2cm  reach_5cm  held_10s  stable_1cm  侧翻   policy_ms
+   专家          99.3                   -                              99.3       99.3       98.7      99.3        0      0.21
+   C3            60.5 [53.9, 67.1]      70.0/52.3/63.3/60.0/56.7       79.5       92.1       26.9      56.1        3.2    0.14
+   P             71.1 [59.3, 80.6]      82.7/77.7/77.7/49.3/68.3       88.7       95.3       30.3      62.1        4.3    0.21
+   K144 (R)      58.9 [52.9, 64.7]      63.3/60.3/54.3/60.3/56.3       65.5       72.3       42.5      56.8        9.9    0.09
+   GRU40 (R)     42.7 [35.7, 49.6]      43.3/32.7/43.0/42.7/52.0       58.6       70.4       23.7      41.0        0.0    0.09
+   CTRL (R)       1.3 [0.3, 2.7]        -                               3.7       11.0        0.0       0.3        0.3    0.09
+   - 与 C3 的差：K144 -1.5 pp，bootstrap [-10.4, +6.8]，Welch [-9.8, +6.7]（分不出）；GRU40 -17.7 [-27.3, -8.3]；CTRL -59.1。
+   - K144 的失败类（seed 平均 %）：circling 13.7、crash 9.9（全部侧翻）、extended_not_reached 7.2、runaway 5.8、never_other 1.8；
+     C3：ENR 18.7、circling 12.1、crash 3.2。即他的模型在我们的分布上失败在底盘层面（绕圈、跑飞、侧翻），我们的失败在最后 1-2 cm。
+2) DEV，band（z 0.30-0.80，n 155）：
+   模型      success              每个 seed                      reach_2cm  reach_5cm  held_10s  stable_1cm  与 C3 的差（bootstrap；Welch）
+   专家      100                  -                              100        100        98.7      100
+   C3        62.7 [55.4, 70.3]    72.9/61.3/56.8/60.0/62.6       83.1       94.1       24.4      58.7
+   P         76.3 [69.3, 83.0]    81.9/71.6/83.2/68.4/76.1       89.9       96.4       31.1      68.5        +13.5 [+4.4, +22.3]; [+4.4, +22.7]
+   K144      93.5 [89.7, 96.9]    96.8/93.5/91.0/96.1/90.3       96.3       98.2       71.6      91.6        +30.8 [+23.4, +38.1]; [+23.4, +38.3]
+   GRU40     71.1 [60.4, 80.0]    72.3/53.5/71.6/74.2/83.9       89.5       95.9       42.6      68.6        +8.4 [-4.3, +20.1]; [-5.2, +22.0]
+   CTRL       2.6 [0.6, 5.2]      -                               7.1       21.3        0.0       0.6        -60.1
+   - band_box（n 103）相同形态：K144 92.2 [87.0, 96.5]（+29.7 [+21.2, +38.1]），GRU40 73.4（+10.9 [-2.3, +23.5]），P 72.4（+9.9 [+0.0, +19.2]），
+     C3 62.5。
+   - K144 在带内的失败类：circling 3.1、ENR 1.8、其余 < 1%；held_10s 71.6% 对 C3 24.4%：他的模型到达后能保持（底盘停得住），我们的蠕动。
+3) DEV，带外（z 在 [0.2, 0.3) 或 (0.8, 1.2]，n 145；由全集与带内推算，每个 seed）：
+   C3 58.1%（66.9/42.8/70.3/60.0/50.3），P 65.7%，K144 21.9%（27.6/24.8/15.2/22.1/20.0），GRU40 12.4%，CTRL 0.0%。
+   即他的模型在自己训练过的高度带内 93%，带外约 1/5，并且侧翻集中在带外（全集 9.9%，带内 0.3%）；C3 在带内外基本持平（训练覆盖 z 0.2-1.2）。
+   这与他自己在 ood_target_height 银行上看到的结果一致（1 cm 到达 16-41/205）：高度是示范没有覆盖的维度，输入变换补不上机械臂的构型。
+4) HARD（200 个；band n 95；band_box n 85）：
+   - 全集：专家 97.0；C3 56.3 [50.0, 62.9]；P 62.7；K144 53.4 [45.5, 61.1]（57.5/56.0/46.5/60.0/47.0）；GRU40 44.5 [36.8, 52.1]。
+     K144 - C3 = -2.9 [-13.3, +7.0]（Welch [-11.1, +5.3]）；GRU40 - C3 = -11.8 [-21.5, -2.3]。
+   - band：C3 55.2 [46.7, 63.4]；P 59.8；K144 87.8 [79.2, 95.2]（93.7/91.6/77.9/96.8/78.9），+32.6 [+21.5, +42.9]（Welch [+21.9, +43.3]）；
+     GRU40 79.2 [68.4, 88.2]，+24.0 [+12.0, +35.4]（Welch [+10.8, +37.2]）。held_10s：C3 23.2、K144 63.6、GRU40 47.4。
+   - band_box：C3 57.4、P 59.1、K144 87.5（+30.1 [+19.1, +40.7]）、GRU40 80.2（+22.8 [+11.3, +34.6]）。
+   - 带外（n 105，推算）：C3 57.3%，P 65.3%，K144 22.3%，GRU40 13.1%。
+5) 读法（描述性）：
+   - 在两条线共同覆盖的分布上，Rodrigo 的配方比 C3 高约 30 pp（DEV +30.8、HARD +32.6，CI 下界都 > +20 pp），而且到达后保持
+     10 s 的比例高 2-3 倍；在整个 DEV / HARD 上两者分不出（-1.5 / -2.9 pp，CI 包含 0），差别来自带外。所以"86-98% 对 52-70%"的
+     差距一半是分布（高度带）、一半是配方；配方的那一半在同一个 harness、同一个 success 定义下确认存在。
+   - 配方里哪一项起作用没有分开（他的日志里没有 fade / 时钟 / 步长 / batch / 训练长度的消融）：带内示范数约 4 倍（3221 对约 820）、
+     每个 episode 都加噪且不衰减、全部 1 kHz 行、时钟与世界位姿输入、K 144。E 的学习曲线（每翻一倍 +8.7 pp）大致能解释其中 2 个
+     翻倍的份额，其余归因未验证。
+   - GRU-Ego（无触发拷贝）在带内 71-79%：没有标签派生装置也能启动机械臂，但比 K144 低 15-20 pp，且 ENR 高（24%）。
+   - 两条线的模型都只在自己训练过的高度范围内工作：这是数据覆盖的结论，不是模型的。
+6) 局限：描述性比较，不是单变量实验；5 个 seed；子集 n 较小（HARD band 95）；带外的数字由全集与带内推算（每个 seed 精确，
+   但没有单独的 CI）；他的模型在我们的 harness 里用我们的专家停靠点评估底盘诊断列（ring 距离等），success 与 reach 不受影响；
+   CONFIRM 与 test 没有打开。
+
+[Results] 第 9 步：test2（封存集，只打开一次；2026-11-05 12:57-14:46；results/step9/run_step9_test2.sh、step9_test2_final.txt/.json/.png）
+------------------------------------------------------------------------------------------------------------------------
+- 按预注册第 7) 条：H-MM 在 dev2 成立并在 confirm2 确认后，最终冻结模型取 L2；test2（seed 301，300 个干净 episode，135 个在模糊带内）
+  只为它构建并打开一次，跑专家与 L2 的 dev2 种子 0-4（即"最终配方的 5 个开发种子 = 一次开封"）。描述性，不再做任何决定。
+- 专家：300/300 成功、0 碰撞、与录制逐位相同（float32 最大差 0）、held_10s 300/300。
+- L2（seed 平均 [两层 bootstrap 95% CI]；带内 | 带外）：
+    docked_clean 97.3% [95.7, 98.5]（带内 97.6、带外 97.0；每个 seed 97.0 / 97.7 / 96.3 / 98.7 / 96.7）
+    success@10 mm 42.0% [33.3, 50.8]（每个 seed 50.7 / 29.3 / 38.3 / 54.0 / 37.7；带内 41.3、带外 42.5）
+    reach_20mm 76.4%、reach_50mm 97.1%、collision 0.5%、no_pass 0.0%、crash 0.1%、circling 0.4%、held_10s 5.5%、
+    extended_not_reached 51.3%、left_or_overshot 3.1%、approached_other 2.7%；锁定侧通过 1500/1500；policy_ms 0.278。
+- 与 dev2（docked_clean 97.1、带内 98.1、success 45.6）和 confirm2（96.1、97.1、44.9）一致：底盘这一半稳定在 96-99%，带内带外
+  相同；10 mm 成功率 42-46%，seed 间 29-54%，失败一半以上是 extended_not_reached（最后 1-2 cm），hold 只有 5-7%（示范无 hold 段）。
+- 用于报告：III-G 的 test2 一句话：L2 on the sealed test2 set: docked_clean 97.3% [95.7, 98.5] (in band 97.6%), success 42.0% [33.3, 50.8], collision 0.5%, held 10 s 5.5%.
+
+
+[Pre-registration] 第 11 步：三个补充检验 R / S / W（2026-11-06 夜，提交前）
+
+目的：给报告里三句目前证据不够直接的话各补一个单变量检验，不改变主模型（实验线主模型仍是 C3，最终方法仍是
+final recipe 的 MLP-Ego-IC）。只用 DEV；HARD、CONFIRM、data/test 都不打开。
+
+一、共同设定
+- 数据：实验线训练划分 trained/data_split.json（1613 个训练 episode，stride 9，缓存 results/step3/cache），与 C3 相同。
+- 训练：train_policy 的 sklearn MLP 训练器，超参数不变（ReLU，Adam 1e-3，alpha 1e-4，batch 200，float64，
+  验证集早停 patience 5 / rel_tol 1e-3，标准化只用原始训练行），种子 0-4。只改下面每个实验声明的那一个变量。
+- 评估：DEV 300 个 episode，协议 v1.1，evaluate_policy 默认参数（早停开，--save-traj），与对照 C3 s0-4 的 DEV 运行
+  完全相同的设置。对照直接用已有运行，不重跑：
+    joint-K0 = ego-novw s0-4（results/ego-novw_s{0..4}_dev）
+    joint-K16 = C3 = ego-novw-trig s0-4（results/ego-novw-trig_s{0..4}_dev）
+- 统计：episode 为单位；seed 均值；两级 bootstrap（先 seed 再 episode，同一 episode 配对，10 000 次）95% CI，
+  以及 seed 层面的 Welch 95% CI（analyze_rollouts.py compare，与第 3 步相同的实现）。
+- 指标：success（v1：10 mm 且正常停止）；arm_extended（EE 在基座坐标系中离开起始位置 > 0.1 m，截至 v1 停止点）；
+  parked；P(手臂从未伸出 | parked)；失败分类 extended_not_reached（ENR）、circling、parked_no_arm；
+  stable_1cm；held_10s；每步策略耗时。
+- 训练产生的验证损失会在评估前看到；只记录，不用于任何判断（第 4 步起的惯例：离线指标不选模型）。
+  冻结前已看到：R 第 1 个 epoch 的损失（train 0.0386 / val 0.0467）低于 C3 s0（0.109474 / 0.117376；C3 s0 在当前
+  环境中逐位复现了这两个数，环境与代码未变）。读法：起始行拷贝与相似的 hold 行冲突、拟合不了，安慰剂行不冲突。不用于判断。
+
+二、实验 R：复制行的特异性（安慰剂对照）
+- 被检验的话：IV-D "the fix: one row, re-weighted"。尚未排除的替代解释：任意追加约 1.4% 带关节速度抖动的行
+  （一种正则化）就能让手臂启动，与是哪一行无关。
+- 唯一变量：K = 16 份拷贝的来源行。C3 用每个训练 episode 的起始行 k0（第一个 nav_done 步）；R 改用一行安慰剂行：
+  从 {k : nav_done[k] 为 False 且 k <= k0 - 1000}（底座仍在运动、距锁存至少 1 s）中均匀抽一步，
+  随机数 numpy default_rng([11, episode])；若该集合为空但 k0 > 0，则从 {k < k0} 中抽；k0 = 0 的两个 episode
+  （747、880，起点即停车位）从 {k >= 1} 中抽并在结果中注明。抖动、K、拷贝行数（25 808）、标签（照录）全部与 C3 相同。
+- 模型名 R（trained/step11/R_s{0..4}.npz），5 个种子。实现：train_policy.run_train 的 C3 路径原样调用，只把
+  拷贝行的读取函数换成安慰剂缓存的读取（step11.py train-r；train_policy 的读取函数要求 nav_done，安慰剂行不满足）。
+  缓存已建：1613 行，规则计数 moving>=1s 1581 / before_k0 30 / k0_zero_any 2，最小距锁存 1000 步。
+- 主假设 H-R（特异性）：起作用的是那一行。预测：
+    R1 arm_extended 的 seed 均值 <= 10%（C3 约 79%）；
+    R2 success 的 seed 均值 <= 5%；
+    R3 R - C3 的 success 差：bootstrap 与 Welch 的 95% 上界都 < -40 pp。
+- 竞争假设 H-R'（正则化）：R 的 success >= 30% 或 arm_extended >= 50%。
+- 读法：R1-R3 全部成立 -> 支持特异性；H-R' 的条件成立 -> "一行"解释被否定，报告必须如实改写；其余 -> 部分支持，
+  如实报告数字。另报告 R - joint-K0 的描述性差值。
+
+三、实验 S：在 A-to-B 任务上直接做两网络拆分（老师的建议）
+- 被检验的话：摘要和 IV-C 的 "a base/arm network split does not [start the arm]"。目前证据是 B-EM（上界）和障碍任务
+  的 H-COPY，不是主任务上的直接检验。
+- 网络（复刻第 9 步 L1 / L1-K0 的设计）：
+    S-base：输入 ego_novw 的 6 个目标特征（ego_dx, ego_dy, target_z, rho, cos_beta, sin_beta），不含手臂 q/qd、
+            不含轮速；输出 v, w；K = 16 份起始行拷贝（该网络无 qd 列，拷贝即 16 份相同行），同第 9 步 L1base。
+    S-arm-K16：输入 ego_novw（20 维），输出 tau1..7；K = 16 份拷贝，抖动同 C3。
+    S-arm-K0：同上但不加拷贝。
+  每个网络的损失只在自己的输出上（标准化 MSE，等权）。策略：轮子来自 S-base，力矩来自手臂网络，(v, w) -> 轮速与
+  BCPolicy 相同。
+- 两个单元：S-K16 = S-base + S-arm-K16；S-K0 = S-base + S-arm-K0（同一种子共用同一个 S-base，两单元只差手臂网络
+  有无拷贝）。种子 0-4。
+- 主假设 H-S-COPY（第 9 步 H-COPY 在主任务上的复刻）：拆分本身不能让手臂启动，拷贝可以。预测：
+    S1 S-K0：P(手臂从未伸出 | parked) 的 seed 均值 >= 90%，且 success <= 5%；
+    S2 S-K16 - S-K0 的 success 差：bootstrap 与 Welch 的 95% 下界都 > +30 pp。
+- 次要 H-S-FACT（双侧，不预测方向；障碍任务上的对应预测失败过）：S-K16 - C3 的 success 与 circling 差及 CI。
+  只有两种 CI 都不含 0 时才写"拆分改变了成功率/转圈"。
+- 描述性 2x2：{joint, split} x {K0, K16} 的 success 与 arm_extended（joint 两格用已有运行；注意 joint-K0 的底座无拷贝，
+  split 两格的底座有拷贝，这一不对称在报告中说明）。
+
+四、实验 W：容量
+- 被检验的话：结论的 "not for lack of data or capacity" 与 IV-F / 局限里的 "capacity was not tested" 互相矛盾。
+- 唯一变量：隐藏层 (256, 256, 256) 代替 (128, 128)（约 13.8 万参数，C3 的约 6.7 倍）。
+    W-K0：ego-novw 配方 + 大网络；W-K16：C3 配方（K = 16）+ 大网络。种子 0-4。
+- 运行地点：训练和 DEV 评估在 windcharger（UCL CS，同一 pixi lock、同一代码和缓存）。
+  冻结前修改（依据框架检查，未看任何新模型结果）：windcharger 上专家 DEV --compare-recorded 为 0/300 逐位一致
+  （成功率 298/300 = 99.3%，与本机相同；两机浮点差异被接触动力学放大）。因此 W 不与本机运行比较：
+  对照 C3 s0-4 与 ego-novw s0-4 在 windcharger 上用同一评估参数重跑（wc_C3_s*、wc_ego-novw_s*），
+  W-K16 vs wc_C3、W-K0 vs wc_ego-novw，比较只在同一台机器内做。另报告：wc_C3 与本机 C3 的描述性差值
+  （C3 在第二台机器上的复现），以及 C3 s0 在 windcharger 上两次运行是否逐位一致（机内确定性）。
+- 假设 H-W-onset（启动失败不是容量问题）：W-K0 的 arm_extended <= 10% 且 success <= 5%。
+- 假设 H-W-floor（最后 1-2 cm 不是容量问题）：W-K16 - C3 的 ENR 份额差点估计 > -5 pp 且 95% CI 含 0；
+  success 差的 95% CI 含 0。
+- 竞争假设 H-W-cap（容量能推动最后一厘米）：ENR 差 <= -8 pp 且两种 CI 都 < 0，并且 success 差两种 CI 都 > 0。
+  成立则报告删去"精度底线不是容量问题"的说法。
+- 两者都不成立 -> 不确定，报告如实写"未定"，并相应弱化结论措辞。
+- 另报告：每步策略耗时（必须 < 1 ms）与参数量。
+
+五、不做的事与冻结
+- 三个实验都不更换主模型，没有采纳规则；三个主假设各自独立，不跨实验做 Holm 校正，次要指标只作描述。
+- 冻结：把本文件、新代码和训练命令的 sha256 写入 results/step11/prereg_step11_frozen.txt，并把本节原文插入 report.txt
+  的 '\n[References] 参考文献' 之前；之后才对任何新模型运行 DEV。冻结后的任何改动都作为修正案写明时间和原因。
+冻结记录：results/step11/prereg_step11_frozen.txt
+
+[Results] 第 11 步：R / S / W 结果（2026-11-06 01:43 冻结后运行，05:00 读出；全部只用 DEV）
+分析：results/step11/step11_analysis.sh r|s|w（analyze_rollouts.py compare，两级 bootstrap 10 000 次 + seed 层 Welch），
+输出 results/step11/analysis/*.txt|json；P(从未伸出 | parked) 由 step11_cond.py；类别份额的 Welch 区间在
+analysis/welch_classes.txt。对照：C3 = ego-novw-trig s0-4，joint-K0 = ego-novw s0-4（已有本机运行，未重跑）。
+
+1) R（安慰剂拷贝）：H-R 支持（R1-R3 全部成立）。
+   success 0.3%（每 seed 0.3/0.0/0.0/1.0/0.3），arm_extended 0.1%；R - C3 = -60.1 pp，bootstrap [-66.9, -53.7]，
+   Welch [-68.5, -51.8]（上界均 < -40）。R - joint-K0 = +0.0 [-0.7, +0.7]：同样数量、同样抖动的拷贝换成随机的
+   底座运动行，与不加拷贝无法区分。失败类：parked_no_arm 63.9%（C3 0%）。竞争假设 H-R'（正则化）不成立。
+   旁证（冻结前已见、不用于判断）：R 的验证损失 0.026-0.029，接近 ego-novw（0.026-0.027），C3 为 0.055-0.062。
+
+2) S（A-to-B 上的两网络拆分）：H-S-COPY 支持（S1、S2 成立）。
+   S-K0：success 0.4%，底座停车 298-300/300（每 seed），P(手臂从未伸出 | parked) 99.8%（专家同一指标 18.2%，
+   即短距离 episode 本不需伸出 0.1 m 的底数；C3 15.2%）。S-K16 - S-K0 = +62.9 pp，bootstrap [+53.5, +72.0]，
+   Welch [+49.8, +76.0]。
+   次要 H-S-FACT（双侧）：S-K16 63.3% vs C3 60.5%，+2.8 pp [-7.9, +13.4]，Welch [-10.5, +16.1]：成功率无差别。
+   circling 12.1% -> 0.3%，-11.9 pp，bootstrap [-16.7, -7.4]，Welch [-18.1, -5.6]（两者都不含 0：拆分消除了转圈）；
+   代价：parked_no_arm 0 -> 5.5%（[+2.5, +9.2]，Welch [+0.9, +10.2]），arm_extended 81.7 -> 74.6%（-7.1 [-11.8, -2.8]）。
+   描述性 2x2 success：joint-K0 0.3 / joint-K16 60.5 / split-K0 0.4 / split-K16 63.3%。读法：拆分改的是底座
+   （看不到手臂的底座不再把静止的手臂读成"继续开"，S-K0 转圈 0%、joint-K0 32%；注意 split 底座带 K16 拷贝而
+   joint-K0 没有，这一比较有混杂），手臂是否启动只取决于手臂网络是否有起始行拷贝。第 9 步 H-COPY 在主任务上复现。
+
+3) W（容量，windcharger，机内比较）：
+   框架：windcharger 机内确定（C3 s0 两次运行逐位一致）；C3 在该机复现：60.6% vs 本机 60.5%，+0.1 [-9.0, +9.6]。
+   H-W-onset 支持：W-K0 success 2.4%（5.7/1.0/3.0/1.7/0.7），arm_extended 2.6%；vs wc ego-novw +1.9 pp
+   [+0.3, +4.1]，Welch [-0.6, +4.5]。大网络底座转圈更少（32.3 -> 3.7%，Welch [-56.5, -0.6]），手臂仍不启动。
+   H-W-floor 按冻结规则不成立，H-W-cap 被否定 -> 规则下"未定"：W-K16 33.5%（42.3/16.3/28.7/43.3/37.0）vs
+   wc_C3 60.6%，-27.1 pp，bootstrap [-39.3, -15.7]，Welch [-41.9, -12.2]；ENR 19.4 -> 36.5%，+17.1 pp [+3.8, +29.2]，
+   Welch [+1.1, +33.0]。即更大的网络没有推动最后一厘米，反而更差（预注册的"不变"预测在相反方向失败）。
+   事后描述（未检验）：W-K16 早停在第 2-3 个 epoch，验证损失 0.054-0.067 与 C3（0.055-0.062）相当；W-K0 验证损失
+   0.024-0.025 低于 ego-novw 0.026-0.027。离线误差再次没有预测闭环结果。每步耗时 0.19-0.21 ms（< 1 ms）。
+
+报告用法：S 替换 IV-C 里以障碍任务为主证据的两网络段落（障碍任务降为复现）；R 加入 IV-D 的"一行"论断；
+W 改写结论 "not for lack of data or capacity" 与 IV-F "(capacity was not tested)"：容量既不启动手臂，也不推动
+最后一厘米（大网更差，机制未检验）。
+分析记录：S 的比较用了 --allow-incomplete：analyze_rollouts.is_hybrid() 把任何含 "base=" 的 policy-arg 判为实验 B
+的 hybrid 并要求 --no-early-stop；split_policy 无状态、不用时间，冻结的预注册规定 S 与 C3 s0-4 同参数评估；
+S 的 10 次运行均 300/300、0 个 harness 错误，故该选项只跳过这条检查。
+运行后重构（05:30，不影响任何结果）：全套单元测试发现把 ego_target 注册进 bc_features.FEATURE_SETS 后，
+build_features("ego_target") 落入错误分支；改为 split_policy.register_ego_target() 同时补上该分支（返回 ego_novw 前 6 列）。
+训练与策略本来就自行切取这 6 列，模型与运行不变；冻结记录中 step11.py / split_policy.py 的 sha256 指重构前版本。
+
 [References] 参考文献（已核对出处）
 --------------------------------
 - P. de Haan, D. Jayaraman, S. Levine, "Causal Confusion in Imitation Learning", NeurIPS 2019. arXiv:1905.11979.
@@ -1872,6 +2136,15 @@ P_MM_compare_dev.*、P_offline_table.*、tolerance_curve_GP.*、fig_tolerance_GP
     PD 执行（50 Hz）。
   * 用在：第 6 步实验 G（chunking + temporal ensembling）与 P（位置参考 + 固定 PD）的动机；G 的失败（1 kHz 力矩输出下加权平均引入
     延迟）与 P 的结果；不采用 CVAE（专家是确定性脚本）与 transformer 的理由。
+
+- C. Wen, J. Lin, J. Qian, Y. Gao, D. Jayaraman, "Keyframe-Focused Visual Imitation Learning", ICML 2021, PMLR 139:11123-11133.
+  arXiv:2106.06452.（2026-11-06 核对：proceedings.mlr.press/v139/wen21d.html 与 arXiv 摘要页）
+  * 内容：copycat 问题的后续工作：示范中专家动作发生变化的帧（keyframe / changepoint）在行为克隆里被大量"延续上一动作"的帧淹没，
+    他们按动作变化点的概率给这些帧加权（keyframe-focused loss），在 MuJoCo 图像控制与 CARLA 驾驶上优于基线。
+  * 与我们的关系：触发帧拷贝（C3 / K 144）是它的一个特例：只加权每个 episode 的一个过渡帧（nav_done 后第一帧），由标签
+    （末尾零轮速段的第一行）而不是学到的 changepoint 概率选出，并对输入加抖动；Rodrigo 的对照显示只加损失权重
+    （K+1，无抖动）比拷贝少到达（84% 对 92%）。
+  * 用在：报告 III-C（装置的定位，draft 4 新增一句）。
 
 [TODO] 待确定
 ------------

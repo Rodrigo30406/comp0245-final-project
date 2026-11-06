@@ -46,3 +46,13 @@ __pycache__/
 /results/step9/**/traj/
 /results/step9/**/logs/
 /trained/step9/*.log
+# step 10 / 11: trajectories, per-episode and console logs, analysis stdout and reference caches (regenerable);
+# results/step11/cache/ (the placebo cache) is covered by /results/*/cache/ and rebuilt by step11.py build-placebo-cache
+/results/step10_cross/**/traj/
+/results/step10_cross/**/logs/
+/results/step10_cross/**/*.log
+/results/step11/**/traj/
+/results/step11/**/logs/
+/results/step11/**/*.log
+/results/step11/analysis/*.stdout
+/results/step11/analysis/cache_ref_*.csv
