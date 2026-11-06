@@ -931,3 +931,67 @@ MLP-Base (`mlp22raw_control`) → MLP-Ego (`mlp28_control`) → MLP-Ego-Cat (`ml
 (`mlp28nom_trig144`) → no DART (`mlp28clean_control`, `mlp28clean_trig144`). Estimated 6 h of GPU (seed-2 wall times
 50 / 21 / 20 / 7 / 33 / 50 min). Single-seed ablations (`mlp22raw_trig144`, K 16 / 512, size caps) stay "seed 0".
 Step 9 (all families at 3 seeds) is not in this chain.
+
+**5 Nov 22:58 — dynamic expert v6–v9: goal seeking and avoidance in one cost (`--mode dwa`, now the default).
+41/42 scenes, 0 collisions, no navigation timeouts.** Rodrigo asked for a look at open-source dynamic-avoidance
+planners (PythonRobotics DWA, goktug97 DWA, ir-sim VO/RVO/HRVO, Python-RVO2, teb_local_planner, Nav2 MPPI, the
+DynaBARN benchmark). None is a drop-in (omnidirectional or ROS, no skid-steer base with an arm), but they share one
+structure that v5 lacked: the attraction to the goal and the avoidance are terms of ONE cost minimised over sampled
+commands at every control step, so there is no nominal controller to hand back to and no recovery phase. v5 kept the
+template's align → drive → orient state machine as the nominal and overrode it; after a detour the template orbited
+the dock. (DynaBARN also reports behaviour cloning as the worst of its four baselines on moving obstacles with
+limited data, and DWA at 17 % / TEB near 0 % in its hard environments: a warning for the clone, not for the expert.)
+The rewrite (`dwa_rollouts`, `dwa_command`): every 50 ms, candidates are integrated for up to 8 s with the cylinder
+at its current velocity and scored on closest approach to the dock, distance at the end, heading error at the closest
+approach, footprint–cylinder clearance (closest approach, and at the end of the horizon with a 0.5 m margin so a
+flee alongside the cylinder is not "resolved"), a cost-to-go check (from the end of the rollout, turn to the dock and
+drive straight 8 s while the cylinder carries on: a detour that leaves the return blocked is no better than waiting),
+leading idle time, turning while driving, command changes, reversing. The template's own align-then-drive law is a
+candidate (simulated closed loop at full / 0.7 / 0.4 speed and after waiting 1–6 s), so far from the cylinder the
+data equal the A-to-B expert's; the avoidance repertoire is wait, straight ahead, reverse, and in-place turn to a
+detour heading then straight. The template takes over at pos_tol for the final orientation (and keeps the timeout).
+Nine iterations in 2.5 h (the 12 seed-1 scenes rerun after each); the diagnoses that mattered, each measured on the logged episodes:
+1. **The base slides sideways when it turns while driving, and the simulator does not damp it.** v·w builds lateral
+   speed; measured 0.36 m/s sideways for 20 s with all four wheels commanded to zero (wheel speeds 1.9–2.7 rad/s:
+   they free-wheel; roll/pitch flat, z unchanged). Braking is useless, so the regime is avoided: every candidate
+   separates turning (in place) from driving (straight), and sustained turning while driving is penalised. This is
+   also the physics behind the step-9 "base leaves the dock during the hold" failures and the v5 orbits.
+2. **The base keeps rotating after an in-place turn** (0.3–0.6 rad/s for 1–2 s with the command at zero; a 1 rad/s
+   align overshoots by up to 0.5 rad). Fixes: in-place turns at 0.6 rad/s, straight runs steer to the heading the
+   rollout planned (gain 1.5, ±0.3 rad/s, the template's own drive steering), and a yaw-rate feedback on the executed
+   command (gain 0.8 on the measured rate, 50 ms low-pass).
+3. **The chase trap.** With a 5 s horizon, fleeing alongside a cylinder that comes from behind at nearly the base's
+   speed scores best at every decision and never ends; the 8 s horizon, the end-of-horizon margin and the cost-to-go
+   term make "wait until it has passed, then go" win (wait-then-drive candidates were added for that).
+4. **Myopia near the dock.** A heading cost at the rollout's end stalled the base 0.15–0.20 m short of the dock after a
+   detour (the final orientation is the orient phase's job: weight 0.3 → 0.05); the smoothness term made "wait 1 s
+   then go" beat "go" at every decision at 0.13 m from the dock (procrastination, fixed by the idle-time cost);
+   the minimum horizon is 3.5 s so a half turn fits.
+Results (`runs/obstacle/dynamic_proto_dwa9*`, cylinder 0.10–0.25 m/s, timeout 60 s, hold 10 s):
+| expert | scenes | success | collisions | nav timeouts | navigation time (median / max) | min clearance (median / min) |
+|---|---|---|---|---|---|---|
+| blind (plain A-to-B), seed 1 | 12 | 6 | 6 | 0 | 17.8 / 19.0 s | 0.04 / 0.00 m |
+| blind, seed 2 | 30 | 12 | 18 | 0 | 16.7 / 19.9 s | 0.01 / 0.00 m |
+| v5 (nominal + velocity-obstacle override), seed 1 | 12 | 9 (4 of them only through the 60 s timeout) | 1 | 6 | 60.0 / 60.0 s | 0.24 / 0.01 m |
+| **v9 (one cost), seed 1** | 12 | **11** | **0** | **0** | 24.0 / 30.8 s | 0.32 / 0.16 m |
+| **v9, seed 2** | 30 | **30** | **0** | **0** | 26.1 / 30.3 s | 0.32 / 0.10 m |
+The one non-success (seed 1 ep 3) is the arm, not the avoidance: the base parked 6 cm from the dock and oriented at
+16 s, the hand's closest approach was 10.5 mm (tolerance 10 mm). Five of 42 scenes pass the cylinder at 0.10–0.15 m
+(the unicycle rollout ignores the base's momentum; the planned margin is 0.25 m); none touches it. Navigation takes
+20–31 s against 18–19 s for the blind template (the manoeuvre costs 5–12 s). GIFs for review:
+`docs/figures/dynamic_proto/dwa9_ep06_wait_then_go.gif` (the former chase: waits, lets it pass, goes),
+`dwa9_ep00_former_collision.gif` (v5's collision scene), `dwa9_ep04_former_loop.gif` (v5's 60 s loop scene).
+Verdict: 41/42 with 0 contacts is above the ≥ 95 % bar set for a data-collection expert; the manoeuvres are short
+(≤ 31 s) and the data far from the cylinder equal the A-to-B expert's. What a learner would need: the cylinder's
+position and velocity are not in a single scan (the expert reads them from the scenario, privileged); a clone needs a
+scan history (stacked scans or the GRU) and the dataset would be ~2000 episodes × 25–40 s at 1 kHz. Not for the
+6 Nov report beyond a "preliminary experiment / future work" paragraph with this table; the collection is Rodrigo's
+call.
+
+**5 Nov 23:00 — set F, all three seeds (chain 3 done 21:46; `scripts/obstacle/dev2_table.py`).** MLP-Ego-IC + lidar
+trained on set F (our DART + base noise in the hold + their 0.5 m base fade), dev2, % of 300: success 77 ± 26
+(47–97), held 10 s 71 ± 26 (44–96). Seed 1 is the best single run of the whole step (290/300, held 288, 1 collision);
+seed 2 the worst of the hold family (141/300, 122 "stalled" stops: the base stops short of the dock). F has the
+highest ceiling and the highest variance; B (80 ± 8, held 77 ± 9) remains the stable choice for the report's table,
+with F reported alongside as mean ± sd and range. No run of F ends with the fade hypothesis refuted: the
+misaligned-park failures stay low in all three seeds (dev2 stop reasons: timeout 32/9/35, stalled 6/0/122).

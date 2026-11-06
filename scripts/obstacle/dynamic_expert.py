@@ -1,33 +1,46 @@
-"""Prototype (5 Nov 2026): dynamic-obstacle task and a velocity-obstacle expert, built on the group's step-9 code.
+"""Prototype (5 Nov 2026): dynamic-obstacle task and a one-cost (DWA-style) avoidance expert, built on the group's step-9 code.
 
 Why: the group's `multi-agent` branch yields/brakes on a fixed path using the other robot's plan (privileged), so its
 demonstrations contain no detour and no action the learner could reproduce from its own observation. This prototype
 is the alternative discussed with the group: one scripted cylinder crosses the start -> dock corridor while the robot
-drives, and the expert steers around it using ONLY the 64-beam scan (the learner's input) plus the goal geometry
+drives, and the expert steers around it using the cylinder's position and velocity (observable from two scans) plus the goal geometry
 the A-to-B expert already uses. Nothing in the group's code is edited: their simulation setup (`evaluate_policy.
 setup_simulation`), base/arm controllers (`robotnik_arm_control`), analytic lidar (`obstacle_task.lidar`) and
 obstacle helpers (`obstacle_task.sim`) are imported as they are.
 
 Scenario (`sample_dynamic_scenario`): start pose and target as step 9 (`scenario.py` constants: target 3.5-5 m away),
 dock = the A-to-B expert's dock, no static obstacle. One cylinder (r 0.25-0.35 m, h 1.5 m) moves on a straight line
-at a constant speed OBST_SPEED (0.15-0.45 m/s) that crosses the start->dock segment at a fraction ALONG (0.35-0.65),
+at a constant speed OBST_SPEED (0.10-0.25 m/s; v1-v4 used 0.15-0.45) that crosses the start->dock segment at a fraction ALONG (0.35-0.65),
 at an angle CROSS_ANGLE_DEG (60-120 deg to the segment, both directions). Its start is set so that it reaches the
 crossing point at the moment the unperturbed robot would (arrival time at 0.25 m/s nominal speed) plus a jitter
 MEET_JITTER_S, so the two really meet; after crossing it carries on in a straight line. The crossing point is kept
 >= 1.0 m from the start and from the dock so the in-place turns are never threatened.
 
-Expert (`ReactiveExpert`, mode "vo", the default): the unchanged `base_controller` (align -> drive -> orient ->
-done, step-9 navigation timeout 45 s) gives the nominal (v, w) towards the dock. While navigating, a sampled
-velocity-obstacle rule replaces it when the nominal command would conflict with the cylinder: 60 candidate (v, w)
-pairs (speeds 0.25 .. -0.12 m/s, yaw rates -0.8 .. 0.8 rad/s, always including the nominal) are rolled out for
-VO_HORIZON s with the cylinder moving at its current velocity, the clearance between the 3-circle robot footprint
-(chassis 0.36 m, arm 0.22 m at 0.38 m, wrist 0.16 m at 0.68 m ahead, as the group's multi-agent code) and the
-cylinder is taken over the rollout, and the cheapest candidate wins: a penalty when the clearance drops below
-VO_MARGIN plus the deviation from the nominal command (and a small cost for reversing). Far from the cylinder the
-nominal command is conflict-free, so the data equal the A-to-B expert's there. The rule needs the cylinder's
-position and velocity: both are observable from two consecutive scans (the learner needs a scan history, i.e. a
-stacked-scan input or a recurrent policy), unlike the other robot's plan in the multi-agent branch. The expert
-reads them from the scenario (privileged, like the step-9 expert reads the waypoint).
+Expert (`ReactiveExpert`, mode "dwa", the default, v6-v7 of 5 Nov 2026): goal seeking and avoidance in ONE cost,
+as the open-source planners do (PythonRobotics DWA, ir-sim VO/RVO, TEB). Every DWA_PERIOD (50 ms) the candidate
+commands of `dwa_rollouts` are integrated for up to DWA_HORIZON s with the cylinder moving at its current velocity
+and the cheapest wins (`dwa_command`): closest approach to the dock, distance to the dock at the end, heading error
+at the closest approach, clearance between the 3-circle footprint (chassis 0.36 m, arm 0.22 m at 0.38 m, wrist
+0.16 m at 0.68 m ahead, as the group's multi-agent code) and the cylinder (closest approach and end of the rollout),
+turning while driving, command changes, reversing. The template's own align-then-drive law is one of the candidates
+(simulated closed loop), so far from the cylinder the data equal the A-to-B expert's; the others are the avoidance
+repertoire (wait, slower, reverse, in-place turn to a detour heading then straight). The template's state machine
+still runs: it takes over for the final orientation once the base is at the dock (pos_tol) and keeps the timeout.
+Two properties of the group's simulation shaped the design (see the DWA_* comments): (1) the base slides sideways
+when it turns while driving (lateral speed builds at about v * w) and the simulator hardly damps it (0.36 m/s
+sideways for 20 s with the wheels commanded to zero, which free-wheel), so every candidate separates turning (in
+place, DWA_TURN_RATE) from driving (straight, with a heading hold); (2) the base keeps rotating after an in-place
+turn, so straight runs hold the heading the rollout assumed. The horizon (8 s) is long enough to see that fleeing
+alongside a cylinder that comes from behind never ends (the chase trap of the shorter horizons).
+The rule needs the cylinder's position and velocity: both are observable from two consecutive scans (the learner
+needs a scan history, i.e. a stacked-scan input or a recurrent policy), unlike the other robot's plan in the
+multi-agent branch. The expert reads them from the scenario (privileged, like the step-9 expert reads the waypoint).
+Mode "vo" (v1-v5) is kept for the record: the unchanged `base_controller` gives the nominal (v, w) and a sampled
+velocity-obstacle rule replaces it only when the nominal command would conflict with the cylinder. It avoided well
+(9/12 at v5) but could not recover: the template aligns only once, so after a detour the drive phase orbits the
+dock (turn radius 0.8 m), and the re-alignment patch alternated with the avoidance (5 of 12 episodes used the whole
+60 s). That is the lesson of the open-source planners: with goal seeking and avoidance in one cost there is no
+nominal controller to hand back to, hence no recovery phase.
 Mode "lidar" is the first attempt kept for the record: single-scan repulsion (turn away from the closest beams,
 slow down when they are ahead). It collided in 8/10 episodes, always on a rear wheel: turning away from a crossing
 body swings the rear into its path, and one scan cannot tell where the body is going. Mode "blind" is the plain
@@ -36,7 +49,7 @@ The arm is `arm_controller` unchanged once navigation is done. A collision (robo
 
 Usage (default pixi env of RoboEnv, from this project's root):
   pixi run --manifest-path ../RoboEnv/pixi.toml python scripts/obstacle/dynamic_expert.py --episodes 0-9 \
-      --out-dir runs/obstacle/dynamic_proto [--gui] [--gif] [--mode vo|lidar|blind]
+      --out-dir runs/obstacle/dynamic_proto [--gui] [--gif] [--mode dwa|vo|lidar|blind]
 Writes one .npz per episode (the group's LOG_FIELDS + lidar (T, 64) + obstacle_xy (T, 2)), index.csv, and with
 --gif a top-view animation per episode (robot footprint, lidar beams, cylinder, planned line) for review.
 """
@@ -100,6 +113,36 @@ REALIGN_ERR = 0.35                 # rad, heading error to the dock after an avo
 VO_SPEEDS = (0.25, 0.18, 0.10, 0.04, 0.0, -0.12)
 VO_RATES = (-0.6, -0.45, -0.3, -0.15, 0.0, 0.15, 0.3, 0.45, 0.6)
 FOOTPRINT = ((0.00, 0.36), (0.38, 0.22), (0.68, 0.16))   # (forward offset, radius) m
+
+# Mode "dwa" (v6): goal seeking and avoidance in ONE cost, as DWA / VO planners do (PythonRobotics DWA, ir-sim RVO,
+# TEB): no nominal controller to fall back to, so there is no "recovery" phase after an avoidance.
+DWA_PERIOD = 0.05                  # s, decision period (20 Hz); the command is held in between
+DWA_HORIZON = 8.0                  # s, rollout horizon far from the dock (long enough to see that fleeing alongside the cylinder never ends); shrinks to DWA_MIN_HORIZON as the dock nears
+DWA_MIN_HORIZON = 3.5              # s (a half turn in place at 1 rad/s must fit: the cost is myopic otherwise)
+DWA_MARGIN = 0.25                  # m, footprint-cylinder clearance kept over the rollout (0.40 made the base flee alongside the cylinder)
+DWA_W_GOAL = 2.0                   # per m of the closest approach of the rollout to the dock
+DWA_W_HEADING = 1.0                # per rad of heading error at the closest approach (to the dock, or the dock bearing within 0.15 m)
+DWA_W_END = 0.5                    # per m between the rollout's end and the dock (moving away costs; reaching it slowly is preferred)
+DWA_W_FINAL = 0.05                 # per rad of dock-bearing error when the rollout reaches the dock (tie-breaker: the orient phase corrects it; 0.3 stalled the base 0.17 m short of the dock after a detour)
+DWA_W_CLEAR = 20.0                 # per m of margin violation (closest approach over the rollout)
+DWA_W_CLEAR_END = 20.0             # per m below DWA_MARGIN_END at the end of the rollout (the conflict must be resolved by then: no fleeing alongside the cylinder)
+DWA_MARGIN_END = 0.50              # m
+DWA_W_BLOCK = 10.0                 # per m of margin violation on the way back to the dock after the rollout (cost-to-go: a detour that leaves the return blocked is no better than waiting)
+DWA_BLOCK_HORIZON = 8.0            # s of that straight return (after an in-place turn at DWA_TURN_RATE) that are checked
+DWA_HIT = 10.0                     # extra when the rollout comes within DWA_HIT_GAP of the cylinder
+DWA_HIT_GAP = 0.10                 # m (the unicycle rollout ignores the base's momentum: keep a reserve)
+DWA_W_TURN = 3.0                   # per rad/s of yaw rate while driving (the skid-steer slip builds up when turning while driving)
+DWA_W_SMOOTH = 0.1                 # per unit change of (v, w) from the held command
+DWA_SLIP_FACTOR = 1.3              # slip counter: measured base speed above this times the commanded speed + 0.08 m/s (v > 0.05 only).
+                                   # Zero wheel commands do not stop a sliding base here (the wheels free-wheel and the lateral friction
+                                   # is nearly zero: 0.36 m/s sideways for 20 s with the wheels at 0), so sliding is prevented, not cured:
+                                   # DWA_W_TURN makes turning while driving expensive (lateral speed builds at about v * w).
+DWA_REVERSE = 0.3
+DWA_W_WAIT = 0.1                   # per s of idle time at the start of a rollout (otherwise "wait 1 s then go" beats "go" at every decision: the base procrastinates at 0.13 m from the dock)
+DWA_HYSTERESIS = 0.02
+DWA_TURN_RATE = 0.6                # rad/s, in-place turns (the template uses 1.0; the base keeps rotating after a fast turn here)
+DWA_HOLD_GAIN = 1.5                # heading hold while driving straight: w = clip(gain * (yaw_ref - yaw), +-0.3), as the template steers
+DWA_YAW_DAMP = 0.8                 # yaw-rate feedback on the executed command: w += gain * (w - measured yaw rate)
 
 
 def sample_dynamic_scenario(seed, episode):
@@ -203,6 +246,142 @@ def velocity_obstacle_command(xy, yaw, v_nom, w_nom, c, v_obs, r, previous=None)
     return best[1], best[2], best[3], nominal_clear
 
 
+def _template_law(err, dist, params, scale=1.0):
+    """The template's align-then-drive law on one rollout state: in-place turn at clip(kp_ori err, +-1) while
+    |err| >= ang_tol, then v = scale * clip(kp_pos dist) with a gentle heading correction w = clip(1.5 err, +-0.1)
+    (the template allows +-0.3 while driving; here turning while driving is kept minimal, see DWA_W_TURN)."""
+    if abs(err) >= params.ang_tol:
+        return 0.0, float(np.clip(params.kp_ori * err, -params.max_ang_vel, params.max_ang_vel))
+    v = scale * float(np.clip(params.kp_pos * dist, params.min_lin_vel, params.max_lin_vel) * max(0.0, math.cos(err)))
+    return v, float(np.clip(1.5 * err, -0.1, 0.1))
+
+
+def dwa_rollouts(xy, yaw, dock_xy, err, dist, params, steps):
+    """[(label, vs, ws)]: the (v, w) sequences of every candidate over `steps` rollout steps of VO_DT.
+
+    Every candidate separates turning from driving: this base slides sideways when it turns while driving (the
+    lateral speed builds at about v * w and the simulator hardly damps it), so the repertoire has in-place turns
+    and straight runs only. Closed-loop candidates (the template's align-then-drive law re-evaluated at every
+    rollout step) at full / 0.7 / 0.4 speed and after waiting 1-6 s (let the cylinder pass, then go); open-loop
+    candidates: wait, straight ahead at 0.25 / 0.18 / 0.10 m/s,
+    reverse straight at 0.12 m/s, and detours (in-place turn at 1 rad/s to a heading +-0.5 / +-1.0 / +-1.5 / +-2.0
+    rad off the dock heading, then straight at 0.25 m/s); in-place turns at DWA_TURN_RATE. Far from the cylinder the closed-loop candidate wins, so
+    the data equal the A-to-B expert's there (up to the gentler steering while driving).
+    """
+    out = []
+    closed = [("drive", 1.0, 0.0), ("drive0.7", 0.7, 0.0), ("drive0.4", 0.4, 0.0)]
+    closed += [(f"wait{tau:.0f}", 1.0, tau) for tau in (1.0, 2.0, 3.0, 4.0, 6.0)]
+    for label, scale, wait in closed:
+        p_xy, p_yaw, e, d = xy.copy(), yaw, err, dist
+        vs, ws = np.zeros(steps), np.zeros(steps)
+        for k in range(steps):
+            v, w = _template_law(e, d, params, scale)
+            if d < params.pos_tol or (k + 1) * VO_DT <= wait:
+                v, w = 0.0, 0.0
+            vs[k], ws[k] = v, w
+            p_yaw += w * VO_DT
+            p_xy = p_xy + v * VO_DT * np.array([math.cos(p_yaw), math.sin(p_yaw)])
+            to = dock_xy - p_xy
+            d = float(np.linalg.norm(to))
+            e = float(wrap_angle(math.atan2(to[1], to[0]) - p_yaw))
+        out.append((label, vs, ws))
+    for v in (0.0, 0.25, 0.18, 0.10, -0.12):
+        out.append((f"straight{v:+.2f}", np.full(steps, v), np.zeros(steps)))
+    ts = VO_DT * np.arange(1, steps + 1)
+    for delta in (0.5, -0.5, 1.0, -1.0, 1.5, -1.5, 2.0, -2.0):
+        turn = wrap_angle(err + delta)
+        if abs(turn) > 0.05:
+            first = ts <= abs(turn) / DWA_TURN_RATE
+            out.append((f"detour{delta:+.1f}", np.where(first, 0.0, 0.25),
+                        np.where(first, math.copysign(DWA_TURN_RATE, turn), 0.0)))
+    return out
+
+
+def dwa_command(xy, yaw, dock_xy, dock_bearing, c, v_obs, r, params, previous=None, debug=False):
+    """(v, w, min clearance of the chosen rollout, horizon, planned heading of its first straight run): one cost
+    for goal seeking and avoidance.
+
+    Each candidate of `dwa_rollouts` is integrated (unicycle) for the horizon with the cylinder at its current
+    velocity. Cost = DWA_W_GOAL * closest approach to the dock + DWA_W_END * distance(end, dock) + DWA_W_HEADING *
+    |heading error towards the dock at the closest approach| (DWA_W_FINAL * |dock bearing error| instead when the
+    rollout reaches the dock, the orient phase corrects it anyway) + DWA_W_CLEAR * max(0, DWA_MARGIN - clearance) +
+    DWA_HIT if the footprint touches the cylinder + DWA_W_BLOCK * margin violation of the straight return to the dock
+    after the rollout (cost-to-go, see the code) + DWA_W_WAIT * leading idle time + DWA_W_TURN * mean |w| while driving (the skid-steer base slides,
+    with growing speed, when it turns while driving for long) + DWA_W_SMOOTH * change of the first command from the
+    held one + DWA_REVERSE if reversing. The first command of the best rollout is returned (held for DWA_PERIOD); the
+    held command is kept while its cost is within DWA_HYSTERESIS of the best. The horizon is distance / 0.25 m/s
+    clipped to [DWA_MIN_HORIZON, DWA_HORIZON].
+    """
+    to_dock = dock_xy - xy
+    dist = float(np.linalg.norm(to_dock))
+    err = float(wrap_angle(math.atan2(to_dock[1], to_dock[0]) - yaw))
+    horizon = float(np.clip(dist / 0.25, DWA_MIN_HORIZON, DWA_HORIZON))
+    steps = max(int(round(horizon / VO_DT)), 2)
+    ts = VO_DT * np.arange(1, steps + 1)
+    cs = c[None, :] + v_obs[None, :] * ts[:, None]
+    v_prev, w_prev = previous if previous is not None else (0.0, 0.0)
+    scored = []
+    for label, vs, ws in dwa_rollouts(xy, yaw, dock_xy, err, dist, params, steps):
+        yaws = yaw + np.cumsum(ws) * VO_DT
+        xs = xy[0] + np.cumsum(vs * np.cos(yaws)) * VO_DT
+        ys = xy[1] + np.cumsum(vs * np.sin(yaws)) * VO_DT
+        clear, clear_end = np.inf, np.inf
+        for off, rad in FOOTPRINT:
+            px, py = xs + off * np.cos(yaws), ys + off * np.sin(yaws)
+            gaps = np.hypot(px - cs[:, 0], py - cs[:, 1]) - rad - r
+            clear, clear_end = min(clear, float(gaps.min())), min(clear_end, float(gaps[-1]))
+        # Cost-to-go: from the end of the rollout, turn in place to the dock and drive straight at 0.25 m/s while the
+        # cylinder carries on; a candidate whose return is blocked pays for it (waiting until the cylinder has passed
+        # leaves a free return; fleeing alongside it does not).
+        end_xy, end_yaw = np.array([xs[-1], ys[-1]]), float(yaws[-1])
+        back = dock_xy - end_xy
+        d_back = float(np.linalg.norm(back))
+        if d_back > params.pos_tol:
+            back_yaw = math.atan2(back[1], back[0])
+            t_turn = abs(wrap_angle(back_yaw - end_yaw)) / DWA_TURN_RATE
+            n2 = max(int(round(min(DWA_BLOCK_HORIZON, t_turn + d_back / 0.25) / VO_DT)), 1)
+            ts2 = horizon + VO_DT * np.arange(1, n2 + 1)
+            cs2 = c[None, :] + v_obs[None, :] * ts2[:, None]
+            moving = np.clip((ts2 - horizon - t_turn), 0.0, None) * 0.25
+            xs2 = end_xy[0] + moving * math.cos(back_yaw)
+            ys2 = end_xy[1] + moving * math.sin(back_yaw)
+            yaws2 = np.where(ts2 - horizon <= t_turn, end_yaw + np.sign(wrap_angle(back_yaw - end_yaw))
+                             * DWA_TURN_RATE * (ts2 - horizon), back_yaw)
+            clear_back = np.inf
+            for off, rad in FOOTPRINT:
+                px, py = xs2 + off * np.cos(yaws2), ys2 + off * np.sin(yaws2)
+                clear_back = min(clear_back, float(np.min(np.hypot(px - cs2[:, 0], py - cs2[:, 1])) - rad - r))
+        else:
+            clear_back = np.inf
+        d_dock = np.hypot(dock_xy[0] - xs, dock_xy[1] - ys)
+        k = int(np.argmin(d_dock))
+        d_min, d_end = float(d_dock[k]), float(d_dock[-1])
+        if d_min > 0.15:
+            heading = DWA_W_HEADING * abs(wrap_angle(math.atan2(dock_xy[1] - ys[k], dock_xy[0] - xs[k]) - yaws[k]))
+        else:
+            heading = DWA_W_FINAL * abs(wrap_angle(dock_bearing - yaws[k]))
+        driving = vs > 0.05
+        turn = float(np.mean(np.abs(ws) * driving)) if driving.any() else 0.0
+        yaw_ref = float(yaws[int(np.argmax(driving))]) if driving.any() else None   # heading of the first straight run
+        active = (np.abs(vs) > 1e-9) | (np.abs(ws) > 1e-9)
+        idle = float(VO_DT * (int(np.argmax(active)) if active.any() else steps))   # leading idle time
+        v, w = float(vs[0]), float(ws[0])
+        cost = (DWA_W_GOAL * d_min + DWA_W_END * d_end + heading + DWA_W_CLEAR * max(0.0, DWA_MARGIN - clear)
+                + DWA_W_CLEAR_END * max(0.0, DWA_MARGIN_END - clear_end) + (DWA_HIT if clear < DWA_HIT_GAP else 0.0)
+                + DWA_W_BLOCK * max(0.0, DWA_MARGIN - clear_back) + DWA_W_TURN * turn + DWA_W_WAIT * idle
+                + DWA_W_SMOOTH * (abs(v - v_prev) + abs(w - w_prev)) + (DWA_REVERSE if v < 0 else 0.0))
+        scored.append((cost, v, w, clear, label, yaw_ref))
+    best = min(scored)
+    if debug:
+        for row in sorted(scored)[:16]:
+            print("   cost %.3f v %+.2f w %+.2f clear %.2f %s" % row[:5])
+    if previous is not None:
+        for cost, v, w, clear, label, yaw_ref in scored:
+            if abs(v - previous[0]) < 1e-9 and abs(w - previous[1]) < 1e-9 and cost <= best[0] + DWA_HYSTERESIS:
+                return v, w, clear, horizon, yaw_ref
+    return best[1], best[2], best[3], horizon, best[5]
+
+
 def obstacle_at(scenario, t):
     ob = scenario["obstacle"]
     xy = np.asarray(ob["start_xy"]) + np.asarray(ob["dir"]) * ob["speed"] * t
@@ -232,9 +411,10 @@ class ReactiveExpert:
     """A-to-B base_controller + lidar-driven avoidance in the drive phase; arm_controller once the base is done."""
 
     def __init__(self, mode="vo"):
-        if mode not in ("vo", "lidar", "blind"):
+        if mode not in ("vo", "dwa", "lidar", "blind"):
             raise ValueError(mode)
         self.mode = mode
+        self.yaw_ref = None
 
     def reset(self, target, info, scenario):
         self.target = np.asarray(target, float)
@@ -242,7 +422,8 @@ class ReactiveExpert:
         self.ee_frame_id, self.shoulder_frame_id = info["ee_frame_id"], info["shoulder_frame_id"]
         self.arm_lower, self.arm_upper = info["joint_lower"][4:11], info["joint_upper"][4:11]
         self.time_step = info["time_step"]
-        self.params = BaseControllerParams(nav_timeout=DYN_NAV_TIMEOUT)
+        self.params = BaseControllerParams(nav_timeout=DYN_NAV_TIMEOUT,
+                                           max_ang_vel=DWA_TURN_RATE if self.mode == "dwa" else 1.0)
         self.arm_params = ArmControllerParams(reach_limit=ARM_REACH_LIMIT)
         self.state = BaseNavState()
         self.dock_xy = np.asarray(scenario["dock_xy"], float)
@@ -254,6 +435,11 @@ class ReactiveExpert:
         self.avoiding_steps = 0
         self.realigns = 0
         self.previous_choice = None
+        self.held = None                       # dwa: (v, w, decision time)
+        self.held_xy = None
+        self.slip_steps = 0
+        self.w_meas, self.prev_bearing = 0.0, None
+        self.last_clear = math.inf
         self.last_avoid = (0.0, 1.0, 0.0)      # (w change, speed scale, repulsion weight | nominal rollout clearance)
 
     @property
@@ -268,6 +454,10 @@ class ReactiveExpert:
         ee_pos = self.model.pin_data.oMf[self.ee_frame_id].translation.copy()
         wheels = base_controller(self.state, obs["base_pos"], obs["base_bearing"], self.dock_xy, self.dock_bearing,
                                  obs["t"], self.params)
+        if self.prev_bearing is not None:
+            instant = wrap_angle(float(obs["base_bearing"]) - self.prev_bearing) / self.time_step
+            self.w_meas = 0.98 * self.w_meas + 0.02 * instant              # ~50 ms low-pass of the measured yaw rate
+        self.prev_bearing = float(obs["base_bearing"])
         self.last_avoid = (0.0, 1.0, 0.0)
         p = self.params
         if self.mode == "vo" and not self.state.done:
@@ -295,6 +485,44 @@ class ReactiveExpert:
                     v = p.wheel_radius * (wheels[0] + wheels[1]) / 2.0
                     w = p.wheel_radius * (wheels[0] - wheels[1]) / p.wheel_base_width
             if (v, w) != (v_nom, w_nom):
+                lw = (v - w * p.wheel_base_width / 2) / p.wheel_radius
+                rw = (v + w * p.wheel_base_width / 2) / p.wheel_radius
+                wheels = np.array([rw, lw, lw, rw])
+        elif self.mode == "dwa" and not self.state.done and self.state.phase in ("align", "drive"):
+            # The template's state machine still runs (it handles the orient phase and the timeout); its align and
+            # drive commands are replaced by the DWA choice until the base is at the dock, then handed to "orient".
+            xy, bearing = np.asarray(obs["base_pos"][:2], float), float(obs["base_bearing"])
+            to_dock = self.dock_xy - xy
+            dist = float(np.linalg.norm(to_dock))
+            err = wrap_angle(math.atan2(to_dock[1], to_dock[0]) - bearing)
+            if dist < p.pos_tol or (dist < 0.15 and math.cos(err) < 0.0):
+                self.state.phase = "orient"
+                wheels = base_controller(self.state, obs["base_pos"], obs["base_bearing"], self.dock_xy,
+                                         self.dock_bearing, obs["t"], self.params)
+            else:
+                if self.held is None or obs["t"] - self.held[2] >= DWA_PERIOD - 1e-9:
+                    c, v_obs = np.asarray(obs["obstacle_xy"], float), np.asarray(obs["obstacle_vel"], float)
+                    v, w, clear, horizon, self.yaw_ref = dwa_command(xy, bearing, self.dock_xy, self.dock_bearing, c, v_obs,
+                                                                     self.obstacle_r, self.params, previous=self.previous_choice)
+                    if self.held is not None:
+                        speed = float(np.linalg.norm(xy - self.held_xy)) / max(obs["t"] - self.held[2], 1e-6)
+                        if abs(self.held[0]) > 0.05 and speed > DWA_SLIP_FACTOR * abs(self.held[0]) + 0.08:
+                            self.slip_steps += int(round(DWA_PERIOD / self.time_step))   # sliding (measured, see below)
+                    self.previous_choice = (v, w)
+                    self.held = (v, w, obs["t"])
+                    self.held_xy = xy.copy()
+                    self.last_clear = clear
+                    if clear < DWA_MARGIN + 0.1:
+                        self.avoiding_steps += int(round(DWA_PERIOD / self.time_step))
+                v, w, _ = self.held
+                if v > 0.05 and abs(w) < 1e-9 and self.yaw_ref is not None:
+                    # Straight run: steer to the heading the rollout planned for it (the base overshoots in-place turns
+                    # by up to 0.5 rad: it keeps rotating when the wheels stop), as the template steers while driving.
+                    w = float(np.clip(DWA_HOLD_GAIN * wrap_angle(self.yaw_ref - bearing), -0.3, 0.3))
+                # Yaw-rate damping: the wheels free-wheel, so a stopped turn command does not stop the rotation;
+                # command the difference actively.
+                w = float(np.clip(w + DWA_YAW_DAMP * (w - self.w_meas), -p.max_ang_vel, p.max_ang_vel))
+                self.last_avoid = (w, v / p.max_lin_vel, self.last_clear)
                 lw = (v - w * p.wheel_base_width / 2) / p.wheel_radius
                 rw = (v + w * p.wheel_base_width / 2) / p.wheel_radius
                 wheels = np.array([rw, lw, lw, rw])
@@ -397,7 +625,7 @@ def run_episode(scenario, out_path, mode="vo", gui=False, hold_s=HOLD_S, verbose
                 "reach_time": reach_time, "nav_done_time": nav_done_time, "duration": t, "n_steps": step + 1,
                 "final_error": ee_err, "collided": collision_time is not None, "collision_time": collision_time,
                 "collision_link": collision_link, "min_clearance": None if math.isinf(min_clear) else float(min_clear),
-                "mode": mode, "hold_s": hold_s, "avoiding_steps": expert.avoiding_steps, "realigns": expert.realigns, "stop_message": stop_message, "time_step": time_step,
+                "mode": mode, "hold_s": hold_s, "avoiding_steps": expert.avoiding_steps, "realigns": expert.realigns, "slip_steps": getattr(expert, "slip_steps", 0), "stop_message": stop_message, "time_step": time_step,
                 "log_every": log_every, "wall_time": time.time() - wall}
         arrays = {k: np.asarray(v, dtype=d) for k, (v, d) in ((k, (log[k], LOG_FIELDS[k])) for k in LOG_FIELDS)}
         os.makedirs(os.path.dirname(os.path.abspath(out_path)), exist_ok=True)
@@ -472,8 +700,9 @@ def main(argv=None):
     ap.add_argument("--out-dir", required=True)
     ap.add_argument("--gui", action="store_true")
     ap.add_argument("--gif", action="store_true", help="top-view animation per episode")
-    ap.add_argument("--mode", default="vo", choices=["vo", "lidar", "blind"],
-                    help="vo: velocity-obstacle expert (default); lidar: single-scan repulsion; blind: plain A-to-B expert")
+    ap.add_argument("--mode", default="dwa", choices=["dwa", "vo", "lidar", "blind"],
+                    help="dwa: one-cost goal seeking + avoidance (default, v6); vo: nominal controller + velocity-obstacle "
+                         "override (v5); lidar: single-scan repulsion; blind: plain A-to-B expert")
     ap.add_argument("--hold-s", type=float, default=HOLD_S)
     args = ap.parse_args(argv)
     os.makedirs(args.out_dir, exist_ok=True)
@@ -487,7 +716,7 @@ def main(argv=None):
         meta = run_episode(sc, path, mode=args.mode, gui=args.gui, hold_s=args.hold_s)
         row = {"episode": ep, "status": meta["status"], "success": meta["success"], "reach_time": meta["reach_time"],
                "nav_done_time": meta["nav_done_time"], "duration": meta["duration"], "min_clearance": meta["min_clearance"],
-               "collision_link": meta["collision_link"], "avoid_s": meta["avoiding_steps"] / 1000, "realigns": meta["realigns"], "obst_speed": sc["obstacle"]["speed"], "obst_r": sc["obstacle"]["r"],
+               "collision_link": meta["collision_link"], "avoid_s": meta["avoiding_steps"] / 1000, "realigns": meta["realigns"], "slip_s": meta["slip_steps"] / 1000, "obst_speed": sc["obstacle"]["speed"], "obst_r": sc["obstacle"]["r"],
                "along": sc["along"], "cross_angle_deg": math.degrees(sc["cross_angle_rad"]), "t_meet": sc["obstacle"]["t_meet"]}
         if args.gif:
             row["gif"] = make_gif(path, os.path.join(args.out_dir, f"ep_{ep:04d}.gif"))
