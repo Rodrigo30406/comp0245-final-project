@@ -249,7 +249,127 @@ as the reference: `ood_far_targets` (max(|x|, |y|) from 2.2 to 3 m), `ood_target
 
 ---
 
-## 1.8 Reproducing the data, in order
+## 1.8 The scripts, what is configurable, and how to use them
+
+### Layout
+
+```
+scripts/collect_dataset.py              A-to-B collector (entry point of src/robot_learning/data/cli.py)
+scripts/simulate.py                     watch the expert on one target in the PyBullet GUI
+scripts/data/make_target_plan.py        regenerate the stratified 16x8x8 target plan and check it against the frozen one
+scripts/data/make_geometry_split.py     train/validation split of A-to-B datasets by held-out target cell
+scripts/data/make_bank_split.py         split of an evaluation bank (all episodes evaluated but the last 5)
+scripts/obstacle/collect_step9_hold.py  static-obstacle collector: the group's collector + 10 s hold (+ base noise in the hold)
+scripts/obstacle/dynamic_expert.py      moving-obstacle expert: development runs, training collection (--dart), policy test (--policy)
+scripts/obstacle/convert_step9_dataset.py  raw obstacle set (group format) -> project dataset layout + split
+scripts/run_tests.py                    unit and integration tests
+
+src/robot_learning/
+  settings.py            where RoboEnv is (ROBOENV_ROOT or ../RoboEnv), optional .env
+  expert/controllers.py  the lecturer's base and arm controllers and stop rule (unchanged)
+  simulation/            setup.py (robot + physics), config.py (episode rules), episode.py (one episode, the lecturer's
+                         step order; used by the collector, the viewer and later the evaluator), interactive.py (viewer)
+  data/                  cli.py (arguments, dataset directory), config.py (spec validation, scenario generation),
+                         scheduler.py (parallel episode processes, resume, lock), worker.py (one episode + DART noise),
+                         storage.py (recorder, hashes, provenance), schema.py (fields and units), sampling.py (target
+                         plan), splits.py (episode inventory, splits, expert-success filter)
+
+experiment_specs/expert/default.json      the expert's rules (gains, tolerances, timeout, standoff table)
+experiment_specs/collection/*.json        one file per collection of the report
+```
+
+### A-to-B collector: `scripts/collect_dataset.py`
+
+| option | effect |
+|---|---|
+| `--config SPEC.json` | the collection spec (below) |
+| `--episodes N` | override the number of episodes: always a prefix of the full set (scenario i depends only on (seed, i); a spec with an explicit `targets` list keeps its first N targets, and cannot grow beyond the list) |
+| `--max-steps N` | override the step cap (1 kHz steps; default 40 000 = 40 s) |
+| `--workers N` | parallel episode processes (headless only) |
+| `--gui` | show the episodes in PyBullet (use with `--workers 1`) |
+| `--plan-only` | freeze config and scenarios without simulating (inspect `scenarios.json`, then `--resume`) |
+| `--resume DIR` | continue an interrupted collection with its frozen config (refuses if any source file changed) |
+| `--output-dir DIR` | where the dataset directory is created (default `datasets/`) |
+| `--roboenv-root DIR` | RoboEnv location (default `ROBOENV_ROOT` or `../RoboEnv`) |
+
+**Collection spec** (JSON; every field optional, defaults in `src/robot_learning/data/config.py`):
+
+| field | default | meaning |
+|---|---|---|
+| `name` | `"dataset"` | part of the dataset directory name |
+| `episodes` | 64 | number of episodes |
+| `seed` | 20261023 | scenario seed (targets and start poses) |
+| `split` | `"development"` | label only (`development`, `train`, `validation`, `test`) |
+| `targets` | `null` | explicit list of [x, y, z], one per episode (the report's specs copy the plan targets) |
+| `target_box` | x, y ∈ [−2, 2], z ∈ [0.3, 0.8] | uniform sampling box, used when `targets` is null |
+| `initial_base` | `{"mode": "nominal"}` | or `{"mode": "uniform_xy", "x": [lo, hi], "y": [lo, hi], "yaw": [lo, hi]}` |
+| `goal_reference` | `"origin"` | `"start"` for random starts (1.2; identical at the nominal start) |
+| `action_noise` | `null` | DART: `{"wheel_std": 0.5, "torque_std": 1.0, "hold_steps": 50, "seed": N}` |
+| `record_every_steps` | 1 | keep one transition every N steps (does not change the control rate) |
+| `max_steps` | 40000 | step cap |
+| `headless` | true | false = GUI |
+| `base_controller`, `arm_controller`, `stop`, `standoff`, `physics` | `experiment_specs/expert/default.json` | override single expert rules, e.g. `"stop": {"reach_tolerance": 0.02}` or `"base_controller": {"nav_timeout": 38.0}` |
+
+Examples:
+
+```bash
+PY="pixi run --manifest-path ../RoboEnv/pixi.toml python"
+$PY scripts/collect_dataset.py --config experiment_specs/collection/smoke.json            # 2 short episodes, pipeline check
+$PY scripts/collect_dataset.py --config experiment_specs/collection/dart_stratified1024_low.json --episodes 64 --workers 8
+$PY scripts/collect_dataset.py --config experiment_specs/collection/e3_multistart3x_dart_low_v2_startgoal.json --plan-only
+$PY scripts/collect_dataset.py --resume datasets/<id> --workers 28
+$PY scripts/collect_dataset.py --config experiment_specs/collection/smoke.json --gui --workers 1
+$PY scripts/simulate.py --target 0 1.1 0.5                                                  # the expert on one target
+```
+
+A new collection = a new spec file: copy one of `experiment_specs/collection/`, change `name`, `seed`, `episodes`,
+the start or the noise, and remove `targets` to sample uniformly in `target_box`.
+
+### Splits
+
+```bash
+$PY scripts/data/make_target_plan.py [OUT.json]                              # regenerate + compare the frozen plan
+$PY scripts/data/make_geometry_split.py OUT.json PRIMARY_DIR [EXTRA_DIR ...]  # A-to-B datasets on the plan targets
+$PY scripts/data/make_bank_split.py BANK_DIR OUT.json [HOLDBACK=5]            # evaluation banks
+```
+
+### Static obstacle: `scripts/obstacle/collect_step9_hold.py`
+
+Runs the group's collector (`python -m obstacle_task.collect`, from the group's `final/robotnik_arm_task`) with the hold
+added; it takes all of the group's options, the useful ones being:
+
+| option | meaning |
+|---|---|
+| `--set-name` | `train2` (2000 episodes, seed 3), `dev2` (300, seed 300), `confirm2` (300, seed 302), ... |
+| `--n-episodes N`, `--seed S`, `--episodes 0-99` | size, scenario seed, subset |
+| `--noise-frac F` | fraction of episodes with noise (1.0 for ours) |
+| `--noise-v`, `--noise-w`, `--noise-torque`, `--noise-hold` | DART noise: m/s, rad/s, N·m, s (ours: 0.0389, 0.1178, 1.0, 0.05) |
+| `--noise-fade-base`, `--noise-fade-arm` | distance (m) within which the noise fades to zero near the dock / target (0 = no fade) |
+| `--workers N`, `--out-dir DIR`, `--resume` | parallelism, output set folder, continue a set |
+
+Environment variables of the wrapper: `STEP9_HOLD_S` (hold after the first reach, default 10 s, 0 = stop at the reach),
+`STEP9_HOLD_WHEEL_NOISE` (rad/s per wheel side during the hold, default 0 = off; 0.5 for set B),
+`STEP9_TASK_DIR` (the group's task folder). Then `convert_step9_dataset.py --source RAW --output DS --split-out SPLIT
+[--validation-fraction 0.15] [--split-seed 20261104] [--workers 8]`.
+
+### Dynamic obstacle: `scripts/obstacle/dynamic_expert.py`
+
+| option | meaning |
+|---|---|
+| `--seed S`, `--episodes 0-99` | scenario seed and episode indices (seeds 1–2: expert development, 3: training set, 4: test) |
+| `--mode dwa\|blind` | the expert (default) or the plain A-to-B template as control |
+| `--dart` | set-F noise on the executed command (training collections) |
+| `--policy RUN_DIR[,db=0.45]` | a learned policy drives, the expert only monitors and labels (closed-loop test) |
+| `--hold-s S` | hold after the first reach (default 10 s) |
+| `--workers N`, `--out-dir DIR` | parallelism, output folder (npz per episode, index.csv, scenarios.json, config.json) |
+| `--gif`, `--gui` | top-view animation per episode, PyBullet window |
+
+Scenario ranges (cylinder speed 0.10–0.25 m/s, crossing point, angle, timing) and the expert's cost weights are the
+constants at the top of the file, each with its reason.
+
+---
+
+## 1.9 Reproducing the data, in order
 
 Environment: the RoboEnv pixi environment (`ROBOENV_ROOT`, default `../RoboEnv`; `default` env for collection and
 simulation, `ml` env for training). From the project root, with
