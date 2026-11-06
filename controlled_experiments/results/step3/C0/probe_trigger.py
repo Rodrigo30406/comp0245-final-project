@@ -17,7 +17,9 @@ import sys
 
 import numpy as np
 
-TASK = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", ".."))
+TASK = os.path.dirname(os.path.abspath(__file__))  # the task folder; also right when C3_probe.py exec()s this code
+while not os.path.exists(os.path.join(TASK, "bc_features.py")) and TASK != os.path.dirname(TASK):
+    TASK = os.path.dirname(TASK)
 sys.path.insert(0, TASK)
 import bc_features as bf  # noqa: E402
 from robotnik_arm_task import STANDOFF_POINTS, STANDOFF_Z_POINTS  # noqa: E402

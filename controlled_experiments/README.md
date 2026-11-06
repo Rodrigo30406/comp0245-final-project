@@ -95,20 +95,25 @@ $PY train_policy.py train --model ego-novw-trig --trigger-copies 16 --seed 0 --o
 ```
 
 The retrained arrays are bit-identical to `trained/ego-novw-trig_s0.npz` (checked in
-`results/step5/backward_compatibility.json`). Tests: `$PY -m unittest discover -s tests` (about 45 s); a few tests
-need the feature caches or trajectories that the commands above regenerate and error without them.
+`results/step5/backward_compatibility.json`). Tests: `$PY -m unittest discover -s tests` (322 tests, about 45 s);
+the few that need regenerable caches or trajectories are skipped, with the reason, until those exist.
 
-## Re-running a pre-registered experiment exactly
+## Re-running the experiments
 
-Each `results/step*/run_*.sh` is a resumable chain (it skips runs that have a `summary.txt`). Before running, the
-chains of the pre-registered experiments check the sha256 of the frozen plan, of the notebook section and of the
-code. This folder is the
-cleaned copy for reading and the quick start: comments and messages translated into English, paths made relative,
-process files (execution logs, handover reports, backups) removed. The program logic is unchanged (checked by
-comparing the syntax trees with string literals masked) and the test suite passes, but the hashes of the plans and of
-the original notebook no longer match here. To re-run a chain byte-for-byte, use the frozen state: branch
-`feature/experimental-line-final` (commit 71ea436), folder `final/robotnik_arm_task/`, which also holds the
-experiment plans `STEP*_PLAN_PROMPT.md` that the code comments cite.
+Each `results/step*/run_*.sh` is a resumable chain, one stage per call where the script lists stages: evaluation
+stages skip every run folder that has a `summary.txt` (all committed runs do), analysis stages regenerate the
+read-outs, and training stages refuse to overwrite a committed model. To re-run something from scratch, move its
+models or run folders away and regenerate the data sets it uses (`DATA_COLLECTION.md`, `EVALUATION.md`,
+`results/step9/run_step9_sets.sh`) and the feature caches (`train_policy.py build-cache`, `build-trigger-cache`).
+Experiment B is run as `MODEL=ego-novw bash results/step3/run_expB.sh` (the arm adopted in experiment A).
+
+During the experiments, the chains of F, G/P and PC refused to start if the frozen plan, the notebook section or the
+code had changed since the freeze (sha256 gates). This folder is a cleaned copy made after the experiments: comments
+and messages translated into English, paths made relative, process files (execution logs, handover reports,
+backups) removed; the program logic is unchanged (syntax trees equal with string literals masked). The frozen plans
+are therefore absent here, and the gates print a "post-hoc re-run" notice and skip the hash comparison instead of
+refusing. The frozen state, with the plans `STEP*_PLAN_PROMPT.md` that the code comments cite and with the strict
+gates, is branch `feature/experimental-line-final` (commit 71ea436), folder `final/robotnik_arm_task/`.
 
 ## What is from the course template, what is modified, what is new
 

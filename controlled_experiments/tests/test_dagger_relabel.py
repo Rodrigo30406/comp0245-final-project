@@ -31,7 +31,14 @@ from evaluate_policy import ARM_MOVE_ANGLE, load_eval_set  # noqa: E402
 TOLERANCES = {"wheel_cmds": 1e-4, "torque_arm": 1e-3}
 
 
+NEEDS_DATA = unittest.skipUnless(  # recorded demonstrations are not in git
+    all(os.path.exists(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data", d, "index.csv"))
+        for d in ("train", "pilot")),
+    "needs data/train and data/pilot (collect_data.py, see DATA_COLLECTION.md)")
+
+
 class TestRecordedExpertReplay(unittest.TestCase):
+    @NEEDS_DATA
     def test_ten_training_episodes(self):
         started = datetime.datetime.now(datetime.timezone.utc).isoformat()
         split = tp.load_split()

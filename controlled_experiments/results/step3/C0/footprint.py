@@ -1,5 +1,7 @@
 import numpy as np, os, sys
-TASK = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", ".."))
+TASK = os.path.dirname(os.path.abspath(__file__))  # the task folder; also right when C3_probe.py exec()s this code
+while not os.path.exists(os.path.join(TASK, "bc_features.py")) and TASK != os.path.dirname(TASK):
+    TASK = os.path.dirname(TASK)
 sys.path.insert(0, TASK); import bc_features as bf
 CT = TASK + "/results/step3/cache/train/"
 T = lambda n: np.load(CT + n + ".npy", mmap_mode="r")

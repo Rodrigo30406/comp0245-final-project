@@ -42,6 +42,13 @@ def npz_rows(path, steps):
     }, a
 
 
+NEEDS_DATA = unittest.skipUnless(  # recorded demonstrations are not in git
+    all(os.path.exists(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data", d, "index.csv"))
+        for d in ("train", "pilot")),
+    "needs data/train and data/pilot (collect_data.py, see DATA_COLLECTION.md)")
+
+
+@NEEDS_DATA
 class TestSplit(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -124,6 +131,7 @@ class TestSplit(unittest.TestCase):
             shutil.rmtree(tmp)
 
 
+@NEEDS_DATA
 class TestCache(unittest.TestCase):
     """A small cache (3 training and 1 validation episodes of the real split), built in a temporary directory."""
 
@@ -223,6 +231,7 @@ class TestCache(unittest.TestCase):
                     np.testing.assert_array_equal(got, np.asarray(value, dtype=got.dtype), err_msg=name)
 
 
+@NEEDS_DATA
 class TestForwardEqualsPredict(unittest.TestCase):
     """(a) The saved .npz model run by bc_features.forward reproduces the trained model to 1e-9."""
 
@@ -641,6 +650,7 @@ class TestLagAnalysis(unittest.TestCase):
         self.assertEqual((s["k_best"], s["mse_best"], s["flat"], s["boundary"]), (None, None, False, False))
 
 
+@NEEDS_DATA
 class TestTriggerCopies(unittest.TestCase):
     """Experiment C3 (STEP3C_PLAN_PROMPT.md 3.1): K jittered copies of each training episode's trigger frame k0.
     The small cache of TestCache plus a trigger cache of its 3 training episodes, in a temporary directory."""
@@ -915,6 +925,7 @@ class TestLabelConventions(unittest.TestCase):
             got = bcf.build_features("ego", bcf.measured_signals(b2, yaw2, q, qd, t2))
             np.testing.assert_allclose(got, ref, atol=1e-9)
 
+    @NEEDS_DATA
     def test_sign_conventions(self):
         """w > 0 turns the base to larger yaw; the first w label has the sign of the bearing beta of the turn
         the expert makes first (towards the target for M0 / M2, away from it for M1)."""

@@ -35,6 +35,12 @@ def recorded_obs(a, k):
             "qd_mes": a["qd_mes"][k].astype(float), "target": a["target"].astype(float)}
 
 
+NEEDS_DATA = unittest.skipUnless(  # recorded demonstrations are not in git
+    all(os.path.exists(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data", d, "index.csv"))
+        for d in ("train", "pilot")),
+    "needs data/train and data/pilot (collect_data.py, see DATA_COLLECTION.md)")
+
+
 class TestPDLayer(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -118,6 +124,7 @@ class TestPDLayer(unittest.TestCase):
         expert.reset(np.array([1., 0., .5]), self.info)
         self.assertEqual(vars(self.params), vars(expert.arm_params))
 
+    @NEEDS_DATA
     def test_b_recorded_float32_10_train_episodes(self):
         maximum = 0.0
         nav_total, nav_exceed, total, exceed = 0, 0, 0, 0
@@ -152,6 +159,7 @@ class TestPDLayer(unittest.TestCase):
             self.assertLessEqual(worst, 1e-3, f"recorded torque mismatch in episode {e}, step {worst_step}")
         self.assertEqual(len(self.evidence["recorded"]), 10)
 
+    @NEEDS_DATA
     def test_c_deployment_matches_offline_on_recorded_episode(self):
         with np.load(self.episode_paths[0]) as d:
             a = {key: d[key] for key in ("base_pos", "base_ori", "base_bearing", "q_mes", "qd_mes", "target")}

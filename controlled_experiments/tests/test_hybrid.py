@@ -99,6 +99,12 @@ def feed(policies, ep, n_steps, time_step=0.001):
         t += time_step
 
 
+NEEDS_DATA = unittest.skipUnless(  # recorded demonstrations are not in git
+    all(os.path.exists(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data", d, "index.csv"))
+        for d in ("train", "pilot")),
+    "needs data/train and data/pilot (collect_data.py, see DATA_COLLECTION.md)")
+
+
 class TestParseArg(unittest.TestCase):
     def test_parse(self):
         self.assertEqual(parse_arg("base=expert;arm=expert"), {"base": "expert", "arm": "expert", "trigger": "fsm"})
@@ -110,6 +116,7 @@ class TestParseArg(unittest.TestCase):
                 parse_arg(bad)
 
 
+@NEEDS_DATA
 class TestModelHalves(unittest.TestCase):
     """(h2) A model side gives exactly BCPolicy's commands."""
 
@@ -149,6 +156,7 @@ class TestModelHalves(unittest.TestCase):
             self.assertTrue(np.array_equal(tau, a[1]), f"step {k}")
 
 
+@NEEDS_DATA
 class TestExpertCells(unittest.TestCase):
     """base=expert;arm=expert == ExpertPolicy bit for bit, and (h3) the shadow FSM's events."""
 
