@@ -1008,6 +1008,7 @@ over the seed 0–2 and `_s34_ … _20261105` directories:
 | MLP-Ego-Cat (`mlp28_cat41_trig144`) | 176 / 176 / 195 / 199 / 195 | 188.2 ± 11.3 (176–199) | 202.0 ± 1.4 (201–204) | 189.0 ± 9.8 (179–200) | 203.4 ± 1.1 (202–205) |
 | nominal starts only (`mlp28nom_trig144`) | 178 / 115 / 170 / 156 / 143 | 152.4 ± 24.8 (115–178) | 196.8 ± 3.2 (193–201) | 61.8 ± 14.6 (40–79) | 106.6 ± 20.9 (84–127) |
 | no DART (`mlp28clean_control`) | 0 / 0 / 0 / 2 / 1 | 0.6 ± 0.9 (0–2) | 27.6 ± 17.2 (18–58) | 0.2 ± 0.4 (0–1) | 19.0 ± 8.1 (13–33) |
+| no DART + IC (`mlp28clean_trig144`, done 05:08) | 0 / 0 / 0 / 0 / 0 | 0.0 ± 0.0 (0–0) | 2.8 ± 1.5 (1–5) | 0.0 ± 0.0 (0–0) | 1.8 ± 1.6 (0–4) |
 
 Seeds 3–4 sit inside or at the edge of the seed 0–2 ranges for every family; no chapter's claim changes. The no-DART
 seeds 3–4 again run away (median final distance 447 m and 21 m, wheels clipped 66–75% of the time), as seeds 0–2 did.
