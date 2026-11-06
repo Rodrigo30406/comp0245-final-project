@@ -1033,3 +1033,7 @@ expert and blind template on the same scenes. Prediction: the MLP reads one scan
 not where it goes; it should avoid the static-looking part (a cylinder ahead) and fail on the timing (wait vs. go),
 i.e. more contacts than the expert, fewer than the blind template. A scan history (stacked scans or the GRU) is the
 fix if so.
+- 04:48, Rodrigo: GRU first. `chain_dynamic_clone2.sh` replaces the chain (the seed-3 collection keeps running):
+  GRU-Ego + lidar seed 0 (step-9 GRU recipe: patience 40, hidden 128, stride 20, chunks of 1000 steps, horizon 75 s)
+  is trained and tested first (the recurrent state can carry the cylinder's motion between scans), then MLP-Ego-IC +
+  lidar seed 0 as the single-scan control.
