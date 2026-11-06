@@ -923,3 +923,11 @@ speed (1.5 m/s at t = 45 s, wheels at 0.24 m/s): the re-align rule avoids that r
   GIFs: `docs/figures/dynamic_proto/vo5_ep01_clean_cross.gif`, `vo5_ep08_wait_and_pass.gif`, `vo5_ep00_collision.gif`.
   Verdict for the report: a working proof of concept (75 % vs 50 % blind), not yet a data-collection expert (needs
   ≥ 95 % and short manoeuvres); the recovery phase is the blocker. Left as future work with these numbers.
+
+**5 Nov 22:48 — seeds 3 and 4 for the rest of the storyline (Rodrigo: five seeds for every model in the progression).**
+`chain_story_s34.sh` (one trainer at a time, same argv as each family's seeds 0–2, evaluations on both banks as
+`v2_<tag>_s34_on_*_20261105`). Order by weight in the story: +DB evaluation of MLP-Ego-IC seeds 3–4 (no training) →
+MLP-Base (`mlp22raw_control`) → MLP-Ego (`mlp28_control`) → MLP-Ego-Cat (`mlp28_cat41_trig144`) → nominal starts only
+(`mlp28nom_trig144`) → no DART (`mlp28clean_control`, `mlp28clean_trig144`). Estimated 6 h of GPU (seed-2 wall times
+50 / 21 / 20 / 7 / 33 / 50 min). Single-seed ablations (`mlp22raw_trig144`, K 16 / 512, size caps) stay "seed 0".
+Step 9 (all families at 3 seeds) is not in this chain.
