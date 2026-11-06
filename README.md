@@ -117,13 +117,39 @@ tests/                    unit and integration tests
 Generated data (`datasets/`, `runs/`) are not versioned; every dataset and run directory records its configuration,
 the hashes of the code and robot assets that produced it, and a copy of the source.
 
-## 5. The starter simulation
+## 5. External code, and what was modified or written from scratch
 
-Starter code: https://github.com/VModugno/LAB_SESSION_COMP_0245_2026_PUBLIC (final assignment source unchanged from
-upstream commit `cae4fb69386872ae73c601ce77e182aad7abe284`, in `final/robotnik_arm_task/`). The expert used throughout
-this project is that controller, refactored into `src/robot_learning/` with identical behaviour (checked by
-`tests/test_episode.py` against recorded lecturer episodes). To run the original script, follow
-`final/robotnik_arm_task/README.md` (`python robotnik_arm_task.py` with RoboEnv's `models/` and `configs/` reachable).
+**External code used as is**
+
+| source | what | where it is used |
+|---|---|---|
+| Lecturer's starter code, [LAB_SESSION_COMP_0245_2026_PUBLIC](https://github.com/VModugno/LAB_SESSION_COMP_0245_2026_PUBLIC), commit `cae4fb69` | the expert: base state machine, IK arm controller, stop rule (`robotnik_arm_control.py`) and the task script (`robotnik_arm_task.py`) | `final/robotnik_arm_task/` unchanged; `src/robot_learning/expert/controllers.py` is a **verbatim copy** of `robotnik_arm_control.py` |
+| [RoboEnv](https://github.com/VModugno/RoboEnv) and its `simulation_and_control` library (lecturer) | PyBullet simulation interface, Pinocchio wrapper, robot models and configs, the pixi environments | imported, not modified (pinned commits in section 1) |
+| Open-source libraries | NumPy, SciPy (`milp` for the target-grid holdout), PyBullet, Pinocchio, PyTorch (training only), Matplotlib | through RoboEnv's environments |
+| The group's obstacle task (`controlled_experiments/obstacle_task/`, `collect_data.py`, `evaluate_policy.py`) | static-obstacle scenarios, lidar, expert, collector and evaluation harness | imported unmodified by our obstacle scripts, which wrap them |
+
+**Modified (refactored from the lecturer's code, same behaviour)**
+
+| file | change | check |
+|---|---|---|
+| `src/robot_learning/simulation/episode.py`, `setup.py`, `config.py` | the main loop and setup of `robotnik_arm_task.py` moved into one reusable episode engine (shared by the viewer, the collector and the evaluator); constants moved to `experiment_specs/expert/default.json`; added: optional start pose, `goal_reference: "start"` (base goal from the start pose, identical to the lecturer's at the origin), an action filter for DART noise, a policy hook and an evaluation horizon | `tests/test_episode.py` replays recorded lecturer episodes (actions, states and stop decisions identical) |
+| `src/robot_learning/simulation/interactive.py`, `scripts/simulate.py` | the lecturer's interactive run on the shared engine | same tests |
+
+**Written from scratch by the group**
+
+| part | files |
+|---|---|
+| data collection: specs, deterministic scenarios, parallel workers, DART noise on the executed command (idea: Laskey et al. 2017), recording, provenance | `src/robot_learning/data/`, `scripts/collect_dataset.py`, `experiment_specs/collection/` |
+| target grid with geometry-only holdout, splits, expert-success filter | `src/robot_learning/data/sampling.py`, `splits.py`, `scripts/data/` |
+| policy inputs (egocentric transforms, clock, lidar) and outputs | `src/robot_learning/learning/features.py`, `outputs.py` |
+| models and trainers: MLP (ignition copies, categorical wheels, data-size options), GRU, causal transformer, NumPy inference | `src/robot_learning/learning/`, `scripts/train_*.py`, `experiment_specs/training/` |
+| closed-loop evaluator, metrics, adversities, statistics, tables and figures | `src/robot_learning/evaluation/`, `scripts/evaluate_policy.py`, `scripts/evaluation/`, `scripts/figures/`, `scripts/run_policy.py` |
+| obstacle extensions: 10 s hold and base noise during the hold (wrapper of the group's collector), dataset converter, harness adapter, the moving-obstacle task and its one-cost avoidance expert (design informed by open-source local planners such as DWA, VO/RVO and TEB; no code taken from them) | `scripts/obstacle/` |
+| the group's controlled experiments (copycat, base/arm split, DAgger, chunking, …) | `controlled_experiments/` (own README) |
+| tests | `tests/` |
+
+The starter script itself still runs as the lecturer wrote it: follow `final/robotnik_arm_task/README.md`
+(`python robotnik_arm_task.py` with RoboEnv's `models/` and `configs/` reachable).
 
 ## 6. Working as a group
 
