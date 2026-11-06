@@ -13,14 +13,16 @@ eventually drives off again.
 
 ![final stop, three stages](figures/problems/final_stop_three.png)
 
-*The three stages, one episode (episode_000024, seed 0): wheel command (black) and distance to the expert's dock (blue
-dashed; dotted: the 8 cm stop box). Expert: align, drive, orient, then done with the wheels at exactly zero from 8.5 s.
-MLP-Ego: parks at the same time but keeps a small non-zero command that grows; from ~28 s the base leaves the dock and
-the navigation restarts. MLP-Ego-IC: parks and stays (residual ~0.04 rad/s, base within a few centimetres of the dock),
-because its arm has started and finishes the task. (MLP-Base, not shown, never stops: 2.4 rad/s and 8 m driven after
-10 s in the same episode.)*
+*The three stages, one episode (episode_000573, seed 0; `problem_figures.py … --episode=episode_000573`): wheel command
+(black) and distance to the expert's dock (blue dashed; dotted: the 8 cm stop box). **Expert**: align, drive, orient,
+then done with the wheels at exactly zero from 7.5 s. **MLP-Base**: reaches the dock at ~7 s but never really stops (the
+command oscillates between 0.2 and 1.5 rad/s), restarts from ~16 s with 0–3 rad/s oscillations and drives 0.8 m away.
+**MLP-Ego-IC**: parks and stays (residual ~0.04 rad/s), because its arm has started and finishes the task.*
 
-The same episode with every model:
+Between the two, **MLP-Ego** (egocentric inputs, no ignition copies) parks properly and holds much longer: on seed 0 it
+parks in 183 of 205 episodes and, when it leaves, it does so after ~27 s parked (median); MLP-Base parks in 99 and leaves
+in 55 of them, sometimes after 6–10 s. The egocentric inputs make the stop steady; without the arm the creep still
+ends it. Episode 000024 with every model:
 
 ![final stop](figures/problems/2_final_stop.png)
 

@@ -12,7 +12,7 @@ along the bearing from the start to the target, so the required final heading is
                         value at 40 s
 
 Usage (any Python with numpy + matplotlib; the evaluation directories hold traces/ and jobs.json):
-  python3 scripts/figures/problem_figures.py OUT_DIR LABEL=EVAL_DIR:POLICY_PREFIX [LABEL=...]
+  python3 scripts/figures/problem_figures.py OUT_DIR LABEL=EVAL_DIR:POLICY_PREFIX [LABEL=...] [--episode=episode_000573]
 e.g. "MLP-Ego=runs/evaluation/v2_mlp28_control_on_clean_validation_20261102:mlp28_control"; the expert is read from the
 first directory. Seeds: every policy label POLICY_PREFIX_seedN found in the directory is pooled (scatter: seed 0 only).
 """
@@ -113,8 +113,8 @@ def pick_episode(models, expert):
     return sorted(expert)[0]
 
 
-def figure_final_stop(models, expert, out):
-    eid = pick_episode(models, expert)
+def figure_final_stop(models, expert, out, episode=None):
+    eid = episode or pick_episode(models, expert)
     rows = [("expert", expert[eid])] + [(label, runs[0][eid]) for label, runs in models if eid in runs[0]]
     fig, axes = plt.subplots(len(rows), 1, figsize=(10, 1.9 * len(rows)), sharex=True)
     for ax, (label, tr) in zip(axes, rows):
@@ -201,6 +201,8 @@ def main(argv):
         raise SystemExit(__doc__)
     out = Path(argv[0]); out.mkdir(parents=True, exist_ok=True)
     models, expert = [], None
+    forced = [a.split("=", 1)[1] for a in argv[1:] if a.startswith("--episode=")]
+    argv = [a for a in argv if not a.startswith("--episode=")]
     for item in argv[1:]:
         label, spec = item.split("=", 1)
         eval_dir, prefix = spec.rsplit(":", 1)
@@ -208,7 +210,7 @@ def main(argv):
             expert = load(eval_dir, "expert")
         models.append((label, [load(eval_dir, p) for p in seeds(eval_dir, prefix)]))
     figure_parking(models, expert, out / "1_parking.png")
-    eid = figure_final_stop(models, expert, out / "2_final_stop.png")
+    eid = figure_final_stop(models, expert, out / "2_final_stop.png", forced[0] if forced else None)
     figure_after_arrival(models, expert, out / "3_after_arrival.png")
     figure_arm_error(models, expert, out / "4_arm_error.png")
     print(f"figures in {out} (final-stop episode {eid})")
