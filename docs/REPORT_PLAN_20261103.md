@@ -1079,3 +1079,15 @@ after an in-place turn), so a parked base can leave the dock with no command at 
   strong; the GRU's 0 / 100 goes with its poor fit (0.200) and its training recipe (whole episodes, 8 per update), the
   same approach defect the recurrent models had on A-to-B (§6v). Both clones lose the recovery after the detour
   (the base does not return to the dock), the phase the expert itself needed a one-cost planner to solve.
+
+**6 Nov 07:45 — balanced data-size series (Rodrigo: coverage should be the parameter).** Pre-registered before the
+result. The random-subset series (`training_episode_cap`) cuts the fixed 16x8x8 design at random: 400 episodes cover 331
+of the 819 training cells unevenly, so its small points are degraded versions of the one balanced design (the full
+set) and the curve can overstate how much data is needed. Here coverage is the parameter: the fine grid is grouped into
+coarse blocks and one training cell is drawn per block (`scripts/analysis/make_balanced_target_cells.py`, seed 20261106;
+blocks 2x2x2 / 2x1x2 / 1x1x2 → 128 / 256 / 512 targets, exactly balanced per coarse level), and the trainer keeps every
+training episode of those targets (new egocentric option `training_target_cells`): 506 / 1011 / 2000 episodes, nominal
+share 23 / 22 / 22 %. MLP-Ego-IC seed 0, same recipe as `v2_mlp28_trig144_seed0`, both validation banks
+(`chain_balanced_size.sh`). Prediction: at equal episode count the balanced points beat the random-subset ones
+(400 → 142 / 137, 800 → 148 / 127, 1600 → 177 / 174 at 1 cm), so the knee moves to fewer episodes; 512 targets (2000
+episodes) should be close to the full 819 (199 / 200).
