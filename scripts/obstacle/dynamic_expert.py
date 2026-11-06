@@ -95,6 +95,17 @@ STEP_CAP = 75000                   # 75 s at 1 kHz
 DYN_NAV_TIMEOUT = 60.0             # s, navigation timeout (step 9: 45 s; the avoidance and the recovery take longer)
 HOLD_S = 10.0                      # hold tail after the first reach (as our hold sets), 0 = stop at the reach
 
+# --dart (6 Nov 2026): the step-9 set F noise for a training collection (train2_hold10_ourdart_basenoise_fade config):
+# executed command = expert label + collect_data.HeldNoise, labels stay clean. Base (v, w) noise during navigation,
+# faded linearly to zero within DART_FADE_BASE of the dock; once navigation is done, DART_HOLD_WHEEL per wheel side
+# whenever the expert's wheel command is exactly zero (the hold, as collect_step9_hold.py); arm torque noise throughout.
+DART_V, DART_W, DART_TORQUE = 0.0389, 0.1178, 1.0   # m/s, rad/s, N*m
+DART_HOLD_S = 0.05                 # s per sample
+DART_FADE_BASE = 0.5               # m
+DART_HOLD_WHEEL = 0.5              # rad/s per wheel side
+DART_STREAM = 24                   # per-episode SeedSequence entry of the noise (the scenario uses STREAM)
+TORQUE_LIMIT = 30.0                # N*m, the expert's envelope
+
 # Reactive layer (all from the scan)
 REACT_RANGE = 1.6                  # m
 STOP_RANGE = 0.55                  # m, forward range at which the speed scale bottoms out
@@ -543,11 +554,34 @@ class ReactiveExpert:
         return wheels, torques, ee_pos
 
 
-LOG_FIELDS = {**legacy.LOG_FIELDS, "lidar": np.float32, "obstacle_xy": np.float32, "avoid_w": np.float32,
-              "speed_scale": np.float32, "clearance": np.float32}
+LOG_FIELDS = {**legacy.LOG_FIELDS, "segment": np.int8, "lidar": np.float32, "obstacle_xy": np.float32,
+              "avoid_w": np.float32, "speed_scale": np.float32, "clearance": np.float32}
+
+_POLICIES = {}
 
 
-def run_episode(scenario, out_path, mode="vo", gui=False, hold_s=HOLD_S, verbose=True, log_every=1):
+def _load_policy(arg):
+    """This project's learned policy behind the harness interface (scripts/obstacle/rl_obstacle_policy.py), cached per process."""
+    if arg not in _POLICIES:
+        sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+        from rl_obstacle_policy import make_policy
+        _POLICIES[arg] = make_policy(arg)
+    return _POLICIES[arg]
+
+
+def converter_fields(scenario):
+    """Fields that scripts/obstacle/convert_step9_dataset.py reads from a step-9 scenario; the moving cylinder is given
+    at its t = 0 position (the converter uses the logged lidar of a moving-obstacle recording, not this list)."""
+    return {"obstacles": [obstacle_at(scenario, 0.0)], "side": 0, "ambiguous": False, "lateral_offset": 0.0,
+            "waypoint_xy": None, "moving_obstacle": True}
+
+
+def run_episode(scenario, out_path, mode="vo", gui=False, hold_s=HOLD_S, verbose=True, log_every=1, dart=False, policy=None):
+    """policy: a training run directory (rl_obstacle_policy.make_policy argument): the learned policy's commands are
+    executed and the expert runs alongside as the monitor (labels, end-effector position, navigation state); the episode
+    ends at a contact, hold_s after the first reach (end-effector within REACH_TOLERANCE) or at the step cap, and its
+    success is "reached, then still within REACH_TOLERANCE at the end of the hold"."""
+    scenario = {**scenario, **converter_fields(scenario)}
     target = np.asarray(scenario["target"], float)
     wall = time.time()
     sim, client, rid, info = setup_simulation(scenario["init_xy"], scenario["init_yaw"], gui=gui, target=target)
@@ -559,6 +593,18 @@ def run_episode(scenario, out_path, mode="vo", gui=False, hold_s=HOLD_S, verbose
         v_obs = obstacle_velocity(scenario)
         expert.reset(target, info, scenario)
         time_step = info["time_step"]
+        learner = None
+        if policy is not None:
+            learner = _load_policy(policy)
+            learner.reset(target, info)
+        if dart:
+            rng = np.random.default_rng([int(scenario["seed"]), int(scenario["episode"]), DART_STREAM])
+            hold_steps = round(DART_HOLD_S / time_step)
+            base_noise = legacy.HeldNoise(rng, [DART_V, DART_W], hold_steps)
+            arm_noise = legacy.HeldNoise(rng, [DART_TORQUE] * 7, hold_steps)
+            hold_noise = legacy.HeldNoise(rng, [DART_HOLD_WHEEL] * 2, hold_steps)
+        dock = np.asarray(scenario["dock_xy"], float)
+        min_ee_err = math.inf
         criteria = StopCriteria(reach_tolerance=REACH_TOLERANCE, max_steps=STEP_CAP)
         cmd = MotorCommands()
         modes = ["velocity"] * 4 + ["torque"] * 7 + ["torque"] * 6
@@ -575,12 +621,25 @@ def run_episode(scenario, out_path, mode="vo", gui=False, hold_s=HOLD_S, verbose
             q_mes, qd_mes = np.array(sim.GetMotorAngles(0)), np.array(sim.GetMotorVelocities(0))
             ob = obstacle_at(scenario, t)
             scan = lidar.scan(base_pos[:2], bearing, [ob])
-            wheels, torques, ee_pos = expert.act({"t": t, "base_pos": base_pos, "base_ori": base_ori,
-                                                  "base_bearing": bearing, "q_mes": q_mes, "qd_mes": qd_mes,
-                                                  "target": target, "lidar": scan,
-                                                  "obstacle_xy": [ob["x"], ob["y"]], "obstacle_vel": v_obs})
+            obs = {"t": t, "base_pos": base_pos, "base_ori": base_ori, "base_bearing": bearing, "q_mes": q_mes,
+                   "qd_mes": qd_mes, "target": target, "lidar": scan, "obstacle_xy": [ob["x"], ob["y"]],
+                   "obstacle_vel": v_obs}
+            wheels, torques, ee_pos = expert.act(obs)
             ee_err = float(np.linalg.norm(target - ee_pos))
+            min_ee_err = min(min_ee_err, ee_err)
             nav_done = expert.nav_done
+            wheels_exec, torques_exec = wheels, torques
+            if learner is not None:
+                wheels_exec, torques_exec = (np.asarray(a, float) for a in learner.act(obs))
+            elif dart:
+                if not nav_done:
+                    scale = legacy.fade(float(np.linalg.norm(dock - base_pos[:2])), DART_FADE_BASE)
+                    dv, dw = base_noise.sample() * scale
+                    wheels_exec = wheels + legacy.wheel_speeds(dv, dw, expert.params)
+                elif np.all(wheels == 0.0):
+                    right, left = hold_noise.sample()
+                    wheels_exec = wheels + np.array([right, left, left, right])
+                torques_exec = np.clip(torques + arm_noise.sample(), -TORQUE_LIMIT, TORQUE_LIMIT)
             if nav_done and nav_done_time is None:
                 nav_done_time = t
             if step % 50 == 0:
@@ -588,14 +647,15 @@ def run_episode(scenario, out_path, mode="vo", gui=False, hold_s=HOLD_S, verbose
             if step % log_every == 0:
                 phase = expert.state.phase
                 vals = {"t": t, "base_pos": base_pos, "base_ori": base_ori, "base_bearing": bearing, "q_mes": q_mes,
-                        "qd_mes": qd_mes, "wheel_cmds": wheels, "torque_arm": torques, "wheel_cmds_exec": wheels,
-                        "torque_arm_exec": torques, "q_des_arm": expert.q_des_arm, "qd_des_arm": expert.qd_des_arm,
+                        "qd_mes": qd_mes, "wheel_cmds": wheels, "torque_arm": torques, "wheel_cmds_exec": wheels_exec,
+                        "torque_arm_exec": torques_exec, "q_des_arm": expert.q_des_arm, "qd_des_arm": expert.qd_des_arm,
                         "phase": legacy.PHASE_CODES["reach"] if nav_done else legacy.PHASE_CODES[phase],
-                        "nav_done": nav_done, "ee_pos": ee_pos, "lidar": scan, "obstacle_xy": [ob["x"], ob["y"]],
+                        "nav_done": nav_done, "segment": int(nav_done), "ee_pos": ee_pos, "lidar": scan,
+                        "obstacle_xy": [ob["x"], ob["y"]],
                         "avoid_w": expert.last_avoid[0], "speed_scale": expert.last_avoid[1], "clearance": min_clear}
                 for k, v in vals.items():
                     log[k].append(v)
-            cmd.SetControlCmd(np.concatenate((wheels, torques, np.zeros(6))), modes)
+            cmd.SetControlCmd(np.concatenate((wheels_exec, torques_exec, np.zeros(6))), modes)
             sim.Step(cmd, "torque")
             ob_next = obstacle_at(scenario, t + time_step)
             client.resetBasePositionAndOrientation(obstacle_ids[0], [ob_next["x"], ob_next["y"], ob_next["h"] / 2], quat)
@@ -606,22 +666,60 @@ def run_episode(scenario, out_path, mode="vo", gui=False, hold_s=HOLD_S, verbose
                 break
             if gui:
                 time.sleep(0.001)
-            msg = check_stop(criteria, t, time_step, ee_err, nav_done)
-            if msg and msg.startswith("Target reached") and reach_time is None:
-                reach_time = t
-            if msg and (not msg.startswith("Target reached") or hold_s <= 0 or t - reach_time >= hold_s):
-                stop_message = msg
-                break
+            if learner is not None:
+                if reach_time is None and ee_err < REACH_TOLERANCE:
+                    reach_time = t
+                if reach_time is not None and t - reach_time >= hold_s:
+                    stop_message = f"Policy hold over at t={t:.3f}s (EE error {ee_err:.4f} m)"
+                    break
+                if step + 1 >= STEP_CAP:
+                    stop_message = f"Step cap at t={t:.3f}s (EE error {ee_err:.4f} m, best {min_ee_err:.4f} m)"
+                    break
+            else:
+                msg = check_stop(criteria, t, time_step, ee_err, nav_done)
+                if msg and msg.startswith("Target reached") and reach_time is None:
+                    reach_time = t
+                if reach_time is not None and hold_s > 0:
+                    # Hold (6 Nov, as collect_step9_hold.py): after the first reach the template's stall rule, which
+                    # fires ~3 s into a hold, is ignored until hold_s have elapsed; the step cap still ends the episode.
+                    if t - reach_time >= hold_s:
+                        stop_message = f"Target reached at t={reach_time:.3f}s, held {hold_s:.0f} s (EE error {ee_err:.4f} m)"
+                        break
+                    if step + 1 >= STEP_CAP:
+                        stop_message = f"Target reached at t={reach_time:.3f}s, step cap during the hold"
+                        break
+                elif msg and (not msg.startswith("Target reached") or hold_s <= 0):
+                    stop_message = msg
+                    break
             t += time_step
             step += 1
             if verbose and step % 2000 == 0:
                 print(f"t={t:.1f}s base {np.round(base_pos[:2], 2)} obst {np.round([ob['x'], ob['y']], 2)} "
                       f"scan min {scan.min():.2f} m phase {expert.state.phase} avoid_w {expert.last_avoid[0]:+.2f} "
                       f"EE err {ee_err:.3f} m")
-        status = "collision" if collision_time is not None else legacy.stop_status(stop_message)
-        if status == "unreachable" and ee_err < REACH_TOLERANCE:
-            status = "reached"
+        if learner is not None:
+            if collision_time is not None:
+                status = "collision"
+            elif reach_time is None:
+                status = "not_reached"
+            else:
+                status = "reached" if ee_err < REACH_TOLERANCE else "left_target"
+        elif collision_time is not None:
+            status = "collision"
+        elif reach_time is not None:
+            status = "reached"          # the expert reached; under --dart the arm noise jitters the final error
+        else:
+            status = legacy.stop_status(stop_message)
+            if status == "unreachable" and ee_err < REACH_TOLERANCE:
+                status = "reached"
+        nav_timed_out = nav_done_time is not None and nav_done_time >= DYN_NAV_TIMEOUT - 1e-6
         meta = {"scenario": scenario, "status": status, "success": status == "reached" and collision_time is None,
+                "seed": int(scenario["seed"]) * 100000 + int(scenario["episode"]), "noisy": bool(dart),
+                "noise_v": DART_V if dart else 0.0, "noise_w": DART_W if dart else 0.0,
+                "noise_torque": DART_TORQUE if dart else 0.0, "noise_hold": DART_HOLD_S,
+                "noise_fade_base": DART_FADE_BASE, "noise_fade_arm": 0.0,
+                "hold_wheel_noise": DART_HOLD_WHEEL if dart else 0.0, "nav_timed_out": bool(nav_timed_out),
+                "segment_switch_time": None, "policy": policy, "min_ee_error": float(min_ee_err),
                 "reach_time": reach_time, "nav_done_time": nav_done_time, "duration": t, "n_steps": step + 1,
                 "final_error": ee_err, "collided": collision_time is not None, "collision_time": collision_time,
                 "collision_link": collision_link, "min_clearance": None if math.isinf(min_clear) else float(min_clear),
@@ -704,20 +802,51 @@ def main(argv=None):
                     help="dwa: one-cost goal seeking + avoidance (default, v6); vo: nominal controller + velocity-obstacle "
                          "override (v5); lidar: single-scan repulsion; blind: plain A-to-B expert")
     ap.add_argument("--hold-s", type=float, default=HOLD_S)
+    ap.add_argument("--dart", action="store_true", help="step-9 set F noise on the executed command (training collection)")
+    ap.add_argument("--policy", default=None, help="run a learned policy (training run dir[,db=..]); the expert only monitors")
+    ap.add_argument("--workers", type=int, default=1)
     args = ap.parse_args(argv)
     os.makedirs(args.out_dir, exist_ok=True)
+    episodes = parse_episodes(args.episodes)
+    scenarios = [{**sample_dynamic_scenario(args.seed, ep)} for ep in episodes]
+    scenarios = [{**sc, **converter_fields(sc), "noisy": bool(args.dart)} for sc in scenarios]
+    with open(os.path.join(args.out_dir, "scenarios.json"), "w") as f:
+        json.dump({"scenarios": scenarios}, f)
+    with open(os.path.join(args.out_dir, "config.json"), "w") as f:
+        json.dump({"set_name": os.path.basename(os.path.normpath(args.out_dir)), "seed": args.seed, "mode": args.mode,
+                   "episodes": args.episodes, "hold_s": args.hold_s, "policy": args.policy, "noise_frac": 1.0 if args.dart else 0.0,
+                   "noise_v": DART_V if args.dart else 0.0, "noise_w": DART_W if args.dart else 0.0,
+                   "noise_torque": DART_TORQUE if args.dart else 0.0, "noise_hold": DART_HOLD_S,
+                   "noise_fade_base": DART_FADE_BASE, "noise_fade_arm": 0.0,
+                   "hold_wheel_noise": DART_HOLD_WHEEL if args.dart else 0.0, "max_steps": STEP_CAP,
+                   "collector": "scripts/obstacle/dynamic_expert.py"}, f, indent=1)
+    jobs = [(sc, os.path.join(args.out_dir, f"ep_{sc['episode']:04d}.npz")) for sc in scenarios]
+    kwargs = {"mode": args.mode, "gui": args.gui, "hold_s": args.hold_s, "dart": args.dart, "policy": args.policy}
+    if args.workers > 1:
+        from concurrent.futures import ProcessPoolExecutor
+        with ProcessPoolExecutor(args.workers) as ex:
+            futures = [ex.submit(run_episode, sc, path, verbose=False, **kwargs) for sc, path in jobs]
+            metas = []
+            for k, fut in enumerate(futures, start=1):
+                metas.append(fut.result())
+                if k % 50 == 0 or k == len(futures):
+                    print(f"  {k}/{len(futures)} episodes, success {sum(m['success'] for m in metas)}", flush=True)
+    else:
+        metas = []
+        for sc, path in jobs:
+            print(f"== episode {sc['episode']}: cylinder r {sc['obstacle']['r']:.2f} m at {sc['obstacle']['speed']:.2f} m/s, "
+                  f"crossing at {sc['along']:.2f} of the segment, angle {math.degrees(sc['cross_angle_rad']):+.0f} deg, "
+                  f"meets the robot at t ~ {sc['obstacle']['t_meet']:.1f} s (nominal {sc['nominal_meet_time_s']:.1f} s)")
+            metas.append(run_episode(sc, path, **kwargs))
     rows = []
-    for ep in parse_episodes(args.episodes):
-        sc = sample_dynamic_scenario(args.seed, ep)
-        path = os.path.join(args.out_dir, f"ep_{ep:04d}.npz")
-        print(f"== episode {ep}: cylinder r {sc['obstacle']['r']:.2f} m at {sc['obstacle']['speed']:.2f} m/s, "
-              f"crossing at {sc['along']:.2f} of the segment, angle {math.degrees(sc['cross_angle_rad']):+.0f} deg, "
-              f"meets the robot at t ~ {sc['obstacle']['t_meet']:.1f} s (nominal {sc['nominal_meet_time_s']:.1f} s)")
-        meta = run_episode(sc, path, mode=args.mode, gui=args.gui, hold_s=args.hold_s)
+    for (sc, path), meta in zip(jobs, metas):
+        ep = sc["episode"]
         row = {"episode": ep, "status": meta["status"], "success": meta["success"], "reach_time": meta["reach_time"],
                "nav_done_time": meta["nav_done_time"], "duration": meta["duration"], "min_clearance": meta["min_clearance"],
                "collision_link": meta["collision_link"], "avoid_s": meta["avoiding_steps"] / 1000, "realigns": meta["realigns"], "slip_s": meta["slip_steps"] / 1000, "obst_speed": sc["obstacle"]["speed"], "obst_r": sc["obstacle"]["r"],
-               "along": sc["along"], "cross_angle_deg": math.degrees(sc["cross_angle_rad"]), "t_meet": sc["obstacle"]["t_meet"]}
+               "along": sc["along"], "cross_angle_deg": math.degrees(sc["cross_angle_rad"]), "t_meet": sc["obstacle"]["t_meet"],
+               "final_error": meta["final_error"], "min_ee_error": meta["min_ee_error"],
+               "file": os.path.basename(path), "max_steps": STEP_CAP}
         if args.gif:
             row["gif"] = make_gif(path, os.path.join(args.out_dir, f"ep_{ep:04d}.gif"))
         rows.append(row)

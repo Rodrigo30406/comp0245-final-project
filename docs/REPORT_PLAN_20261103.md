@@ -1015,3 +1015,21 @@ Offline NRMSE of the new seeds: MLP-Base 0.158 / 0.162, MLP-Ego 0.120 / 0.120, C
 0.184 / 0.184, no-DART control 0.080 / 0.089, no-DART + IC 0.093 / 0.095 (no DART again has the lowest offline error and the
 worst closed loop). Note: Cat seeds 0 and 1 give the same nominal counts (176 / 190 / 201) but differ on the
 random-start bank (179 / 193 / 202 vs 179 / 191 / 203), so they are distinct models.
+
+**6 Nov 04:40 — cloning the dynamic expert v9 (Rodrigo: one seed of the best MLP, can it imitate it?).** Pre-registered
+before the result. `dynamic_expert.py` gains `--dart` (the step-9 set F noise on the executed command, labels clean:
+v 0.0389 m/s, w 0.1178 rad/s held 50 ms and faded within 0.5 m of the dock, torque 1.0 N·m, 0.5 rad/s per wheel side
+during the hold), `--policy` (a learned policy drives, the expert runs alongside as the monitor; success = reached
+within 1 cm and still within 1 cm at the end of a 10 s hold, a contact ends the episode), `--workers`, and writes
+the set files `convert_step9_dataset.py` reads (which now takes the logged lidar when the recording has one: the
+cylinder moves). Fix found in the smoke test: the template's stall rule ended every expert episode 3–6 s into the hold
+(clean runs too); the hold now lasts the full 10 s, as `collect_step9_hold.py` does, and an expert episode counts as
+a success when it reached without contact (with --dart the arm noise jitters the final error to 1–2 cm). Smoke test,
+seed 3 episodes 0–23 with --dart: 24/24, 0 contacts, min clearance 0.05 m.
+`chain_dynamic_clone.sh`: 1600 episodes on seed 3 (seeds 1–2 were the expert's development scenes; 1600 rather than
+2000 because the set F trainer peaked at 95 GB) → `datasets/dynamic/dyn_seed3_dart1600_lidar` → MLP-Ego-IC + lidar
+(`raw21_targetpolar_clock_lidar64_v1`, K 144, horizon 75 s) seed 0 → closed-loop test on 100 fresh scenes (seed 4),
+expert and blind template on the same scenes. Prediction: the MLP reads one scan, so it sees where the cylinder is but
+not where it goes; it should avoid the static-looking part (a cylinder ahead) and fail on the timing (wait vs. go),
+i.e. more contacts than the expert, fewer than the blind template. A scan history (stacked scans or the GRU) is the
+fix if so.

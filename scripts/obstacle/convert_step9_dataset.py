@@ -112,7 +112,10 @@ def convert_episode(job):
     applied = np.concatenate([arrays["wheel_cmds_exec"], arrays["torque_arm_exec"]], axis=1).astype(np.float32)
     previous = np.vstack([np.zeros((1, 11), dtype=np.float32), applied[:-1]])
     obstacles = meta["scenario"]["obstacles"]
-    lidar = scan_batch(base_pos[:, :2], bearing, obstacles).astype(np.float32)
+    if "lidar" in arrays:   # moving obstacle (scripts/obstacle/dynamic_expert.py): the logged scan is the only true one
+        lidar = arrays["lidar"].astype(np.float32)
+    else:
+        lidar = scan_batch(base_pos[:, :2], bearing, obstacles).astype(np.float32)
     ee = arrays["ee_pos"].astype(np.float32)
     distance = np.linalg.norm(ee.astype(np.float64) - target, axis=1)
     next_obs = np.vstack([observation[1:], observation[-1:]])
