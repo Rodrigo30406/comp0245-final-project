@@ -21,8 +21,8 @@ LABELS = {"expert": "expert v2 (recorded clean)",
           "mlp28lidarnoclock_trig144": "MLP-Ego-IC+lidar, recorded, no clock",
           "mlp28lidarhold_trig144": "MLP, hold, their DART", "gru28lidarhold_patience40": "GRU, hold, their DART",
           "mlp28lidarholdD_trig144": "MLP, hold, our DART (D)", "gru28lidarholdD_patience40": "GRU, hold, our DART (D)",
-          "mlp28lidarholdB_trig144": "MLP-Ego-IC+lidar, improved recordings",
-          "gru28lidarholdB_patience40": "GRU-Ego+lidar, improved recordings",
+          "mlp28lidarholdB_trig144": "MLP-Ego-IC+lidar",
+          "gru28lidarholdB_patience40": "GRU-Ego+lidar",
           "mlp28lidarholdF_trig144": "MLP, hold, our DART+base noise+fade (F)",
           "gru28lidarholdF_patience40": "GRU, hold, our DART+base noise+fade (F)"}
 # tag suffixes after _seedN that name an evaluation variant of the same model family (appended to the label)

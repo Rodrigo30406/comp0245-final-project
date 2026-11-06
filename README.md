@@ -106,7 +106,7 @@ src/robot_learning/
 scripts/                  entry points (collect, train, evaluate, run_policy, simulate) and data/, evaluation/,
                           figures/, obstacle/ tools
 experiment_specs/         expert rules, collection specs, training recipes, evaluation protocols, data-size subsets
-weights/                  the 55 reaching and 14 obstacle models of the report (portable NumPy files)
+weights/                  the 55 reaching and 8 obstacle models of the report (portable NumPy files)
 results/                  evaluations/: summaries of the 85 reaching evaluations; obstacle/: per-scene rows of the obstacle tests
 docs/                     one chapter per part of the report, results.md, usage.md, figures/
 controlled_experiments/   the group's controlled experiments and obstacle-task code (own README)

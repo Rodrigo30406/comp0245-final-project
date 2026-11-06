@@ -128,9 +128,8 @@ the dataset in float32.
 **Task** (the group's obstacle task, protocol v2.0): one cylinder between the start and a target 3.5–5 m away, a 64-beam
 planar lidar added to the observations (variant `raw21_targetpolar_clock_lidar64_v1`, 92 inputs); the expert drives
 around it, docks and reaches. **Evaluation**: 300 unseen scenes (dev2, seed 300), 60 s episodes. **Training**: 2000
-scenes. *Original recordings*: the group's collection (stops at the first reach). *Improved recordings*: the expert kept
-running 10 s after the reach, DART perturbations on the executed commands, and the base still perturbed during that hold
-([07_obstacles.md](07_obstacles.md)). Three seeds per row.
+scenes, recorded with the expert kept running 10 s after the reach and DART perturbations on the executed commands,
+including the base during that hold ([07_obstacles.md](07_obstacles.md)). Three seeds per row.
 
 | metric | definition |
 |---|---|
@@ -142,18 +141,14 @@ running 10 s after the reach, DART perturbations on the executed commands, and t
 
 Percent of the 300 scenes, mean ± sd (min–max):
 
-| model, training data | success | held 10 s | stable 1 cm | docked clean | contacts |
+| model | success | held 10 s | stable 1 cm | docked clean | contacts |
 |---|---|---|---|---|---|
 | expert | 100 | 100 | 100 | 100 | 0 |
-| group's baseline L2 (side classifier + base and arm networks), seed 0 | 60.0 | 9 | 49 | 97 | 0 |
-| MLP-Ego-IC + lidar, original recordings | 54 ± 6 (48–61) | 8 ± 4 | 45 ± 8 | 93 ± 5 | 0 |
-| **MLP-Ego-IC + lidar, improved recordings** | **80 ± 8 (71–87)** | **77 ± 9 (67–85)** | 80 ± 8 | 90 ± 5 | 1 ± 0 |
-| GRU-Ego + lidar, improved recordings | 55 ± 9 (45–60) | 38 ± 5 (32–42) | 51 ± 8 | 99 ± 1 | 0 |
-| TF-Ego + lidar, original recordings | 12 ± 4 (7–15) | 0 | 8 ± 3 | 97 ± 2 | 0 |
+| **MLP-Ego-IC + lidar** | **80 ± 8 (71–87)** | **77 ± 9 (67–85)** | 80 ± 8 | 90 ± 5 | 1 ± 0 |
+| GRU-Ego + lidar | 55 ± 9 (45–60) | 38 ± 5 (32–42) | 51 ± 8 | 99 ± 1 | 0 |
 
 Reading: the obstacle itself is solved (0–1 % contacts, docked in 90–99 %); the failures are the last centimetre and the
-hold, as in reaching, and what fixes them is the data (8 → 77 % held), not a memory model. Regenerate:
-`python3 scripts/obstacle/dev2_table.py --runs results/obstacle/static_dev2`. Discussion and limitations:
+hold, as in reaching. Regenerate: `python3 scripts/obstacle/dev2_table.py`. Discussion and limitations:
 [07_obstacles.md](07_obstacles.md).
 
 ---

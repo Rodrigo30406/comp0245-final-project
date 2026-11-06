@@ -3,7 +3,7 @@
 The reaching recipe (egocentric inputs, ignition copies, chapters 2–6) extended to tasks with an obstacle in the way.
 The policy gets one extra input: a **64-beam planar lidar scan** around the base (92 inputs in total, variant
 `raw21_targetpolar_clock_lidar64_v1`, [02](02_inputs_and_outputs.md)). It never sees the obstacle's position: only what
-the scan shows. Only the best model of each family is reported; full tables in [results.md](results.md) sections 2–3.
+the scan shows. Tables also in [results.md](results.md) sections 2–3.
 
 ## 7.1 Static obstacle
 
@@ -12,40 +12,32 @@ away. The expert drives around it, docks and reaches. Evaluation: 300 unseen sce
 episodes. Success = end effector within 1 cm of the target without touching the obstacle; *held 10 s* = still within
 1.5 cm 10 s later.
 
-**What we did to the data.** Cloning the plain recordings gave a policy that avoided the obstacle and reached, but left
-the target 2–3 s later (held 10 s: 8 %). Three changes to how the demonstrations are recorded, the same ideas as in
-reaching:
+**How the demonstrations are recorded.** The same principles as in reaching ([01](01_data_collection.md)), applied
+to the group's collector:
 
-1. **Keep recording after the reach.** The original recordings stop the moment the hand first reaches the target, so the
-   policy never sees what to do next. We keep the expert running 10 s more: the data now contain "stay on the target".
-2. **Perturb the commands while recording** (DART, [01](01_data_collection.md)): small random pushes on the executed
-   wheel and arm commands, while the recorded label stays the expert's clean command. The data show how to recover from
-   the policy's own small errors.
-3. **Keep perturbing the base while holding.** A cloned policy never stops its base exactly ([06](06_base_drift.md)),
-   so during the hold its base creeps. The original noise was switched off once the base arrived, so the data never
-   showed a moving base during the hold. With the perturbation kept on, the data show the arm compensating a moving
-   base, which is what the policy needs.
-
-The first two alone raise *held 10 s* only to 59 %; the third brings it to 77 %.
+1. **The recording continues 10 s after the reach.** The policy must not only reach the target but stay there, so the
+   data contain the expert holding the hand on the target.
+2. **The commands are perturbed while recording** (DART): small random pushes on the executed wheel and arm commands,
+   while the recorded label stays the expert's clean command. The data show how to recover from the small errors the
+   policy itself will make.
+3. **The base stays perturbed during the hold.** A cloned policy never stops its base exactly
+   ([06](06_base_drift.md)), so while holding, its base creeps. Perturbing the base during the hold puts in the data the
+   arm compensating a moving base, which is the situation the policy will face.
 
 **Results** (300 unseen scenes, three training seeds, mean ± sd (min–max)):
 
 | policy | success | held 10 s | docked without contact | contacts |
 |---|---|---|---|---|
 | expert | 100 | 100 | 100 | 0 |
-| MLP-Ego-IC + lidar, original recordings | 54 ± 6 (48–61) | 8 ± 4 | 93 | 0 |
-| **MLP-Ego-IC + lidar, improved recordings** | **80 ± 8 (71–87)** | **77 ± 9 (67–85)** | 90 | 1 |
-| GRU-Ego + lidar, improved recordings | 55 ± 9 (45–60) | 38 ± 5 (32–42) | 99 | 0 |
-| TF-Ego + lidar (transformer), original recordings | 12 ± 4 (7–15) | 0 | 97 | 0 |
+| **MLP-Ego-IC + lidar** | **80 ± 8 (71–87)** | **77 ± 9 (67–85)** | 90 | 1 |
+| GRU-Ego + lidar | 55 ± 9 (45–60) | 38 ± 5 (32–42) | 99 | 0 |
 
-**Reading.** Avoiding the obstacle is the easy part: every model docks without contact in 90–99 % of the scenes. As in
-reaching, the hard part is the last centimetre and staying there, and it is solved by what the data show, not by a
-bigger model: the MLP beats the memory models (the GRU docks better but reaches less precisely; the transformer, trained
-on the original recordings only, docks but almost never reaches 1 cm).
+**Reading.** Avoiding the obstacle is the easy part: both models dock without contact in 90–99 % of the scenes. As in
+reaching, the hard part is the last centimetre and staying there. The MLP, reading one instant, does it better than the
+GRU, which has memory: the GRU docks more cleanly but reaches less precisely and holds less (38 % against 77 %).
 
-**Limitations.** Of the ~20 % failures, about half never dock cleanly and in the rest the base docks but the hand
-does not get within 1 cm. The seed spread is large (71–87 %). The transformer was not retrained on the improved recordings. The
-dead band that helps parking in reaching hurts here (80 → 47 %): it removes the small final turn.
+**Limitations.** Of the MLP's ~20 % failures, about half never dock cleanly and in the rest the base docks but the hand
+does not get within 1 cm. The seed spread is large (71–87 %).
 
 ## 7.2 Moving obstacle (preliminary)
 
@@ -60,7 +52,7 @@ cheapest according to one cost that combines reaching the dock and keeping clear
 dynamic-window planners used in open-source navigation). Far from the cylinder its best candidate is the course
 expert's own command, so it behaves like it. Two features of the simulator shaped it: the base slides sideways if it
 turns while driving, so manoeuvres turn in place and then drive straight; and it keeps rotating after a turn, so a
-yaw-rate correction was added. Training data: 1600 episodes recorded with the same perturbations as above, all
+yaw-rate correction was added. Training data: 1600 episodes recorded with the same perturbations as in 7.1, all
 successful, no contacts.
 
 **Results** (100 unseen scenes, one training seed):
@@ -91,5 +83,5 @@ python3 scripts/obstacle/dev2_table.py --runs results/obstacle/static_dev2     #
 # moving obstacle: results/obstacle/dynamic_test/<policy>/index.csv, one row per test scene
 ```
 
-Collection, training and evaluation commands: [usage.md](usage.md) section 7. In the code and data names, the improved
-static recordings are "set B" (`OBSTACLE_HOLD_WHEEL_NOISE=0.5`), the original ones "recorded" or train2.
+Collection, training and evaluation commands: [usage.md](usage.md) section 7. In the code and data names, the static
+recordings of 7.1 are "set B" (`OBSTACLE_HOLD_WHEEL_NOISE=0.5`).

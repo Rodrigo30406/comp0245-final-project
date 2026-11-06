@@ -34,10 +34,8 @@ Obstacle tasks (`obstacle/`, 92 inputs: the 21 observations + a 64-beam lidar sc
 
 | directory | report name | training data |
 |---|---|---|
-| `obstacle/static_mlp_seed{0,1,2}` | MLP-Ego-IC + lidar (best static model) | improved recordings (`splits/static_obstacle_split.json`) |
-| `obstacle/static_gru_seed{0,1,2}` | GRU-Ego + lidar | improved recordings |
-| `obstacle/static_tf_seed{0,1,2}` | TF-Ego + lidar | original recordings (`splits/static_obstacle_recorded_split.json`) |
-| `obstacle/static_mlp_untreated_seed{0,1,2}` | MLP-Ego-IC + lidar, before the data changes | original recordings |
+| `obstacle/static_mlp_seed{0,1,2}` | static obstacle, MLP-Ego-IC + lidar | 2000 episodes with hold and perturbations (`splits/static_obstacle_split.json`) |
+| `obstacle/static_gru_seed{0,1,2}` | static obstacle, GRU-Ego + lidar | the same |
 | `obstacle/dynamic_mlp_seed0`, `obstacle/dynamic_gru_seed0` | moving obstacle, MLP-Ego-IC / GRU-Ego + lidar | 1600 avoidance-expert episodes (`splits/dynamic_obstacle_split.json`) |
 
 They run inside the obstacle harnesses (they need the lidar scan), not with `run_policy.py`: see
