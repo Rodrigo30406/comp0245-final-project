@@ -8,9 +8,9 @@ Reading order, following the structure of the report. Each chapter states the cr
 | # | chapter | status |
 |---|---|---|
 | 1 | [Data collection](01_data_collection.md): DART noise, randomised targets and starts and their bounds, data size, expert-failure filter, the hold | done |
-| 2 | Inputs and outputs: the 21 observations, egocentric transforms, clock, lidar; the 9 independent outputs | to do |
-| 3 | Models: MLP, GRU, transformer; training recipe and model selection | to do |
-| 4 | Evaluation: offline error vs closed-loop success, metrics and banks | to do |
+| 2 | [Inputs and outputs](02_inputs_and_outputs.md): the 21 observations, the egocentric transforms, clock, what is not given (copycat), the 9 outputs | done |
+| 3 | [Models](03_models.md): the progression, MLP / GRU / transformer, training recipe, efficiency, reproduction commands | done |
+| 4 | [Evaluation](04_evaluation.md): closed-loop protocol, metrics, banks, offline error vs closed-loop success, commands | done |
 | 5 | [Arm ignition](05_arm_ignition.md): the arm that never starts, the ignition copies, memory | done |
 | 6 | [Base drift](06_base_drift.md): park, creep and restart; dead band, categorical wheels, memory | done |
 | 7 | Static obstacle avoidance (lidar) | to do |

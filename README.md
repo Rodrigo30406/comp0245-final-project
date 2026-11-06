@@ -12,7 +12,7 @@ Curated version of the project for the report: only the v2 pipeline, organised b
 - `src/robot_learning/`: simulation (the lecturer's episode, unchanged), expert controllers, data collection and splits.
 - `scripts/collect_dataset.py`: reaching collector; `scripts/data/`: target grid and splits; `scripts/obstacle/`: the
   static- and dynamic-obstacle collectors (they import the group's obstacle task code from `controlled_experiments/`;
-  once per clone: `ln -s ../RoboEnv/models controlled_experiments/models`).
+  once per clone: `ln -s ../../RoboEnv/models controlled_experiments/models`).
 - `experiment_specs/`: the expert rules and every collection spec used by the report.
 - `tests/`: `python scripts/run_tests.py` in the RoboEnv environment.
 
