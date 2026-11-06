@@ -10,7 +10,7 @@ Curated version of the project for the report: only the v2 pipeline, organised b
 [`docs/README.md`](docs/README.md). Layout so far:
 
 - `src/robot_learning/`: simulation (the lecturer's episode, unchanged), expert controllers, data collection and splits.
-- `scripts/collect_dataset.py`: A-to-B collector; `scripts/data/`: target plan and splits; `scripts/obstacle/`: the
+- `scripts/collect_dataset.py`: reaching collector; `scripts/data/`: target grid and splits; `scripts/obstacle/`: the
   static- and dynamic-obstacle collectors (need the group's `obstacle_task`, see `docs/01_data_collection.md`).
 - `experiment_specs/`: the expert rules and every collection spec used by the report.
 - `tests/`: `python scripts/run_tests.py` in the RoboEnv environment.

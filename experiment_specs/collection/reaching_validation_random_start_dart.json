@@ -17,7 +17,7 @@
   ]
  },
  "max_steps": 40000,
- "name": "e1_randompose_v2_startgoal_dart_low_wheel0.5_torque1.0_hold50",
+ "name": "reaching_validation_random_start_dart",
  "record_every_steps": 1,
  "seed": 20261031,
  "split": "development",

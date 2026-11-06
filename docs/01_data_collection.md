@@ -10,9 +10,9 @@ randomised start poses, and the amount of data.
 
 | collector | task | code | output |
 |---|---|---|---|
-| A-to-B collector | reach a target with the mobile manipulator (the assignment task) | `scripts/collect_dataset.py` → `src/robot_learning/data/` | `datasets/<id>/` (project dataset layout) |
-| Static-obstacle hold collector | A-to-B with one cylinder between start and target, 64-beam lidar | `scripts/obstacle/collect_step9_hold.py` (wraps the group's `obstacle_task.collect`) | raw set → `scripts/obstacle/convert_step9_dataset.py` → project layout |
-| Dynamic-obstacle collector | A-to-B with one moving cylinder crossing the path | `scripts/obstacle/dynamic_expert.py --dart` | raw set → same converter |
+| reaching collector | reach a target with the mobile manipulator (the assignment task) | `scripts/collect_dataset.py` → `src/robot_learning/data/` | `datasets/<id>/` (project dataset layout) |
+| Static-obstacle hold collector | reaching with one cylinder between start and target, 64-beam lidar | `scripts/obstacle/collect_static_obstacle.py` (wraps the group's `obstacle_task.collect`) | raw set → `scripts/obstacle/convert_obstacle_dataset.py` → project layout |
+| Dynamic-obstacle collector | reaching with one moving cylinder crossing the path | `scripts/obstacle/dynamic_obstacle.py --dart` | raw set → same converter |
 
 All three record at the simulator rate (1 kHz, every physics step), store the expert's **clean** command as the label
 and the command actually executed separately, and keep every episode (successes and failures) with its metadata, so
@@ -111,8 +111,8 @@ lose half of the demonstrations, mostly their final approach, which is what the 
 level was kept.
 
 **Result** (five seeds, 205 held-out geometries, stable arrival within 1 cm; the control is the same scenarios
-collected without noise: `stratified1024_nominal.json`, `e3_multistart3x_v2_startgoal_clean.json`,
-`e1_randompose_v2_startgoal_clean.json`):
+collected without noise: `reaching_nominal_clean.json`, `reaching_random_start_clean.json`,
+`reaching_validation_random_start_clean.json`):
 
 | same model, same scenarios | with DART | without DART |
 |---|---|---|
@@ -124,7 +124,7 @@ Without DART the policy fits the demonstrations *better* offline and never arriv
 workspace (median final distance 250–1500 m, wheels at the envelope 75–88 % of the time).
 
 DART also matters during the final **hold** (base parked, arm reaching): with the noise on, the base keeps being nudged
-while the arm reaches, so the demonstrations show the arm compensating a moving base. That is why the A-to-B MLP
+while the arm reaches, so the demonstrations show the arm compensating a moving base. That is why the reaching MLP
 tolerates the few centimetres of base creep it produces itself (chapter 6), and why the obstacle sets needed the noise
 kept on during the hold (1.6).
 
@@ -132,7 +132,7 @@ kept on during the hold (1.6).
 
 ## 1.4 Experiment 2: randomised targets and start poses
 
-### Targets: a stratified plan, and its bounds
+### Targets: a grid over a bounded box
 
 **Bounds.** The brief does not fix a range ("generalise to new targets and/or initial conditions"); the box is
 x, y ∈ [−2, 2] m (drives of up to 2.8 m from the origin), z ∈ [0.3, 0.8] m. It is inside what the expert can solve
@@ -142,8 +142,8 @@ band; the standoff table puts the dock 0.72–0.78 m from the target in the plan
 −0.2 / +0.3 m around the shoulder height. Everything outside the box is reserved for the generalisation banks (1.7),
 where the expert still succeeds (210/210, 209/210, 210/210), so the banks test the learner, not the expert.
 
-**Plan** (`experiment_specs/collection/stratified1024_plan.json`, made by `robot_learning.data.sampling.stratified_grid`,
-regenerated and checked by `scripts/data/make_target_plan.py`): the box is cut into a **16 × 8 × 8 grid** (cells of
+**Target grid** (`experiment_specs/collection/target_grid_16x8x8.json`, made by `robot_learning.data.sampling.stratified_grid`,
+regenerated and checked by `scripts/data/make_target_grid.py`): the box is cut into a **16 × 8 × 8 grid** (cells of
 0.25 m × 0.5 m × 0.0625 m) and one target is drawn uniformly inside each of the 1024 cells. Compared with 1024 uniform
 draws this guarantees that every region of the box is demonstrated (no holes, no clusters).
 
@@ -157,7 +157,7 @@ centres) out of 32 random objectives:
 - in every vertical pair of cells at most one is held out: every (x, y) column keeps training data at every height band.
 
 The validation side is defined by the **target**: an episode whose target lies in a held-out cell is validation,
-whatever its start pose (`scripts/data/make_geometry_split.py`). No target geometry is ever seen in both training and
+whatever its start pose (`scripts/data/make_train_val_split.py`). No target geometry is ever seen in both training and
 validation, also across the nominal-start and random-start collections.
 
 ### Start poses
@@ -167,8 +167,8 @@ validation, also across the nominal-start and random-start collections.
 | nominal | `initial_base: {"mode": "nominal"}` | the lecturer's start: origin, facing +x |
 | random start | `initial_base: {"mode": "uniform_xy", "x": [-2, 2], "y": [-2, 2], "yaw": [-π, π]}`, `"goal_reference": "start"` | position uniform in the same square as the targets, any heading; base goal from the start pose (1.2) |
 
-Each random-start collection demonstrates every plan target **three times** with three different start poses
-(`e3_multistart3x_*`: 3 × 1024 episodes, targets = plan targets repeated three times).
+The random-start collection demonstrates every grid target **three times** with three different start poses
+(`reaching_random_start_dart`: 3 × 1024 episodes, the grid targets repeated three times).
 
 **Result** (MLP-Ego-IC, five seeds, 1 cm; control: the nominal-start collection alone):
 
@@ -184,31 +184,48 @@ is as good from anywhere as from the origin, and better from the origin too.
 
 ## 1.5 Experiment 3: how much data
 
-**The training mixture** (every A-to-B model of the report):
+**The training mixture** (every reaching model of the report):
 
 | dataset (spec) | start | episodes | expert successes | used for |
 |---|---|---|---|---|
-| `dart_stratified1024_low` | nominal | 1024 (plan, once) | 895 | training (819 geometries) + nominal validation (205) |
-| `e3_multistart3x_dart_low_v2_startgoal` | random | 3072 (plan × 3) | 2806 | training + validation |
-| `e10b_replacement_v2_expert_failures_startgoal_dart_low` | random | 353 (the failed scenarios, new start and noise) | 322 | replaces failures (1.2) |
+| `reaching_nominal_dart` | nominal | 1024 (grid, once) | 895 | training (819 geometries) + nominal validation (205) |
+| `reaching_random_start_dart` | random | 3072 (grid × 3) | 2806 | training + validation |
+| `reaching_recollect_failures_dart` | random | 353 (the failed scenarios, new start and noise) | 322 | replaces failures (1.2) |
 
-After the geometry split and the success rule: **3 221 training episodes** (721 nominal + 2 500 random start; about
-35 M rows at 1 kHz) and 802 validation episodes. The closed-loop validation sets are the 205 nominal held-out
-geometries and the 205 held-out geometries of the random-start bank `e1_randompose_dart_low_v2_startgoal`.
+After the train/validation split and the success rule: **3 221 training episodes** and 802 validation episodes. Three
+levels, not to be confused:
+
+- **target positions**: 819 grid cells for training (205 held out), one fixed target each;
+- **episodes** (demonstrations): 3 221, i.e. each training target demonstrated about four times, once from the nominal
+  start (721 episodes) and three times from random starts (2 500 episodes, re-collections included);
+- **rows** (state → command pairs, what the network is fitted on): about 35 M, since an episode lasts ~12.5 s at 1 kHz.
+
+ The closed-loop validation sets are the 205 nominal held-out
+geometries and the 205 held-out geometries of the random-start bank `reaching_validation_random_start_dart`.
 Collection cost: about 10 min per 1024 episodes with 28 worker processes.
 
-**Learning curve** with the final recipe (MLP-Ego-IC, seed 0, fixed random subsets of the 3 221 successes, stable
-arrivals within 1 cm of 205):
+**Learning curve** with the final recipe (MLP-Ego-IC, seed 0). Each point is a random subset of the 3 221 training
+episodes (one fixed permutation, `training_episode_cap` option of the trainer), so every point keeps the mixture's
+proportion of about 22 % nominal and 78 % random-start episodes; stable arrivals within 1 cm of 205:
 
 | training episodes | 400 | 800 | 1 600 | 2 400 | 3 221 |
 |---|---|---|---|---|---|
+| nominal / random-start episodes | 93 / 307 | 193 / 607 | 370 / 1230 | 549 / 1851 | 721 / 2500 |
+| distinct target cells (of 819) | 331 | 553 | 772 | 818 | 819 |
 | nominal validation | 142 | 148 | 177 | 195 | 199 |
 | random-start validation | 137 | 127 | 174 | 187 | 200 |
 | offline NRMSE | 0.209 | 0.189 | 0.142 | 0.142 | 0.139 |
 
-The closed-loop result keeps improving up to the full set while the offline error has already flattened at 1 600: the
-extra episodes add coverage of rare states (the arm's ignition, the parked base), which the average error hardly sees.
-The curve is one seed; it is a sizing argument, not a precise scaling law.
+- The closed-loop result keeps improving up to the full set while the offline error has already flattened at 1 600:
+  the extra episodes add coverage of rare states (the arm's ignition, the parked base), which the average error hardly
+  sees.
+- Up to ~2 400 episodes the curve mixes two effects, more distinct targets and more start poses per target; from 2 400
+  on every training cell is covered and the last gain (195 → 199 nominal, 187 → 200 random start) comes from more start
+  poses per target only.
+- Read together with experiment 2: at about the same size, 721 nominal-only episodes give 62 ± 15 on the random-start
+  validation while 800 mixed episodes give 127 (nominal validation 152 ± 25 against 148). The diversity of start poses
+  matters more than the number of episodes.
+- The curve is one seed (the end points have five); it is a sizing argument, not a precise scaling law.
 
 ---
 
@@ -217,13 +234,13 @@ The curve is one seed; it is a sizing argument, not a precise scaling law.
 **Problem.** A demonstration that ends at the moment of the reach shows nothing about *staying* there. Cloned policies
 reach the target and leave it 2–3 s later.
 
-- **A-to-B**: not extended. An episode ends at the first reach within 1 cm after at least 8 s; its last seconds are the
-  reach phase with the base parked and, with DART, perturbed, which is what the A-to-B policies learn to hold from.
-- **Static obstacle**: the group's collector stops at the reach. `collect_step9_hold.py` keeps the expert running for
-  **10 s after the first reach** (`STEP9_HOLD_S`, default 10) without editing the group's code (it wraps
+- **reaching**: not extended. An episode ends at the first reach within 1 cm after at least 8 s; its last seconds are the
+  reach phase with the base parked and, with DART, perturbed, which is what the reaching policies learn to hold from.
+- **Static obstacle**: the group's collector stops at the reach. `collect_static_obstacle.py` keeps the expert running for
+  **10 s after the first reach** (`OBSTACLE_HOLD_S`, default 10) without editing the group's code (it wraps
   `obstacle_task.collect.check_stop`). Holding alone was not enough: the group's collector switches the base noise off
   once navigation is done, so the base is still in 99 % of the hold rows and the arm is never seen compensating
-  anything. `STEP9_HOLD_WHEEL_NOISE=0.5` adds our wheel noise (0.5 rad/s per side, 50 ms) whenever the expert's wheel
+  anything. `OBSTACLE_HOLD_WHEEL_NOISE=0.5` adds our wheel noise (0.5 rad/s per side, 50 ms) whenever the expert's wheel
   command is exactly zero, i.e. during the hold.
 
   | set | noise during navigation | noise during the hold | MLP held 10 s (3 seeds) |
@@ -234,7 +251,7 @@ reach the target and leave it 2–3 s later.
   | **B**: hold, our DART + base noise in the hold | ours | arm + base | **77 ± 9 %** |
   | F: B + base noise faded within 0.5 m of the dock | ours, faded | arm + base | 71 ± 26 % |
 
-- **Dynamic obstacle**: `dynamic_expert.py` holds 10 s after the first reach (the template's stall rule is ignored
+- **Dynamic obstacle**: `dynamic_obstacle.py` holds 10 s after the first reach (the template's stall rule is ignored
   during the hold), and `--dart` applies the set-F noise (base noise faded near the dock, 0.5 rad/s per wheel side in the
   hold, torque noise throughout).
 
@@ -254,14 +271,14 @@ as the reference: `ood_far_targets` (max(|x|, |y|) from 2.2 to 3 m), `ood_target
 ### Layout
 
 ```
-scripts/collect_dataset.py              A-to-B collector (entry point of src/robot_learning/data/cli.py)
+scripts/collect_dataset.py              reaching collector (entry point of src/robot_learning/data/cli.py)
 scripts/simulate.py                     watch the expert on one target in the PyBullet GUI
-scripts/data/make_target_plan.py        regenerate the stratified 16x8x8 target plan and check it against the frozen one
-scripts/data/make_geometry_split.py     train/validation split of A-to-B datasets by held-out target cell
+scripts/data/make_target_grid.py        regenerate the 16x8x8 target grid and check it against the frozen one
+scripts/data/make_train_val_split.py     train/validation split of reaching datasets by held-out target cell
 scripts/data/make_bank_split.py         split of an evaluation bank (all episodes evaluated but the last 5)
-scripts/obstacle/collect_step9_hold.py  static-obstacle collector: the group's collector + 10 s hold (+ base noise in the hold)
-scripts/obstacle/dynamic_expert.py      moving-obstacle expert: development runs, training collection (--dart), policy test (--policy)
-scripts/obstacle/convert_step9_dataset.py  raw obstacle set (group format) -> project dataset layout + split
+scripts/obstacle/collect_static_obstacle.py  static-obstacle collector: the group's collector + 10 s hold (+ base noise in the hold)
+scripts/obstacle/dynamic_obstacle.py      moving-obstacle expert: development runs, training collection (--dart), policy test (--policy)
+scripts/obstacle/convert_obstacle_dataset.py  raw obstacle set (group format) -> project dataset layout + split
 scripts/run_tests.py                    unit and integration tests
 
 src/robot_learning/
@@ -272,13 +289,13 @@ src/robot_learning/
   data/                  cli.py (arguments, dataset directory), config.py (spec validation, scenario generation),
                          scheduler.py (parallel episode processes, resume, lock), worker.py (one episode + DART noise),
                          storage.py (recorder, hashes, provenance), schema.py (fields and units), sampling.py (target
-                         plan), splits.py (episode inventory, splits, expert-success filter)
+                         grid), splits.py (episode inventory, splits, expert-success filter)
 
 experiment_specs/expert/default.json      the expert's rules (gains, tolerances, timeout, standoff table)
 experiment_specs/collection/*.json        one file per collection of the report
 ```
 
-### A-to-B collector: `scripts/collect_dataset.py`
+### reaching collector: `scripts/collect_dataset.py`
 
 | option | effect |
 |---|---|
@@ -300,7 +317,7 @@ experiment_specs/collection/*.json        one file per collection of the report
 | `episodes` | 64 | number of episodes |
 | `seed` | 20261023 | scenario seed (targets and start poses) |
 | `split` | `"development"` | label only (`development`, `train`, `validation`, `test`) |
-| `targets` | `null` | explicit list of [x, y, z], one per episode (the report's specs copy the plan targets) |
+| `targets` | `null` | explicit list of [x, y, z], one per episode (the report's specs copy the grid targets) |
 | `target_box` | x, y ∈ [−2, 2], z ∈ [0.3, 0.8] | uniform sampling box, used when `targets` is null |
 | `initial_base` | `{"mode": "nominal"}` | or `{"mode": "uniform_xy", "x": [lo, hi], "y": [lo, hi], "yaw": [lo, hi]}` |
 | `goal_reference` | `"origin"` | `"start"` for random starts (1.2; identical at the nominal start) |
@@ -315,8 +332,8 @@ Examples:
 ```bash
 PY="pixi run --manifest-path ../RoboEnv/pixi.toml python"
 $PY scripts/collect_dataset.py --config experiment_specs/collection/smoke.json            # 2 short episodes, pipeline check
-$PY scripts/collect_dataset.py --config experiment_specs/collection/dart_stratified1024_low.json --episodes 64 --workers 8
-$PY scripts/collect_dataset.py --config experiment_specs/collection/e3_multistart3x_dart_low_v2_startgoal.json --plan-only
+$PY scripts/collect_dataset.py --config experiment_specs/collection/reaching_nominal_dart.json --episodes 64 --workers 8
+$PY scripts/collect_dataset.py --config experiment_specs/collection/reaching_random_start_dart.json --plan-only
 $PY scripts/collect_dataset.py --resume datasets/<id> --workers 28
 $PY scripts/collect_dataset.py --config experiment_specs/collection/smoke.json --gui --workers 1
 $PY scripts/simulate.py --target 0 1.1 0.5                                                  # the expert on one target
@@ -328,12 +345,12 @@ the start or the noise, and remove `targets` to sample uniformly in `target_box`
 ### Splits
 
 ```bash
-$PY scripts/data/make_target_plan.py [OUT.json]                              # regenerate + compare the frozen plan
-$PY scripts/data/make_geometry_split.py OUT.json PRIMARY_DIR [EXTRA_DIR ...]  # A-to-B datasets on the plan targets
+$PY scripts/data/make_target_grid.py [OUT.json]                              # regenerate + compare the frozen grid
+$PY scripts/data/make_train_val_split.py OUT.json PRIMARY_DIR [EXTRA_DIR ...]  # reaching datasets on the grid targets
 $PY scripts/data/make_bank_split.py BANK_DIR OUT.json [HOLDBACK=5]            # evaluation banks
 ```
 
-### Static obstacle: `scripts/obstacle/collect_step9_hold.py`
+### Static obstacle: `scripts/obstacle/collect_static_obstacle.py`
 
 Runs the group's collector (`python -m obstacle_task.collect`, from the group's `final/robotnik_arm_task`) with the hold
 added; it takes all of the group's options, the useful ones being:
@@ -347,17 +364,17 @@ added; it takes all of the group's options, the useful ones being:
 | `--noise-fade-base`, `--noise-fade-arm` | distance (m) within which the noise fades to zero near the dock / target (0 = no fade) |
 | `--workers N`, `--out-dir DIR`, `--resume` | parallelism, output set folder, continue a set |
 
-Environment variables of the wrapper: `STEP9_HOLD_S` (hold after the first reach, default 10 s, 0 = stop at the reach),
-`STEP9_HOLD_WHEEL_NOISE` (rad/s per wheel side during the hold, default 0 = off; 0.5 for set B),
-`STEP9_TASK_DIR` (the group's task folder). Then `convert_step9_dataset.py --source RAW --output DS --split-out SPLIT
+Environment variables of the wrapper: `OBSTACLE_HOLD_S` (hold after the first reach, default 10 s, 0 = stop at the reach),
+`OBSTACLE_HOLD_WHEEL_NOISE` (rad/s per wheel side during the hold, default 0 = off; 0.5 for set B),
+`OBSTACLE_TASK_DIR` (the group's task folder). Then `convert_obstacle_dataset.py --source RAW --output DS --split-out SPLIT
 [--validation-fraction 0.15] [--split-seed 20261104] [--workers 8]`.
 
-### Dynamic obstacle: `scripts/obstacle/dynamic_expert.py`
+### Dynamic obstacle: `scripts/obstacle/dynamic_obstacle.py`
 
 | option | meaning |
 |---|---|
 | `--seed S`, `--episodes 0-99` | scenario seed and episode indices (seeds 1–2: expert development, 3: training set, 4: test) |
-| `--mode dwa\|blind` | the expert (default) or the plain A-to-B template as control |
+| `--mode dwa\|blind` | the expert (default) or the plain reaching template as control |
 | `--dart` | set-F noise on the executed command (training collections) |
 | `--policy RUN_DIR[,db=0.45]` | a learned policy drives, the expert only monitors and labels (closed-loop test) |
 | `--hold-s S` | hold after the first reach (default 10 s) |
@@ -376,44 +393,61 @@ simulation, `ml` env for training). From the project root, with
 `PY="pixi run --manifest-path ../RoboEnv/pixi.toml python"`:
 
 ```bash
-# 0. check the pipeline and the frozen target plan
+# 0. check the pipeline and the frozen target grid
 $PY scripts/run_tests.py
-$PY scripts/data/make_target_plan.py                      # -> OK: identical to the frozen plan
+$PY scripts/data/make_target_grid.py                      # -> OK: identical to the frozen target grid
 
-# 1. A-to-B collections (each prints DATASET: datasets/<timestamp>_<name>_<hash>)
-$PY scripts/collect_dataset.py --config experiment_specs/collection/dart_stratified1024_low.json --workers 28
-$PY scripts/collect_dataset.py --config experiment_specs/collection/e3_multistart3x_dart_low_v2_startgoal.json --workers 28
-$PY scripts/collect_dataset.py --config experiment_specs/collection/e1_randompose_dart_low_v2_startgoal.json --workers 28
+# 1. reaching collections (each prints DATASET: datasets/<timestamp>_<name>_<hash>)
+$PY scripts/collect_dataset.py --config experiment_specs/collection/reaching_nominal_dart.json --workers 28
+$PY scripts/collect_dataset.py --config experiment_specs/collection/reaching_random_start_dart.json --workers 28
+$PY scripts/collect_dataset.py --config experiment_specs/collection/reaching_validation_random_start_dart.json --workers 28
 #    the failed scenarios of the two random-start collections, re-collected with new start / noise:
-$PY scripts/collect_dataset.py --config experiment_specs/collection/e10b_replacement_v2_expert_failures_startgoal_dart_low.json --workers 28
-#    controls and banks: stratified1024_nominal, e3_multistart3x_v2_startgoal_clean, e1_randompose_v2_startgoal_clean,
+$PY scripts/collect_dataset.py --config experiment_specs/collection/reaching_recollect_failures_dart.json --workers 28
+#    controls and banks: reaching_nominal_clean, reaching_random_start_clean, reaching_validation_random_start_clean,
 #    ood_far_targets, ood_target_height, ood_far_start
 
 # 2. splits
-$PY scripts/data/make_geometry_split.py runs/splits/v2_mixture.json NOMINAL_DIR E3_DIR E10B_DIR
-$PY scripts/data/make_geometry_split.py runs/splits/e1_randompose_v2_startgoal_819_205.json E1_DIR
+$PY scripts/data/make_train_val_split.py runs/splits/reaching_train_val.json NOMINAL_DART_DIR RANDOM_START_DART_DIR RECOLLECT_DIR
+$PY scripts/data/make_train_val_split.py runs/splits/reaching_validation_random_start.json VALIDATION_RANDOM_START_DIR
 $PY scripts/data/make_bank_split.py OOD_DIR runs/splits/bank_<name>.json
 
-# 3. static obstacle, set B (needs the group's final/robotnik_arm_task with obstacle_task: STEP9_TASK_DIR)
-cd $STEP9_TASK_DIR && STEP9_HOLD_WHEEL_NOISE=0.5 $PY <project>/scripts/obstacle/collect_step9_hold.py \
+# 3. static obstacle, set B (needs the group's final/robotnik_arm_task with obstacle_task: OBSTACLE_TASK_DIR)
+cd $OBSTACLE_TASK_DIR && OBSTACLE_HOLD_WHEEL_NOISE=0.5 $PY <project>/scripts/obstacle/collect_static_obstacle.py \
     --set-name train2 --workers 12 --noise-frac 1.0 --noise-v 0.0389 --noise-w 0.1178 --noise-torque 1.0 \
-    --noise-hold 0.05 --noise-fade-base 0 --noise-fade-arm 0 --out-dir <project>/datasets/step9/raw/train2_hold10_B
-cd <project> && pixi run --manifest-path ../RoboEnv/pixi.toml -e ml python scripts/obstacle/convert_step9_dataset.py \
-    --source datasets/step9/raw/train2_hold10_B --output datasets/step9/train2_hold10_B_lidar \
-    --split-out runs/splits/step9_train2_hold10_B_split.json --validation-fraction 0.15 --split-seed 20261104
+    --noise-hold 0.05 --noise-fade-base 0 --noise-fade-arm 0 --out-dir <project>/datasets/static_obstacle/raw/set_B
+cd <project> && pixi run --manifest-path ../RoboEnv/pixi.toml -e ml python scripts/obstacle/convert_obstacle_dataset.py \
+    --source datasets/static_obstacle/raw/set_B --output datasets/static_obstacle/set_B \
+    --split-out runs/splits/static_obstacle_set_B.json --validation-fraction 0.15 --split-seed 20261104
 #    set F: the same with --noise-fade-base 0.5
 
 # 4. dynamic obstacle: training set (seed 3) and the converter
-$PY scripts/obstacle/dynamic_expert.py --seed 3 --episodes 0-1599 --dart --workers 28 --out-dir runs/obstacle/dyn_train_seed3_dart1600
-pixi run --manifest-path ../RoboEnv/pixi.toml -e ml python scripts/obstacle/convert_step9_dataset.py \
+$PY scripts/obstacle/dynamic_obstacle.py --seed 3 --episodes 0-1599 --dart --workers 28 --out-dir runs/obstacle/dyn_train_seed3_dart1600
+pixi run --manifest-path ../RoboEnv/pixi.toml -e ml python scripts/obstacle/convert_obstacle_dataset.py \
     --source runs/obstacle/dyn_train_seed3_dart1600 --output datasets/dynamic/dyn_seed3_dart1600_lidar \
     --split-out runs/splits/dyn_seed3_dart1600_split.json
 ```
 
-The split scripts were checked against the splits used for the report: `make_geometry_split.py` reproduces
-`v2_mixture.json` and `e1_randompose_v2_startgoal_819_205.json`, and `make_bank_split.py` reproduces the bank splits,
-episode for episode with identical inventory fingerprints. `dynamic_expert.py` reproduces the report's expert, blind
-and DART recordings bit for bit.
+The split scripts were checked against the splits used for the report (episode for episode, identical inventory
+fingerprints), and `dynamic_obstacle.py` reproduces the report's expert, blind and DART recordings bit for bit.
+
+### Names used in the experiment records
+
+The specs were renamed for this branch; the `name` field (and so the dataset directory name) changed, the scenarios
+did not (they depend on the seed only). The runs and splits of the report, in the `rodrigo` branch, use the old names:
+
+| spec here | dataset / split name in the experiment records |
+|---|---|
+| `target_grid_16x8x8.json` | `stratified1024_plan.json` |
+| `reaching_nominal_dart` | `dart_stratified1024_low` (`dart_stratified1024_wheel0_5_torque1_0_hold50`) |
+| `reaching_nominal_clean` | `stratified1024_nominal` |
+| `reaching_random_start_dart` | `e3_multistart3x_dart_low_v2_startgoal` |
+| `reaching_random_start_clean` | `e3_multistart3x_v2_startgoal_clean` |
+| `reaching_validation_random_start_dart` | `e1_randompose_dart_low_v2_startgoal` |
+| `reaching_validation_random_start_clean` | `e1_randompose_v2_startgoal_clean` |
+| `reaching_recollect_failures_dart` | `e10b_replacement_v2_expert_failures_startgoal_dart_low` |
+| split `reaching_train_val.json` | `v2_mixture.json` |
+| split `reaching_validation_random_start.json` | `e1_randompose_v2_startgoal_819_205.json` |
+| static obstacle, sets D / B / F | `step9_train2_hold10_ourdart`, `..._ourdart_basenoise`, `..._ourdart_basenoise_fade` |
 
 ### What a dataset directory contains
 

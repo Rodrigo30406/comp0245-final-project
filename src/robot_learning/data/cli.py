@@ -50,7 +50,7 @@ def prepare(args):
         effective_request["episodes"] = args.episodes
         targets = effective_request.get("targets")
         if targets is not None:
-            # An explicit target list (the plan-based specs) is cut to its first N entries: the same prefix rule as
+            # An explicit target list (the target-grid specs) is cut to its first N entries: the same prefix rule as
             # sampled scenarios. Growing it would need targets the spec does not contain.
             if args.episodes > len(targets):
                 raise ValueError(f"--episodes {args.episodes} exceeds the {len(targets)} explicit targets of the spec")

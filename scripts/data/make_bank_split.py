@@ -18,7 +18,7 @@ def build(dataset, holdback=5):
         raise ValueError("holdback must leave episodes on both sides")
     split = {"training": records[-holdback:], "validation": records[:-holdback]}
     validate_partition(records, split)
-    return {"dataset": str(dataset), "extra_datasets": [], "plan": None, "seed": None,
+    return {"dataset": str(dataset), "extra_datasets": [], "target_grid": None, "seed": None,
             "unit": "evaluation bank: every episode is evaluated except the last HOLDBACK, parked on the training side; no model trains on this dataset",
             "expert_failures_in_split": sum(1 for r in records if r.get("success") is not True),
             "validation_fraction": len(split["validation"]) / len(records), "inventory_sha256": inventory_fingerprint(records), **split}
