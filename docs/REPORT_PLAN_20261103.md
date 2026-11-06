@@ -1038,3 +1038,21 @@ fix if so.
   GRU-Ego + lidar seed 0 (step-9 GRU recipe: patience 40, hidden 128, stride 20, chunks of 1000 steps, horizon 75 s)
   is trained and tested first (the recurrent state can carry the cylinder's motion between scans), then MLP-Ego-IC +
   lidar seed 0 as the single-scan control.
+
+**6 Nov 05:30 — step 9, limitations of set B and what was not tried (Rodrigo: document, do not run).** Set B
+(MLP-Ego-IC + lidar, our DART with the base perturbed during the hold) is the report's obstacle model: success 80 ± 8 %
+(71–87), held 10 s 77 ± 9 %, three seeds. Its failures are parking, not avoidance (seed 0: 53 failures, 1 contact,
+34 stalled, 18 timeouts; failures' closest end-effector approach median 36 cm): the base stops misaligned or off the
+dock and the arm cannot reach. Known causes: (i) the final in-place turn is weakened by the base noise still active
+near the dock (set F, which fades it within 0.5 m, cuts the misaligned parks 34 → 12 in seed 0 but adds a seed that
+stops short: 47 / 97 / 86 %); (ii) the simulator's skid-steer base keeps sliding and rotating after the wheels stop
+(measured while building the dynamic expert: 0.36 m/s sideways for 20 s with zero wheel commands, 0.3–0.6 rad/s
+after an in-place turn), so a parked base can leave the dock with no command at all. Not tried, with the reason:
+- an ensemble of the B seeds (averaged outputs) to reduce the seed spread: cheap, but averaging may blur the very
+  turn that one seed makes and another does not; untested;
+- extra copies of the final in-place turn rows, selected from the labels like the trigger row (opposite-sign wheel
+  labels after the last translating row), not from the expert's phase: legitimate under the same rule as K 144, but
+  the turn is ~5 % of the rows (the trigger row was 1 in 12 000), so it is not starved, and (ii) is physics, not data;
+- DAgger on the parking states: the most direct fix, but the step-9 expert is a state machine (segment, waypoint)
+  that has to be re-entered at states it did not generate; future work;
+- seeds 3–4 of B and F (the five-seed convention): B and F stay at three seeds in the report, marked as such.
