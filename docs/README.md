@@ -1,5 +1,7 @@
 # Documentation
 
+**All result tables of the report: [results.md](results.md)** (reaching, static obstacle, moving obstacle).
+
 Reading order, following the structure of the report. Each chapter states the criteria behind the choices, the evidence
 (v2 data, five seeds unless marked), and the commands that reproduce it.
 
