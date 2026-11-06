@@ -15,8 +15,18 @@ import csv
 import numpy as np
 
 ROOT = Path(__file__).resolve().parents[2]
-LABELS = {"expert": "expert v2 (recorded clean)", "mlp28lidar_trig144": "MLP-Ego-IC + lidar (K=144)",
-          "gru28lidar_patience40": "GRU-Ego + lidar", "tf28lidar_p40": "TF-Ego + lidar (700-episode cap)"}
+LABELS = {"expert": "expert v2 (recorded clean)",
+          "mlp28lidar_trig144": "MLP-Ego-IC+lidar, recorded", "gru28lidar_patience40": "GRU-Ego+lidar, recorded",
+          "tf28lidar_p40": "TF-Ego+lidar, recorded",
+          "mlp28lidarnoclock_trig144": "MLP-Ego-IC+lidar, recorded, no clock",
+          "mlp28lidarhold_trig144": "MLP, hold, their DART", "gru28lidarhold_patience40": "GRU, hold, their DART",
+          "mlp28lidarholdD_trig144": "MLP, hold, our DART (D)", "gru28lidarholdD_patience40": "GRU, hold, our DART (D)",
+          "mlp28lidarholdB_trig144": "MLP, hold, our DART+base noise (B)",
+          "gru28lidarholdB_patience40": "GRU, hold, our DART+base noise (B)",
+          "mlp28lidarholdF_trig144": "MLP, hold, our DART+base noise+fade (F)",
+          "gru28lidarholdF_patience40": "GRU, hold, our DART+base noise+fade (F)"}
+# tag suffixes after _seedN that name an evaluation variant of the same model family (appended to the label)
+VARIANTS = {"_db045": " +DB 0.45"}
 
 
 def pct(x, n=300):
@@ -52,6 +62,7 @@ def metrics(rows):
     return {
         "n": n,
         "success": sum(ok),
+        "held_10s": sum(truthy(r["held_10s"]) for r in rows),
         "stable_1cm": sum(r["stable_1cm_time"] not in ("", "nan") for r in rows),
         "stable_2cm": sum(r["stable_2cm_time"] not in ("", "nan") for r in rows),
         "stable_5cm": sum(r["stable_5cm_time"] not in ("", "nan") for r in rows),
@@ -73,28 +84,32 @@ def main():
     families = defaultdict(dict)
     for d in sorted(Path(args.runs).glob(f"step9_*_{args.eval_set}")):
         csv_path = d / "rollouts.csv"
-        if not csv_path.exists():
+        if not csv_path.exists() or not (d / "summary.txt").exists():   # summary.txt is written last: skip running evaluations
             continue
         tag = d.name[len("step9_"):-len(args.eval_set) - 1]
-        m = re.match(r"(.*)_seed(\d+)$", tag)
-        fam, seed = (m.group(1), int(m.group(2))) if m else (tag, 0)
+        m = re.match(r"(.*)_seed(\d+)(.*)$", tag)
+        fam, seed = (m.group(1) + m.group(3), int(m.group(2))) if m else (tag, 0)
         families[fam][seed] = read_rows(csv_path)
-    print(f"{'policy':34s} seeds  success  stable1cm  stable2cm  stable5cm  docked_clean  collision  same_side  band/outside")
+    print(f"{'policy':44s} seeds  success  held_10s  stable1cm  stable2cm  stable5cm  docked_clean  collision  same_side  band/outside")
     for fam, runs in families.items():
         seeds = sorted(runs)
         ms = [metrics(runs[s]) for s in seeds]
         n = ms[0]["n"]
-        row = [LABELS.get(fam, fam), ",".join(map(str, seeds))]
-        for key in ["success", "stable_1cm", "stable_2cm", "stable_5cm", "docked_clean", "collision", "same_side"]:
+        base, variant = fam, ""
+        for suffix, text in VARIANTS.items():
+            if fam.endswith(suffix):
+                base, variant = fam[:-len(suffix)], text
+        row = [LABELS.get(base, base) + variant, ",".join(map(str, seeds))]
+        for key in ["success", "held_10s", "stable_1cm", "stable_2cm", "stable_5cm", "docked_clean", "collision", "same_side"]:
             row.append(fmt([m[key] for m in ms], n))
         band = fmt([m["band_success"][0] for m in ms], ms[0]["band_success"][1])
         out = fmt([m["out_success"][0] for m in ms], ms[0]["out_success"][1])
-        print(f"{row[0]:34s} {row[1]:6s} " + "  ".join(f"{c:>12s}" for c in row[2:]) + f"  {band} / {out}")
+        print(f"{row[0]:44s} {row[1]:6s} " + "  ".join(f"{c:>12s}" for c in row[2:]) + f"  {band} / {out}")
     print("\nper seed (counts of", n, "episodes):")
     for fam, runs in families.items():
         for s in sorted(runs):
             m = metrics(runs[s])
-            print(f"  {fam}_seed{s}: success {m['success']}, 1/2/5 cm {m['stable_1cm']}/{m['stable_2cm']}/{m['stable_5cm']}, "
+            print(f"  {fam}_seed{s}: success {m['success']}, held 10 s {m['held_10s']}, 1/2/5 cm {m['stable_1cm']}/{m['stable_2cm']}/{m['stable_5cm']}, "
                   f"docked_clean {m['docked_clean']}, collision {m['collision']}, same side {m['same_side']}, "
                   f"stops {m['stop']}, failures' min EE error median {m['min_error_fail_median_mm']:.1f} mm")
 

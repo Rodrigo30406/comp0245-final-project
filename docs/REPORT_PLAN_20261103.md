@@ -833,3 +833,30 @@ MLP-Base (21 obs. + clock), MLP-Ego (+7 egocentric transforms), MLP-Ego-IC (+K i
 +DB and MLP-Ego-Cat for the parking variants. (3) Two more seeds (3, 4) of MLP-Ego-IC, GRU-Ego and TF-Ego queued
 (`chain_seeds34.sh`, after the nominal-only chain; configs `mlp_pytorch_successes{,_patience40,_patience20}_seed{3,4}.json`),
 evaluated on both banks as `v2_<tag>_s34_on_*_20261104`, so the report can give mean ± sd over five seeds.
+
+**5 Nov 19:20 — all seeds of the hold sets (dev2, % of 300, mean ± sd, min–max).** `scripts/obstacle/dev2_table.py` now
+reports held_10s and groups the +DB evaluations with their family. MLP = MLP-Ego-IC + lidar (K = 144), GRU = GRU-Ego + lidar.
+
+| set | policy | success | held 10 s | stable 1 cm | docked clean | collisions |
+|---|---|---|---|---|---|---|
+| recorded (ends at the reach) | MLP | 54 ± 6 (48–61) | 8 ± 4 | 45 ± 8 | 93 ± 5 | 0 |
+| hold, their DART (seeds 0–1; seed 2 evaluating) | MLP | 160 and 234 / 300 | 5 and 38 % | | | |
+| hold, our DART (D) | MLP | 73 ± 2 (70–74) | 59 ± 3 (56–61) | 71 ± 3 | 89 ± 5 | 1 ± 2 |
+| hold, our DART + base noise in the hold (B) | MLP | **80 ± 8 (71–87)** | **77 ± 9 (67–85)** | 80 ± 8 | 90 ± 5 | 1 ± 0 |
+| B, +DB 0.45 | MLP | 47 ± 22 (26–71) | 45 ± 23 | | 89 ± 5 | 0 |
+| D, +DB 0.45 | MLP | 46 ± 3 (44–50) | 43 ± 5 | | 92 ± 2 | 1 ± 2 |
+| recorded | GRU | 13 ± 3 (9–15) | 1 ± 1 | 7 ± 2 | 97 ± 1 | 8 ± 8 |
+| hold, their DART (seed 0) | GRU | 5.0 | 0.0 | 1.7 | 91.7 | 22.0 |
+| hold, our DART (D) | GRU | 16 ± 11 (9–29) | 2 ± 1 | 14 ± 10 | 99 ± 1 | 0 |
+| hold, our DART + base noise (B) | GRU | 55 ± 9 (45–60) | 38 ± 5 (32–42) | 51 ± 8 | 99 ± 1 | 0 |
+
+Reading: (i) perturbing both the arm and the base during the hold (set B) is what restores the hold, for both
+architectures: MLP 8 → 77 % held, GRU 1 → 38 %; the arm-only perturbation (D) helps the MLP (59 %) but not the GRU (2 %).
+(ii) +DB hurts every model trained with hold data (B: 80 → 47 %, D: 73 → 46 %): the stop is already in the data, and
+zeroing small wheel commands removes the final turn (the base parks misaligned). +DB stays an option only for the
+recorded-set model (54 → 57 %). (iii) The their-DART hold seeds disagree strongly (160 vs 234 successes; docked clean
+297 vs 290): the base creep is seed-dependent, which is consistent with no recovery rows around the parked pose.
+(iv) The remaining failure of B/D is the misaligned park (§ 13:45); set F (our noise + their 0.5 m base fade) tests
+whether the unfaded base noise during the orient phase causes it. Set F collected 14:49 (1998/2000 successes);
+chain 3 trains its three MLP seeds after the GRU their-DART hold seed 1 finishes; GRU hold seed 2 and the no-clock
+seeds 1–2 were dropped (low value: the clock was ruled out with seed 0, 143/300 vs 182).
