@@ -21,8 +21,8 @@ Two properties of the simulator shaped the design: the base slides sideways when
 driving (straight, heading held); and the base keeps rotating after an in-place turn, so a yaw-rate feedback is added.
 The expert reads the cylinder's position and velocity from the scenario (privileged); a learner sees them only through
 the 64-beam lidar (velocity needs two scans or memory). Mode "blind" is the plain A-to-B template (control).
-Design history (v1 single-scan repulsion, v2-v5 template + velocity-obstacle override, v6-v9 one cost): see
-docs/01_data_collection.md and the rodrigo branch.
+Design history of the expert (single-scan repulsion, then the template with a velocity-obstacle override, then one
+cost): see docs/08_dynamic_obstacles.md.
 
 Modes of use (default pixi env of RoboEnv, from the project root; the group's obstacle task code must be importable,
 see STEP9_TASK_DIR below):
@@ -70,7 +70,7 @@ from obstacle_task.sim import link_name, min_clearance, robot_obstacle_contact, 
 STREAM = 23                        # per-episode SeedSequence entry (step 9 uses 9, multi-agent 19)
 ALONG = (0.35, 0.65)               # crossing point as a fraction of the start->dock segment
 CROSS_ANGLE_DEG = (60.0, 120.0)    # angle between the cylinder's line and the start->dock segment
-OBST_SPEED = (0.10, 0.25)          # m/s (<= the base's 0.25 m/s: a faster body coming from behind cannot be escaped; v1-v4 used 0.15-0.45)
+OBST_SPEED = (0.10, 0.25)          # m/s (<= the base's 0.25 m/s: a faster body coming from behind cannot be escaped)
 MEET_JITTER_S = (-2.0, 2.0)        # s, obstacle arrival at the crossing point relative to the robot's nominal one
 ROBOT_NOMINAL_SPEED = 0.25         # m/s, base_controller max_lin_vel: nominal arrival time = distance / speed
 ALIGN_TIME_S = 1.5                 # s, allowance for the initial in-place turn in the nominal arrival time
