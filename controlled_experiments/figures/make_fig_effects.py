@@ -29,7 +29,7 @@ ROWS = [
     ("A  drop wheel speed†", 8.5, 5.5, 11.7, "adopted", False),
     ("HARD", 3.2, 0.6, 6.3, "adopted", True),
     ("CONFIRM", 7.1, 4.3, 10.1, "adopted", True),
-    ("C3  triggering copies", 60.1, 53.5, 66.9, "adopted", False),
+    ("C3  ignition copies", 60.1, 53.5, 66.9, "adopted", False),
     ("HARD", 55.9, 49.8, 62.6, "adopted", True),
     ("CONFIRM", 64.0, 57.3, 71.8, "adopted", True),
     ("R  random row (vs C3)", -60.1, -66.9, -53.7, "adopted", False),

@@ -1,6 +1,6 @@
 # Controlled experiments
 
-This folder holds the controlled experiments behind the design of the final policy (MLP-Ego-TC, trained by the code
+This folder holds the controlled experiments behind the design of the final policy (MLP-Ego-IC, trained by the code
 at the repository root). Each design question was isolated here and tested one variable at a time, in closed loop,
 on fixed evaluation sets and under rules written down and hashed before the runs (pre-registration). The answers
 were then carried into the final policy. The report cites every experiment below by its letter (Fig. 1).
@@ -8,7 +8,7 @@ were then carried into the final policy. The report cites every experiment below
 | design choice in the final policy | question tested here | experiments |
 |---|---|---|
 | no measured wheel speed in the inputs | does the base copy its own previous command? | A |
-| triggering copies of the onset row | why does the arm never start? is it that row, or just more rows? does a base/arm split fix it? | B, C3, R, S |
+| ignition copies of the onset row | why does the arm never start? is it that row, or just more rows? does a base/arm split fix it? | B, C3, R, S |
 | DART noise and more data | where does more data help? | E (learning curve, stride) |
 | model selection in closed loop only | does offline error rank the models? | offline vs closed loop (18 models) |
 | a plain memoryless MLP | would EE-error inputs, DAgger, action chunking, a PD output layer or a bigger network do better? | D, F, G, P (+PC), W |
@@ -23,7 +23,7 @@ zero, and the base never moves (experiment A; Wen et al. 2020, de Haan et al. 20
 features (`ego` -> `ego-novw`) frees the base. The arm has the mirror problem: the reach starts on a single row per
 episode (the first row after the base's done latch), every look-alike row is labelled "hold", so the regressor learns
 "hold" (experiment B: with the expert driving the base, the learned arm never left rest in 1500/1500 runs). Appending
-K jittered copies of that one row (triggering copies, C3) starts the arm; copies of a random row do not (R), and
+K jittered copies of that one row (ignition copies, C3) starts the arm; copies of a random row do not (R), and
 splitting the policy into base and arm networks does not either, unless the arm net gets the copies (S).
 
 ## Report section -> code -> read-out
@@ -37,12 +37,12 @@ Chinese, as hashed at freeze time); their English text is in `report.txt` under 
 | Closed-loop evaluation and pre-registration | protocol v1.1; DEV / HARD / CONFIRM = seeds 200 / 201 / 202 | `evaluate_policy.py`, `analyze_rollouts.py`, `EVALUATION.md` | `results/expert_v11_{dev,hard,confirm}/` |
 | Data collection | 2000 episodes, half with DART-style held noise | `collect_data.py`, `DATA_COLLECTION.md` | `report.txt` [Methodology] Formal dataset |
 | Inputs, outputs and models | features `ego` (22), `ego-novw` (20); MLP 128x128 | `bc_features.py`, `train_policy.py`, `policies/bc_policy.py` | `trained/*.offline.json` |
-| Triggering copies | K copies of the onset row with qd jitter | `train_policy.py build-trigger-cache`, `--trigger-copies` | `results/step3/C3_K_choice.json` |
+| Ignition copies | K copies of the onset row with qd jitter | `train_policy.py build-trigger-cache`, `--trigger-copies` | `results/step3/C3_K_choice.json` |
 | Offline fit vs closed loop | 18 models | `analyze_rollouts.py` | `results/step3/fig_step3_offline_vs_closed.pdf` |
 | Copycat in the base | A: `ego` vs `ego-novw` | `results/step3/run_expA.sh`, `run_confirmA.sh` | `results/step3/A_ego_vs_ego-novw_{dev,hard,confirm}.txt` |
 | Arm-onset failure | B: expert base + learned arm and vice versa | `results/step3/run_expB.sh`, `policies/hybrid.py` | `results/step3/fig_step3_split2x2.pdf`, `results/B-*` |
 | | S: separate base and arm networks | `results/step11/step11.py`, `policies/split_policy.py` | `results/step11/analysis/SK*_vs_*.txt` |
-| Triggering copies (results) | C3: `ego-novw` + 16 copies | `results/step3/run_expC3.sh`, `C3_probe.py`, `C3_mechanisms.py` | `results/step3/C3_mechanisms.txt`, `A_ego-novw_vs_ego-novw-trig_{dev,hard,confirm}.txt` |
+| Ignition copies (results) | C3: `ego-novw` + 16 copies | `results/step3/run_expC3.sh`, `C3_probe.py`, `C3_mechanisms.py` | `results/step3/C3_mechanisms.txt`, `A_ego-novw_vs_ego-novw-trig_{dev,hard,confirm}.txt` |
 | | R: copies of a random row | `results/step11/step11.py` | `results/step11/analysis/R_vs_*.txt` |
 | | E: learning curve and stride | `results/step3/run_step4E.sh`, `train_step4e.py`, `step4E_analysis.py` | `results/step3/fig_step4_{learning_curve,stride}.pdf` |
 | Cross-evaluation | X: the final policy's weights in this harness | `results/step10_cross/run_cross.sh`, `policies/rodrigo_policy.py`, `trained/rodrigo_v2/` | `results/step10_cross/cross_{dev,hard}.txt` |

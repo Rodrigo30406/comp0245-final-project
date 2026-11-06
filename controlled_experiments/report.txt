@@ -1817,7 +1817,7 @@ execution record results/step7/REPORT_PC.md)
 4) Learners (obstacle_task/train.py, policies.py): the episodes of train2 with status = reached, no collision and no navigation timeout (consistent with the A-to-B filter;
    for an episode whose navigation timed out, the "trigger frame" is a timer-forced stop, not an arrival), split 85/15 by episode (stratified by noisy × ambiguous, seed 0), stride 9 +
    a per-episode offset; validation = all 1 kHz rows of the validation episodes; the lidar is recomputed offline from the recorded base pose (bit-identical to deployment). sklearn 2x128 ReLU,
-   Adam 1e-3, alpha 1e-4, batch 200, each network is early-stopped on its own validation loss (patience 8, relative 1e-3, at most 150 epochs, best kept). Triggering copies K = 16
+   Adam 1e-3, alpha 1e-4, batch 200, each network is early-stopped on its own validation loss (patience 8, relative 1e-3, at most 150 epochs, best kept). Ignition copies K = 16
    (the same qd jitter rule as C3, about 1.3-1.5% of the training rows, consistent with the optimal proportions for C3 and for Rodrigo).
    - L0 single network: single84 (arm20 + lidar 64) -> (v, w, tau1-7), with copies.
    - L1 two networks: base network base70 (6-dim target + lidar 64, no arm state) -> (v, w); arm network arm20 -> tau1-7; the same copy rows.
@@ -1876,7 +1876,7 @@ results/step9/step9_dev2.txt/.json, step9_confirm2.txt/.json, step9_test2_final.
    collision -2.7, parked_no_arm -2.2 (not significant). L0's failure shapes: left_or_overshot 18.3%, approached_other 15.7% (L1 4.3 / 2.1%),
    a collision bump in the middle of the band (d 0-0.2) (a signature of averaging); L0 success 16.7%.
 3) H-COPY (dev2, L1-K0 vs L1): fraction of "units where the base is parked but the arm never starts": L1-K0 80.6% (per seed 77.7 / 78.1 / 76.1 / 86.0 /
-   85.3%), L1 0.0% -> the pre-registered prediction holds (L1-K0 >= 50%, L1 <= 10%): the split alone cannot make the arm start; the start comes from the triggering copies. Unconditional
+   85.3%), L1 0.0% -> the pre-registered prediction holds (L1-K0 >= 50%, L1 <= 10%): the split alone cannot make the arm start; the start comes from the ignition copies. Unconditional
    parked_no_arm: L1-K0 70.1% [65.1, 74.9], L1 0.0%; success L1 - L1-K0 +32.5 pp [+25.3, +40.1]. L1-K0 and L1 share the base network, with identical
    docking curves.
 4) Per configuration (dev2, seed mean [two-level bootstrap 95% CI]):
@@ -1970,7 +1970,7 @@ results/step10_cross/cross_dev.txt/.json, cross_hard.txt/.json; adapter policies
    - Which item of the recipe does the work has not been separated (his logs contain no ablations of fade / clock / stride / batch / training length): about 4 times as many in-band demonstrations (3221 vs about 820),
      noise added in every episode without decay, all 1 kHz rows, clock and world-pose inputs, K 144. E's learning curve (+8.7 pp per doubling) can roughly explain the share of 2 of those
      doublings; the attribution of the rest is unverified.
-   - GRU-Ego (no triggering copies) reaches 71-79% in band: the arm can be started without any label-derived device, but 15-20 pp lower than K144, and with high ENR (24%).
+   - GRU-Ego (no ignition copies) reaches 71-79% in band: the arm can be started without any label-derived device, but 15-20 pp lower than K144, and with high ENR (24%).
    - The models of both lines only work inside the height range they were trained on: this is a conclusion about data coverage, not about the models.
 6) Limitations: descriptive comparison, not a single-variable experiment; 5 seeds; small subset n (HARD band 95); the out-of-band numbers are derived from the full set and the in-band subset (exact per seed,
    but without a separate CI); his models are evaluated in our harness with our expert's docking point for the base diagnostic columns (ring distance etc.), and success and reach are unaffected;
