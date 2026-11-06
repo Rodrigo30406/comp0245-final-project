@@ -149,6 +149,8 @@ class TestPCComparisonSeedCompatibility(unittest.TestCase):
             with self.subTest(function=name):
                 self.assertEqual(old_functions[name], new_functions[name])
 
+    @unittest.skipUnless((HERE / "smoke" / "confirmed").exists(),
+                         "needs the step-7 smoke fixtures (not in git; results/step7/pc_smoke.py)")
     def test_actual_complete_comparison_accepts_independent_stream_seed(self):
         # The real descriptive comparison performs seed + 1 + k in its
         # stratification path.  A SeedSequence cannot be passed through there.

@@ -204,6 +204,7 @@ class TestGPResume(unittest.TestCase):
                  patch.object(pipeline, "HERE", here), \
                  patch.object(pipeline, "CODE_DIR", here), \
                  patch.object(pipeline, "SMOKE_ROOT", None), \
+                 patch.object(pipeline, "post_hoc", return_value=False), \
                  patch.object(pipeline, "check_freeze") as freeze, \
                  patch.object(pipeline, "status"), \
                  patch.object(pipeline, "event") as event:
@@ -213,6 +214,11 @@ class TestGPResume(unittest.TestCase):
                 pipeline.stage("G", "cache", fn)
                 fn.assert_called_once_with()
                 self.assertEqual(event.call_args.args, ("G", "cache", "skip_complete"))
+                with patch.object(pipeline, "post_hoc", return_value=True):
+                    source.write_bytes(b"SETTING = 1\n# comment translated after the freeze\n")
+                    pipeline.stage("G", "cache", fn)  # post-hoc copy: the completed stage is skipped, not rerun
+                    self.assertEqual(event.call_args.args, ("G", "cache", "skip_complete"))
+                    source.write_text("SETTING = 1\n")
                 for path in (source, shell, *shared):
                     with self.subTest(changed=path.name):
                         original_source = path.read_bytes()
@@ -224,7 +230,7 @@ class TestGPResume(unittest.TestCase):
                     with self.assertRaisesRegex(RuntimeError, "hash of a completed stage has changed"):
                         pipeline.stage("G", "cache", fn)
                 fn.assert_called_once_with()
-                self.assertEqual(freeze.call_count, 9)
+                self.assertEqual(freeze.call_count, 10)
                 self.assertEqual(marker.read_bytes(), original)
 
     def test_failed_freeze_prevents_stage_execution_and_marker(self):

@@ -83,6 +83,9 @@ def save_linear(path, k, delta, weights=None, bias=None):
                    np.ones(width), [weights], [bias], meta)
 
 
+@unittest.skipUnless((TASK_DIR / "results" / "step3" / "cache" / "manifest.json").exists()
+                     and (TASK_DIR / "results" / "step3" / "cache" / "trigger" / "manifest.json").exists(),
+                     "needs the step-3 feature caches (train_policy.py build-cache, build-trigger-cache)")
 class TestChunkRecordedLabels(unittest.TestCase):
     def test_a_1000_random_training_rows_all_segments_and_terminal_padding(self):
         """Sample actual C3 fitted rows, including trigger-frame source copies."""

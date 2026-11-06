@@ -23,9 +23,17 @@ def sha(path):
     return h.hexdigest()
 
 
+POST_HOC_NOTE = ("post-hoc re-run: the frozen plan is not in this copy (the code comments and report.txt were "
+                 "translated after the experiment), so the freeze hashes are not checked; the frozen state is "
+                 "branch feature/experimental-line-final (commit 71ea436)")
+
+
 def check_freeze():
     """Check the plan and the exact frozen report section before every stage."""
     j = json.loads((HERE / "prereg_F_hashes.json").read_text())
+    if not (TASK / "STEP5_DAGGER_PLAN_PROMPT.md").exists():
+        print("F " + POST_HOC_NOTE, flush=True)
+        return
     plan = (TASK / "STEP5_DAGGER_PLAN_PROMPT.md").read_bytes()
     amendment_path = HERE / "amendment2_baseline.json"
     expected_plan = j["plan_sha256"]
