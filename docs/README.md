@@ -11,8 +11,8 @@ Reading order, following the structure of the report. Each chapter states the cr
 | 2 | Inputs and outputs: the 21 observations, egocentric transforms, clock, lidar; the 9 independent outputs | to do |
 | 3 | Models: MLP, GRU, transformer; training recipe and model selection | to do |
 | 4 | Evaluation: offline error vs closed-loop success, metrics and banks | to do |
-| 5 | Copycat / ignition: the trigger-row copies, two-network variants | to do |
-| 6 | Base drift: the residual creep, categorical wheels, dead band, GRU, restart of the navigation | to do |
+| 5 | [Arm ignition](05_arm_ignition.md): the arm that never starts, the ignition copies, memory | done |
+| 6 | [Base drift](06_base_drift.md): park, creep and restart; dead band, categorical wheels, memory | done |
 | 7 | Static obstacle avoidance (lidar) | to do |
 | 8 | Dynamic obstacles | to do |
 
