@@ -31,6 +31,15 @@ The expert stops at exactly zero (background: its phases). MLP-Ego parks at the 
 small non-zero command and then restarts and leaves the dock. The models with the ignition copies stay; with the dead
 band (+DB) and the categorical wheels (Cat) the command is exactly zero, as the expert's.*
 
+![park, creep, restart](figures/problems/parking_creep.png)
+
+*Where the base parks and where it drives off again, in the expert's goal frame (seed 0, 205 nominal targets; origin at
+the expert's dock, arrow: required final heading, dashed: the expert's 8 cm stop box). Green: where the expert's base
+stands at 40 s. Blue: where the policy's base first stays still for 0.5 s; orange cross: where it later moves off
+(> 5 cm/s), joined by a grey line. MLP-Base parks in 186 episodes but drives off again in 140, all around the dock.
+MLP-Ego parks on the near edge of the box like the expert and stays in 155, but restarts in 50, backing away towards
+the start. MLP-Ego-IC, whose arm has started, parks and stays in 196 (8 restarts). `scripts/figures/parking_creep.py`.*
+
 ![after arrival](figures/problems/3_after_arrival.png)
 
 *All episodes (three seeds), aligned at the first entry into the stop box. Left: median base speed (symlog scale): the
