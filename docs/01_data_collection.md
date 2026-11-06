@@ -197,6 +197,9 @@ then checks that it is enough.
    arrivals on the nominal validation (195 → 199) and the offline error stopped improving at 1 600 episodes. The
    amount is therefore at the knee of the curve: enough, with little to gain from collecting more.
 
+In one sentence, for the report: *the dataset size was set by coverage (one target per cell of a 16 × 8 × 8 grid, four
+start poses per target), and a learning curve shows it sits at saturation: 34 % more episodes add 2 % more arrivals.*
+
 **The training mixture** (every reaching model of the report):
 
 | dataset (spec) | start | episodes | expert successes | used for |
