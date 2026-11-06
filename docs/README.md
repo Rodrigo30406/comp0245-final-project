@@ -14,5 +14,4 @@ Reading order, following the structure of the report. Each chapter states the cr
 | 7 | Static obstacle avoidance (lidar) | to do |
 | 8 | Dynamic obstacles | to do |
 
-All results of the report use the **v2** data definition (see 1.8 for why v1 is not used). The full research log,
-including v1, is in the `rodrigo` branch.
+The full research log (every experiment in the order it was run) is in the `rodrigo` branch.

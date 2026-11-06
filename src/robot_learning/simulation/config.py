@@ -81,6 +81,6 @@ def resolve_episode_config(requested):
 def same_expert_configuration(a, b):
     """True when two resolved episode configurations describe the same expert and physics. `goal_reference` is not
     compared: it only decides where the base goal is placed for a non-nominal start pose (identical at the nominal
-    start), so datasets with different start-pose distributions may legitimately differ in it (mixture v2)."""
+    start), so datasets with different start-pose distributions may legitimately differ in it (the training mixture)."""
     strip = lambda cfg: {k: v for k, v in cfg.items() if k != "goal_reference"}
     return strip(a) == strip(b)
