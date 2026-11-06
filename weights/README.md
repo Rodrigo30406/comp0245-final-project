@@ -54,4 +54,4 @@ to the expert's envelope (±5.27 rad/s, ±30 N·m).
 
 Evaluating these files again (`scripts/evaluate_policy.py --model LABEL=weights/<run>`) needs the datasets of their
 split (the evaluator checks that no evaluated scenario was used in training): copy them under `datasets/` or set
-`DATASETS_ROOT`; they are found by directory name. See [docs/reproduce.md](../docs/reproduce.md).
+`DATASETS_ROOT`; they are found by directory name. See [docs/usage.md](../docs/usage.md) sections 5 and 8.

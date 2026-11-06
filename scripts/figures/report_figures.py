@@ -3,7 +3,7 @@ models. Okabe-Ito palette, thin marks, one axis per panel.
 
 Usage: python3 scripts/figures/report_figures.py [EPISODE_INDEX] [OUT_DIR] [EVALUATIONS_DIR]
 EVALUATIONS_DIR (default runs/evaluation) holds the evaluation directories named as in the experiment records
-(docs/04_evaluation.md, docs/reproduce.md)."""
+(docs/04_evaluation.md, docs/usage.md section 8)."""
 import json, glob, numpy as np, matplotlib
 matplotlib.use('Agg'); import matplotlib.pyplot as plt
 import sys, os

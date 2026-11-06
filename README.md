@@ -55,8 +55,8 @@ for another start pose, `--dead-band 0.45` for the +DB variant and `--headless` 
 | obstacle tasks | `scripts/obstacle/` | [01](docs/01_data_collection.md) 1.6, 1.8; [results](docs/results.md) 2–3 |
 
 **[`docs/usage.md`](docs/usage.md) is the task-by-task guide** (collect, split, train, evaluate, tables and figures,
-obstacles: each with its command, parameters and what to choose). [`docs/reproduce.md`](docs/reproduce.md) lists, for
-every table and figure of the report, what to run.
+obstacles: each with its command, parameters and what to choose), ending with what to run for every table and
+figure of the report.
 
 ## 4. Repository layout
 
@@ -72,7 +72,7 @@ scripts/                  entry points (collect, train, evaluate, run_policy, si
 experiment_specs/         expert rules, collection specs, training recipes, evaluation protocols, data-size subsets
 weights/                  the 55 trained models of the report (portable NumPy files)
 results/evaluations/      summaries of the 85 closed-loop evaluations behind the tables
-docs/                     one chapter per part of the report, results.md, reproduce.md, figures/
+docs/                     one chapter per part of the report, results.md, usage.md, figures/
 controlled_experiments/   the group's controlled experiments and obstacle-task code (own README)
 final/robotnik_arm_task/  the lecturer's starter code, unchanged
 tests/                    unit and integration tests
