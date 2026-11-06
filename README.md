@@ -12,23 +12,59 @@ are documented in [`docs/`](docs/README.md).
 
 ## 1. Setup
 
-The project uses the course environment **RoboEnv** (simulator, robot models, `simulation_and_control`), cloned as a
-sibling folder:
+The project runs on **RoboEnv**, the course environment: the PyBullet simulator, the robot models (`models/`,
+`configs/`) and the lecturer's `simulation_and_control` library, managed with [pixi](https://pixi.sh). RoboEnv is cloned
+**next to** this repository; the code finds it there (or through `ROBOENV_ROOT`).
 
 ```
-<parent>/RoboEnv/                   # pixi.toml, models/, configs/, simulation_and_control
+<parent>/RoboEnv/                   # the environment: pixi.toml, models/, configs/, simulation_and_control/
 <parent>/comp0245-final-project/    # this repository
 ```
 
+**1. Install pixi** (once per machine):
+
 ```bash
-cd comp0245-final-project
-PY="pixi run --manifest-path ../RoboEnv/pixi.toml python"            # simulation, collection, evaluation
-PYML="pixi run --manifest-path ../RoboEnv/pixi.toml -e ml python"    # training (PyTorch, CUDA)
-ln -s ../../RoboEnv/models controlled_experiments/models             # once per clone: robot models for the obstacle code
-$PY scripts/run_tests.py                                             # 45 tests, about 1 min (torch tests run under $PYML)
+curl -fsSL https://pixi.sh/install.sh | sh          # Linux / macOS (Windows PowerShell: irm https://pixi.sh/install-pixi.ps1 | iex)
 ```
 
-RoboEnv elsewhere: `export ROBOENV_ROOT=/path/to/RoboEnv`. Datasets stored elsewhere: `export DATASETS_ROOT=/path`.
+**2. Get RoboEnv with its submodule, at the version used for the report:**
+
+```bash
+cd <parent>
+git clone --recurse-submodules https://github.com/VModugno/RoboEnv.git
+cd RoboEnv
+git checkout 7bb49439677c2ac111347b40e997025ce87bff50 && git submodule update --init --recursive   # simulation_and_control df58505
+```
+
+The datasets and evaluations of the report record these two commits and the hashes of every robot model and simulator
+file; the evaluator refuses to compare runs made with different physics or robot assets. A newer RoboEnv works for
+new experiments, but compare results only within one version.
+
+**3. Create the two environments** (pixi downloads everything; no compiler needed):
+
+```bash
+pixi install                  # default: simulation, data collection, evaluation (numpy, pybullet, pinocchio, scipy, ...)
+pixi install -e ml            # ml: the same + PyTorch, for training
+pixi run smoke-test           # prints "simulation_and_control OK"
+```
+
+Training uses a CUDA GPU when available (`--device cuda`, PyTorch wheels with CUDA on Linux); `--device cpu` works for
+small runs. Everything else (simulation, evaluation, the trained policies) runs on the CPU, without PyTorch.
+
+**4. Get this repository next to it and check the installation:**
+
+```bash
+cd <parent>
+git clone https://github.com/Rodrigo30406/comp0245-final-project.git
+cd comp0245-final-project
+PY="pixi run --manifest-path ../RoboEnv/pixi.toml python"            # simulation, collection, evaluation
+PYML="pixi run --manifest-path ../RoboEnv/pixi.toml -e ml python"    # training (PyTorch)
+ln -s ../../RoboEnv/models controlled_experiments/models             # robot models for the group's obstacle code
+$PY scripts/run_tests.py                                             # 45 tests, about 1 min (torch tests: $PYML)
+```
+
+RoboEnv in another folder: `export ROBOENV_ROOT=/path/to/RoboEnv` (and use that path in `--manifest-path`). Datasets
+stored elsewhere: `export DATASETS_ROOT=/path`. Both can also go in a local `.env` file (`KEY=value` lines; ignored by Git).
 
 ## 2. Try it in five minutes
 

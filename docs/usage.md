@@ -1,7 +1,7 @@
 # Using the code
 
 A task-by-task guide: for each thing you may want to do, the command, its parameters, what to choose, and what it
-produces. Setup (RoboEnv next to this repository) is in the main [README](../README.md). All commands run from the
+produces. Setup (installing pixi and RoboEnv, next to this repository) is in the main [README](../README.md#1-setup). All commands run from the
 project root with:
 
 ```bash
