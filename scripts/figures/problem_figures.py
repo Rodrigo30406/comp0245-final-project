@@ -9,7 +9,7 @@ along the bearing from the start to the target, so the required final heading is
                         MLP-Ego parks, creeps and restarts; the arm-igniting policies stay)
   3_after_arrival.png   all episodes, aligned at the first entry into the stop box: base speed and drift from there
   4_arm_error.png       end-effector distance to the target over time (median and IQR), its closest approach and its
-                        value at 40 s
+                        value at 40 s; 4_arm_error_time.png/.pdf: the first panel alone (report figure)
 
 Usage (any Python with numpy + matplotlib; the evaluation directories hold traces/ and jobs.json):
   python3 scripts/figures/problem_figures.py OUT_DIR LABEL=EVAL_DIR:POLICY_PREFIX [LABEL=...] [--episode=episode_000573]
@@ -196,6 +196,23 @@ def figure_arm_error(models, expert, out):
     fig.tight_layout(); fig.savefig(out, dpi=150); plt.close(fig)
 
 
+def figure_arm_error_time(models, expert, out):
+    """Single panel for the report: end-effector distance to the target over time, median and IQR, expert vs policies."""
+    fig, ax = plt.subplots(figsize=(6.4, 3.4))
+    series = [("expert", [expert], EXPERT_COLOUR)] + [(label, runs, COLOURS[i]) for i, (label, runs) in enumerate(models)]
+    for label, runs, colour in series:
+        curves = np.array([tr["distance"] for run in runs for tr in run.values()])
+        t = next(iter(runs[0].values()))["time"]
+        ax.plot(t, np.median(curves, axis=0), color=colour, lw=1.6, label=label)
+        ax.fill_between(t, np.percentile(curves, 25, axis=0), np.percentile(curves, 75, axis=0), color=colour, alpha=.12, lw=0)
+    ax.set_yscale("log"); ax.set_ylim(5e-5, 5); ax.set_xlim(0, 40)
+    ax.axhline(REACH, color="k", lw=.7, ls=":"); ax.text(39.5, REACH * 1.12, "1 cm", ha="right", va="bottom", fontsize=8)
+    ax.set_xlabel("time (s)"); ax.set_ylabel("end effector to target (m)")
+    ax.grid(alpha=.3, which="both"); ax.legend(fontsize=8, frameon=False, ncol=2, loc="upper right")
+    fig.tight_layout()
+    fig.savefig(out.with_suffix(".png"), dpi=200); fig.savefig(out.with_suffix(".pdf")); plt.close(fig)
+
+
 def main(argv):
     if len(argv) < 2:
         raise SystemExit(__doc__)
@@ -213,6 +230,7 @@ def main(argv):
     eid = figure_final_stop(models, expert, out / "2_final_stop.png", forced[0] if forced else None)
     figure_after_arrival(models, expert, out / "3_after_arrival.png")
     figure_arm_error(models, expert, out / "4_arm_error.png")
+    figure_arm_error_time(models, expert, out / "4_arm_error_time.png")
     print(f"figures in {out} (final-stop episode {eid})")
 
 
