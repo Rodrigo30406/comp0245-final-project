@@ -1,6 +1,6 @@
-"""Collect the obstacle task (step 9) with the group's collector, but keep stepping the expert for HOLD_S seconds after
+"""Collect the static-obstacle task with the group's collector, but keep stepping the expert for HOLD_S seconds after
 the first reach, so the demonstrations contain the hold (the group's `obstacle_task.collect` stops at the reach, and
-policies cloned from it leave the target 2-3 s after arriving; REPORT_PLAN §8, 5 Nov).
+policies cloned from it leave the target 2-3 s after arriving; docs/01_data_collection.md, section 1.6).
 
 Nothing in the group's code is edited: this script imports `obstacle_task.collect` and replaces its `check_stop` name
 with a wrapper. Before the first reach the wrapper is the template rule unchanged (stall, step cap). From the step the
@@ -9,35 +9,35 @@ ignored) until HOLD_S have elapsed, then returns a "Target reached ... held" mes
 episode's meta reads as before; the step cap still ends an episode. The per-episode state resets at t = 0 (every episode
 starts there; the pool runs one episode per fresh process anyway).
 
-STEP9_HOLD_WHEEL_NOISE=<rad/s> (default 0 = off) adds this project's DART base perturbation during the hold: the
+OBSTACLE_HOLD_WHEEL_NOISE=<rad/s> (default 0 = off) adds this project's DART base perturbation during the hold: the
 group's collector switches its base noise off once navigation is done, so its hold rows show a still base, whereas our
-A-to-B demonstrations perturb the base throughout (0.5 rad/s per wheel side, right and left independent, each sample
+reaching demonstrations perturb the base throughout (0.5 rad/s per wheel side, right and left independent, each sample
 held 50 ms). The wrapper replaces `collect.MotorCommands` by a subclass whose SetControlCmd adds the held noise to the
 (executed) motor command, after the collector has logged wheel_cmds_exec, so that logged field omits this noise; the
-motion of the base in base_pos shows it. SetControlCmd adds the held noise to the
-four executed wheel speeds whenever the expert's wheel command is exactly zero (its latched stop: during navigation the
+motion of the base in base_pos shows it. The noise is added to the four executed wheel speeds whenever the expert's wheel command is exactly zero (its latched stop: during navigation the
 executed wheels are never all exactly zero); the labels stay the clean zero. The noise stream is seeded from the
 episode's command-noise seed (seed * 100000 + episode, the collector's convention) plus 1.
 
-Same arguments as the group's collector. Example (same scenarios, noisy flags and noise seeds as their train2):
-  cd <step9 worktree>/final/robotnik_arm_task && pixi run python <project>/scripts/obstacle/collect_step9_hold.py \
-      --set-name train2 --workers 16 --out-dir <project>/datasets/step9/raw/train2_hold10
+Same arguments as the group's collector (set B of the report: our noise, base noise in the hold):
+  cd $OBSTACLE_TASK_DIR && OBSTACLE_HOLD_WHEEL_NOISE=0.5 pixi run python <project>/scripts/obstacle/collect_static_obstacle.py \
+      --set-name train2 --workers 12 --noise-frac 1.0 --noise-v 0.0389 --noise-w 0.1178 --noise-torque 1.0 \
+      --noise-hold 0.05 --noise-fade-base 0 --noise-fade-arm 0 --out-dir <project>/datasets/static_obstacle/raw/set_B
 """
 import os
 import sys
 
-# The group's step-9 task code (branch feature/step9-obstacle-lidar, folder final/robotnik_arm_task).
-TASK_DIR = os.environ.get("STEP9_TASK_DIR",
+# The group's obstacle task code (branch feature/step9-obstacle-lidar, folder final/robotnik_arm_task).
+TASK_DIR = os.environ.get("OBSTACLE_TASK_DIR",
                           os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "final", "robotnik_arm_task"))
 if not os.path.isdir(os.path.join(TASK_DIR, "obstacle_task")):
-    raise SystemExit(f"obstacle_task not found in {TASK_DIR}: set STEP9_TASK_DIR to the group's final/robotnik_arm_task "
+    raise SystemExit(f"obstacle_task not found in {TASK_DIR}: set OBSTACLE_TASK_DIR to the group's final/robotnik_arm_task "
                      "of branch feature/step9-obstacle-lidar")
 if TASK_DIR not in sys.path:
     sys.path.insert(0, TASK_DIR)
 
 from obstacle_task import collect  # noqa: E402
 
-HOLD_S = float(os.environ.get("STEP9_HOLD_S", "10.0"))
+HOLD_S = float(os.environ.get("OBSTACLE_HOLD_S", "10.0"))
 _template_check_stop = collect.check_stop
 _state = {"reached_at": None}
 
@@ -60,7 +60,7 @@ def check_stop_with_hold(criteria, current_time, time_step, ee_dist_error, base_
 
 collect.check_stop = check_stop_with_hold      # also applied in the spawned workers (they re-import this module)
 
-HOLD_WHEEL_NOISE = float(os.environ.get("STEP9_HOLD_WHEEL_NOISE", "0"))
+HOLD_WHEEL_NOISE = float(os.environ.get("OBSTACLE_HOLD_WHEEL_NOISE", "0"))
 HOLD_WHEEL_NOISE_STEPS = 50                    # 50 ms per sample, as this project's collector
 _noise = {"held": None}
 

@@ -1,5 +1,5 @@
-"""Convert a step-9 obstacle collection (the group's `obstacle_task/collect.py` sets, expert v2 with one cylinder and a
-64-beam lidar) into this project's dataset layout, so the egocentric / GRU / transformer trainers can learn it.
+"""Convert an obstacle collection (static: the group's `obstacle_task/collect.py` sets through collect_static_obstacle.py;
+moving: dynamic_obstacle.py; one cylinder and a 64-beam lidar) into this project's dataset layout, so the egocentric / GRU / transformer trainers can learn it.
 
 Source set folder (`final/robotnik_arm_task/data/obstacle/<set>/`): scenarios.json, config.json, index.csv and one
 ep_XXXX.npz per episode with collect_data.LOG_FIELDS arrays (t, base_pos, base_bearing, q_mes (17), qd_mes (17),
@@ -10,15 +10,16 @@ Output dataset (`datasets/<name>/`): schema.json, config.json, scenarios.json, d
 in the recorder's field layout (schema.FIELDS: observation (21) = base xyz, bearing, 7 arm q, 7 arm qd, target;
 action (11) = 4 wheels + 7 torques, the clean expert command) plus one extra per-row array `lidar` (N, 64): the planar
 scan recomputed from the logged base pose and the episode's obstacles with the exact ray-circle caster of
-`obstacle_task/lidar.py` (vendored below, checked against the original when it is importable). The episode metadata
-carries `success` = expert reached the target, no contact, navigation not timed out (the step-9 learners' keep rule),
+`obstacle_task/lidar.py` (vendored below, checked against the original when it is importable); for a moving cylinder
+the logged scan is used instead. The episode metadata
+carries `success` = expert reached the target, no contact, navigation not timed out (the expert-success rule),
 `termination` = the collector's status, and the scenario (obstacles, side, ambiguous band, lateral offset, noisy flag).
 
 Then an explicit episode-level split (training / validation by episode, expert failures kept in the split: the trainers
 drop them with keep_expert_failures=false) is written with the inventory fingerprint, like runs/splits/*.json.
 
 Usage:
-  python scripts/obstacle/convert_step9_dataset.py --source <set dir> --output datasets/<name> \
+  python scripts/obstacle/convert_obstacle_dataset.py --source <set dir> --output datasets/<name> \
       --split-out runs/splits/<name>_split.json [--validation-fraction 0.15] [--split-seed 20261104] [--workers 8]
 """
 import argparse
@@ -112,7 +113,7 @@ def convert_episode(job):
     applied = np.concatenate([arrays["wheel_cmds_exec"], arrays["torque_arm_exec"]], axis=1).astype(np.float32)
     previous = np.vstack([np.zeros((1, 11), dtype=np.float32), applied[:-1]])
     obstacles = meta["scenario"]["obstacles"]
-    if "lidar" in arrays:   # moving obstacle (scripts/obstacle/dynamic_expert.py): the logged scan is the only true one
+    if "lidar" in arrays:   # moving obstacle (scripts/obstacle/dynamic_obstacle.py): the logged scan is the only true one
         lidar = arrays["lidar"].astype(np.float32)
     else:
         lidar = scan_batch(base_pos[:, :2], bearing, obstacles).astype(np.float32)
@@ -176,7 +177,7 @@ def convert_episode(job):
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("--source", required=True, help="step-9 set folder (scenarios.json, index.csv, ep_XXXX.npz)")
+    parser.add_argument("--source", required=True, help="obstacle set folder (scenarios.json, index.csv, ep_XXXX.npz)")
     parser.add_argument("--output", required=True, help="dataset folder to create (must not exist)")
     parser.add_argument("--split-out", required=True, help="explicit split JSON to write")
     parser.add_argument("--validation-fraction", type=float, default=0.15)
@@ -210,8 +211,8 @@ def main(argv=None):
                      "scenario_id": scenario_id, "row": row})
     print(f"converting {len(jobs)} recorded episodes of {len(src_scenarios)} scenarios")
     episode_cfg = resolve_episode_config({"base_controller": {"nav_timeout": 45.0}, "max_steps": 60000})
-    config = {**episode_cfg, "name": f"step9_{src_config.get('set_name', source.name)}", "episodes": len(jobs),
-              "seed": int(src_config["seed"]), "initial_base": {"mode": "step9_scenario_sampler"},
+    config = {**episode_cfg, "name": f"obstacle_{src_config.get('set_name', source.name)}", "episodes": len(jobs),
+              "seed": int(src_config["seed"]), "initial_base": {"mode": "obstacle_scenario_sampler"},
               "action_noise": {"model": "collect_data.HeldNoise of the group repository", "noise_frac": src_config.get("noise_frac"),
                                "v_m_s": src_config.get("noise_v"), "w_rad_s": src_config.get("noise_w"),
                                "torque_nm": src_config.get("noise_torque"), "hold_s": src_config.get("noise_hold"),
@@ -219,7 +220,7 @@ def main(argv=None):
               "expert": "obstacle expert v2 (two base segments over the unchanged template controllers, nav_timeout 45 s, "
                         "step cap 60 000, contact ends the episode); the group's obstacle_task/expert.py",
               "source": {"set_dir": str(source), "set_config": src_config, "collector": "obstacle_task/collect.py (protocol v2.0)"},
-              "converted_by": "scripts/obstacle/convert_step9_dataset.py", "converted_at": utc_now()}
+              "converted_by": "scripts/obstacle/convert_obstacle_dataset.py", "converted_at": utc_now()}
     write_json(output / "config.json", config)
     write_json(output / "config.requested.json", config)
     schema = dataset_schema()
@@ -236,7 +237,7 @@ def main(argv=None):
             if k % 200 == 0 or k == len(jobs):
                 print(f"  {k}/{len(jobs)} converted", flush=True)
     successes = sum(m["success"] for m in done.values())
-    manifest = {"format": "step9 obstacle collection converted to the project dataset layout", "created_at": utc_now(),
+    manifest = {"format": "obstacle collection converted to the project dataset layout", "created_at": utc_now(),
                 "source_dir": str(source), "source_index_sha256": sha256(source / "index.csv"),
                 "source_scenarios_sha256": sha256(source / "scenarios.json"), "episodes": len(done),
                 "expert_successes": successes, "collisions": sum(m["collided"] for m in done.values()),
@@ -247,18 +248,18 @@ def main(argv=None):
     # Provenance: this project's and RoboEnv's source fingerprint (as the collectors record) plus the group repository's
     # obstacle task sources that produced the recordings (commit and file hashes), hashed by the trainers' run records.
     task_dir = source.parent.parent.parent if (source.parent.parent.parent / "obstacle_task").exists() else None
-    step9 = {"task_dir": str(task_dir) if task_dir else None}
+    task_source = {"task_dir": str(task_dir) if task_dir else None}
     if task_dir:
-        step9["git"] = git_info(task_dir)
-        step9["files"] = {str(p.relative_to(task_dir)): sha256(p) for p in sorted((task_dir / "obstacle_task").glob("*.py"))}
+        task_source["git"] = git_info(task_dir)
+        task_source["files"] = {str(p.relative_to(task_dir)): sha256(p) for p in sorted((task_dir / "obstacle_task").glob("*.py"))}
         for name in ("collect_data.py", "evaluate_policy.py", "robotnik_arm_control.py", "robotnik_arm_task.py", "bc_features.py"):
             if (task_dir / name).exists():
-                step9["files"][name] = sha256(task_dir / name)
-    write_json(output / "provenance.json", {**provenance(Path(PROJECT_ROOT), Path(get_roboenv_root())), "step9_source": step9})
+                task_source["files"][name] = sha256(task_dir / name)
+    write_json(output / "provenance.json", {**provenance(Path(PROJECT_ROOT), Path(get_roboenv_root())), "obstacle_task_source": task_source})
     records = inventory(output)
     partition = split_episodes(records, args.validation_fraction, args.split_seed)
     split = {"dataset": str(output), "extra_datasets": [], "seed": args.split_seed,
-             "unit": "whole episode; uniform random holdout by episode (step-9 scenarios are all distinct)",
+             "unit": "whole episode; uniform random holdout by episode (obstacle scenarios are all distinct)",
              "validation_fraction": args.validation_fraction, "inventory_sha256": inventory_fingerprint(records),
              "expert_failures_in_split": sum(not r["success"] for r in records),
              "note": "expert failures (contact, navigation timeout, not reached) are kept in the split; trainers drop them with keep_expert_failures=false",

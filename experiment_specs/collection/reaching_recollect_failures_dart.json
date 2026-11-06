@@ -17,7 +17,7 @@
   ]
  },
  "max_steps": 40000,
- "name": "e10b_replacement_v2_expert_failures_startgoal_dart_low_wheel0.5_torque1.0_hold50",
+ "name": "reaching_recollect_failures_dart",
  "record_every_steps": 1,
  "seed": 20261103,
  "split": "development",

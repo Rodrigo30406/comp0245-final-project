@@ -17,7 +17,7 @@
   ]
  },
  "max_steps": 40000,
- "name": "e3_multistart3x_v2_startgoal_clean",
+ "name": "reaching_random_start_dart",
  "record_every_steps": 1,
  "seed": 20261032,
  "split": "development",
@@ -15397,5 +15397,11 @@
    0.7380517733591554
   ]
  ],
+ "action_noise": {
+  "wheel_std": 0.5,
+  "torque_std": 1.0,
+  "hold_steps": 50,
+  "seed": 20261032
+ },
  "goal_reference": "start"
 }

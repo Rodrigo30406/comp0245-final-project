@@ -17,7 +17,7 @@
   ]
  },
  "max_steps": 40000,
- "name": "e1_randompose_v2_startgoal_clean",
+ "name": "reaching_validation_random_start_clean",
  "record_every_steps": 1,
  "seed": 20261031,
  "split": "development",

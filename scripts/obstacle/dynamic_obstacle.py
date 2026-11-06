@@ -1,7 +1,7 @@
 """Moving-obstacle task: a one-cost (DWA-style) avoidance expert, its training collection and the closed-loop test.
 
 Task (`sample_dynamic_scenario`): start pose and target as the static-obstacle task (target 3.5-5 m away), base goal
-("dock") from the A-to-B expert's standoff rule, no static obstacle. One cylinder (r 0.25-0.35 m, h 1.5 m) moves on a
+("dock") from the reaching expert's standoff rule, no static obstacle. One cylinder (r 0.25-0.35 m, h 1.5 m) moves on a
 straight line at a constant speed (OBST_SPEED, 0.10-0.25 m/s, never faster than the base) across the start->dock
 segment, at a fraction ALONG of it and an angle CROSS_ANGLE_DEG; it is timed to reach the crossing point when the
 undisturbed robot would (+- MEET_JITTER_S), so the two really meet. The crossing point is >= 1 m from the start and the
@@ -13,24 +13,24 @@ up to DWA_HORIZON s with the cylinder moving at its current velocity, and the ch
 approach to the dock, distance at the end, heading error, clearance between a 3-circle footprint and the cylinder
 (over the rollout and at its end), a cost-to-go check (a detour that leaves the way back blocked is no better than
 waiting), idle time, turning while driving, command changes, reversing. The template's own align-then-drive law is one
-of the candidates, so far from the cylinder the data equal the A-to-B expert's; the others are wait, slower, reverse,
+of the candidates, so far from the cylinder the data equal the reaching expert's; the others are wait, slower, reverse,
 and in-place turn to a detour heading then straight. The template's state machine still takes over at the dock for the
 final orientation and keeps the timeout; the arm is the unchanged arm_controller once navigation is done.
 Two properties of the simulator shaped the design: the base slides sideways when it turns while driving (lateral speed
 ~ v*w, hardly damped: 0.36 m/s for 20 s with the wheels at zero), so every candidate separates turning (in place) from
 driving (straight, heading held); and the base keeps rotating after an in-place turn, so a yaw-rate feedback is added.
 The expert reads the cylinder's position and velocity from the scenario (privileged); a learner sees them only through
-the 64-beam lidar (velocity needs two scans or memory). Mode "blind" is the plain A-to-B template (control).
+the 64-beam lidar (velocity needs two scans or memory). Mode "blind" is the plain reaching template (control).
 Design history of the expert (single-scan repulsion, then the template with a velocity-obstacle override, then one
 cost): see docs/08_dynamic_obstacles.md.
 
 Modes of use (default pixi env of RoboEnv, from the project root; the group's obstacle task code must be importable,
-see STEP9_TASK_DIR below):
-  expert, development scenes with GIFs:  python scripts/obstacle/dynamic_expert.py --seed 1 --episodes 0-11 --gif --out-dir DIR
-  training collection (DART noise):      python scripts/obstacle/dynamic_expert.py --seed 3 --episodes 0-1599 --dart --workers 28 --out-dir DIR
-  closed-loop test of a learned policy:  python scripts/obstacle/dynamic_expert.py --seed 4 --episodes 0-99 --policy RUN_DIR --workers 28 --out-dir DIR
+see OBSTACLE_TASK_DIR below):
+  expert, development scenes with GIFs:  python scripts/obstacle/dynamic_obstacle.py --seed 1 --episodes 0-11 --gif --out-dir DIR
+  training collection (DART noise):      python scripts/obstacle/dynamic_obstacle.py --seed 3 --episodes 0-1599 --dart --workers 28 --out-dir DIR
+  closed-loop test of a learned policy:  python scripts/obstacle/dynamic_obstacle.py --seed 4 --episodes 0-99 --policy RUN_DIR --workers 28 --out-dir DIR
 Each run writes one ep_XXXX.npz per episode (the group's LOG_FIELDS + lidar (T, 64), obstacle_xy (T, 2)), index.csv,
-scenarios.json and config.json: the set layout scripts/obstacle/convert_step9_dataset.py turns into a training dataset.
+scenarios.json and config.json: the set layout scripts/obstacle/convert_obstacle_dataset.py turns into a training dataset.
 """
 import argparse
 import csv
@@ -42,12 +42,12 @@ import time
 
 import numpy as np
 
-# The group's step-9 task code (obstacle_task package, collect_data.py, evaluate_policy.py; branch
+# The group's obstacle task code (obstacle_task package, collect_data.py, evaluate_policy.py; branch
 # feature/step9-obstacle-lidar, folder final/robotnik_arm_task). Default: this repository's copy of that folder.
-TASK_DIR = os.environ.get("STEP9_TASK_DIR",
+TASK_DIR = os.environ.get("OBSTACLE_TASK_DIR",
                           os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "final", "robotnik_arm_task"))
 if not os.path.isdir(os.path.join(TASK_DIR, "obstacle_task")):
-    raise SystemExit(f"obstacle_task not found in {TASK_DIR}: set STEP9_TASK_DIR to the group's final/robotnik_arm_task "
+    raise SystemExit(f"obstacle_task not found in {TASK_DIR}: set OBSTACLE_TASK_DIR to the group's final/robotnik_arm_task "
                      "of branch feature/step9-obstacle-lidar")
 if TASK_DIR not in sys.path:
     sys.path.insert(0, TASK_DIR)
@@ -67,7 +67,7 @@ from obstacle_task.expert import NAV_TIMEOUT  # noqa: E402
 from obstacle_task.scenario import INIT_RADIUS, INIT_YAW_DEG, OBST_HEIGHT, OBST_RADIUS, TARGET_R, TARGET_THETA_DEG, TARGET_Z  # noqa: E402
 from obstacle_task.sim import link_name, min_clearance, robot_obstacle_contact, spawn_obstacles  # noqa: E402
 
-STREAM = 23                        # per-episode SeedSequence entry (step 9 uses 9, multi-agent 19)
+STREAM = 23                        # per-episode SeedSequence entry (static-obstacle task: 9)
 ALONG = (0.35, 0.65)               # crossing point as a fraction of the start->dock segment
 CROSS_ANGLE_DEG = (60.0, 120.0)    # angle between the cylinder's line and the start->dock segment
 OBST_SPEED = (0.10, 0.25)          # m/s (<= the base's 0.25 m/s: a faster body coming from behind cannot be escaped)
@@ -77,13 +77,13 @@ ALIGN_TIME_S = 1.5                 # s, allowance for the initial in-place turn 
 END_CLEAR = 1.0                    # m, the cylinder's path (surface) to the start and to the dock
 OBST_RUN_IN = 2.5                  # m, the cylinder starts this far from the crossing point at least
 STEP_CAP = 75000                   # 75 s at 1 kHz
-DYN_NAV_TIMEOUT = 60.0             # s, navigation timeout (step 9: 45 s; the avoidance and the recovery take longer)
+DYN_NAV_TIMEOUT = 60.0             # s, navigation timeout (static obstacle: 45 s; the avoidance and the recovery take longer)
 HOLD_S = 10.0                      # hold tail after the first reach (as our hold sets), 0 = stop at the reach
 
-# --dart (6 Nov 2026): the step-9 set F noise for a training collection (train2_hold10_ourdart_basenoise_fade config):
+# --dart: the static-obstacle set F noise for a training collection:
 # executed command = expert label + collect_data.HeldNoise, labels stay clean. Base (v, w) noise during navigation,
 # faded linearly to zero within DART_FADE_BASE of the dock; once navigation is done, DART_HOLD_WHEEL per wheel side
-# whenever the expert's wheel command is exactly zero (the hold, as collect_step9_hold.py); arm torque noise throughout.
+# whenever the expert's wheel command is exactly zero (the hold, as collect_static_obstacle.py); arm torque noise throughout.
 DART_V, DART_W, DART_TORQUE = 0.0389, 0.1178, 1.0   # m/s, rad/s, N*m
 DART_HOLD_S = 0.05                 # s per sample
 DART_FADE_BASE = 0.5               # m
@@ -125,7 +125,7 @@ DWA_YAW_DAMP = 0.8                 # yaw-rate feedback on the executed command: 
 
 
 def sample_dynamic_scenario(seed, episode):
-    """One scenario: start, target, dock (A-to-B expert) and the cylinder's straight-line motion."""
+    """One scenario: start, target, dock (reaching expert) and the cylinder's straight-line motion."""
     rng = np.random.default_rng([int(seed), int(episode), STREAM])
     for attempt in range(1, 10001):
         xy, yaw = legacy.sample_init_poses(1, rng, INIT_RADIUS, INIT_YAW_DEG)
@@ -200,7 +200,7 @@ def dwa_rollouts(xy, yaw, dock_xy, err, dist, params, steps):
     candidates: wait, straight ahead at 0.25 / 0.18 / 0.10 m/s,
     reverse straight at 0.12 m/s, and detours (in-place turn at 1 rad/s to a heading +-0.5 / +-1.0 / +-1.5 / +-2.0
     rad off the dock heading, then straight at 0.25 m/s); in-place turns at DWA_TURN_RATE. Far from the cylinder the closed-loop candidate wins, so
-    the data equal the A-to-B expert's there (up to the gentler steering while driving).
+    the data equal the reaching expert's there (up to the gentler steering while driving).
     """
     out = []
     closed = [("drive", 1.0, 0.0), ("drive0.7", 0.7, 0.0), ("drive0.4", 0.4, 0.0)]
@@ -324,7 +324,7 @@ def obstacle_at(scenario, t):
 
 class DynamicExpert:
     """mode "dwa": the one-cost avoidance replaces the template's align / drive commands until the base is at the dock;
-    mode "blind": the plain A-to-B template (control). The arm_controller reaches once navigation is done."""
+    mode "blind": the plain reaching template (control). The arm_controller reaches once navigation is done."""
 
     def __init__(self, mode="dwa"):
         if mode not in ("dwa", "blind"):
@@ -436,7 +436,7 @@ def _load_policy(arg):
 
 
 def converter_fields(scenario):
-    """Fields that scripts/obstacle/convert_step9_dataset.py reads from a step-9 scenario; the moving cylinder is given
+    """Fields that scripts/obstacle/convert_obstacle_dataset.py reads from a static-obstacle scenario; the moving cylinder is given
     at its t = 0 position (the converter uses the logged lidar of a moving-obstacle recording, not this list)."""
     return {"obstacles": [obstacle_at(scenario, 0.0)], "side": 0, "ambiguous": False, "lateral_offset": 0.0,
             "waypoint_xy": None, "moving_obstacle": True}
@@ -546,7 +546,7 @@ def run_episode(scenario, out_path, mode="dwa", gui=False, hold_s=HOLD_S, verbos
                 if msg and msg.startswith("Target reached") and reach_time is None:
                     reach_time = t
                 if reach_time is not None and hold_s > 0:
-                    # Hold (6 Nov, as collect_step9_hold.py): after the first reach the template's stall rule, which
+                    # Hold (6 Nov, as collect_static_obstacle.py): after the first reach the template's stall rule, which
                     # fires ~3 s into a hold, is ignored until hold_s have elapsed; the step cap still ends the episode.
                     if t - reach_time >= hold_s:
                         stop_message = f"Target reached at t={reach_time:.3f}s, held {hold_s:.0f} s (EE error {ee_err:.4f} m)"
@@ -665,9 +665,9 @@ def main(argv=None):
     ap.add_argument("--gui", action="store_true")
     ap.add_argument("--gif", action="store_true", help="top-view animation per episode")
     ap.add_argument("--mode", default="dwa", choices=["dwa", "blind"],
-                    help="dwa: the one-cost expert (default); blind: the plain A-to-B template (control)")
+                    help="dwa: the one-cost expert (default); blind: the plain reaching template (control)")
     ap.add_argument("--hold-s", type=float, default=HOLD_S)
-    ap.add_argument("--dart", action="store_true", help="step-9 set F noise on the executed command (training collection)")
+    ap.add_argument("--dart", action="store_true", help="set F noise on the executed command (training collection)")
     ap.add_argument("--policy", default=None, help="run a learned policy (training run dir[,db=..]); the expert only monitors")
     ap.add_argument("--workers", type=int, default=1)
     args = ap.parse_args(argv)
@@ -684,7 +684,7 @@ def main(argv=None):
                    "noise_torque": DART_TORQUE if args.dart else 0.0, "noise_hold": DART_HOLD_S,
                    "noise_fade_base": DART_FADE_BASE, "noise_fade_arm": 0.0,
                    "hold_wheel_noise": DART_HOLD_WHEEL if args.dart else 0.0, "max_steps": STEP_CAP,
-                   "collector": "scripts/obstacle/dynamic_expert.py"}, f, indent=1)
+                   "collector": "scripts/obstacle/dynamic_obstacle.py"}, f, indent=1)
     jobs = [(sc, os.path.join(args.out_dir, f"ep_{sc['episode']:04d}.npz")) for sc in scenarios]
     kwargs = {"mode": args.mode, "gui": args.gui, "hold_s": args.hold_s, "dart": args.dart, "policy": args.policy}
     if args.workers > 1:

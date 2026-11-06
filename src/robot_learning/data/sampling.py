@@ -1,8 +1,8 @@
-"""Stratified target plan: one jittered target per cell of a grid over the target box, and a geometry-only holdout.
+"""Target grid: one jittered target per cell of a grid over the target box, and a geometry-only holdout.
 
 The holdout is chosen from cell geometry alone, before any target is jittered or any episode is simulated, so no
-outcome can leak into the choice. Used once to freeze experiment_specs/collection/stratified1024_plan.json
-(grid 16x8x8 over x, y in [-2, 2] m and z in [0.3, 0.8] m, seed 20261026); scripts/data/make_target_plan.py
+outcome can leak into the choice. Used once to freeze experiment_specs/collection/target_grid_16x8x8.json
+(grid 16x8x8 over x, y in [-2, 2] m and z in [0.3, 0.8] m, seed 20261026); scripts/data/make_target_grid.py
 regenerates and checks it.
 """
 import itertools
