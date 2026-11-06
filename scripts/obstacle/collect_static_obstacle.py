@@ -26,12 +26,13 @@ Same arguments as the group's collector (set B of the report: our noise, base no
 import os
 import sys
 
-# The group's obstacle task code (branch feature/step9-obstacle-lidar, folder final/robotnik_arm_task).
+# The group's obstacle task code: controlled_experiments/ of this repository (obstacle_task package, collect_data.py,
+# evaluate_policy.py; identical to branch feature/step9-obstacle-lidar, folder final/robotnik_arm_task).
 TASK_DIR = os.environ.get("OBSTACLE_TASK_DIR",
-                          os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "final", "robotnik_arm_task"))
+                          os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "controlled_experiments"))
 if not os.path.isdir(os.path.join(TASK_DIR, "obstacle_task")):
-    raise SystemExit(f"obstacle_task not found in {TASK_DIR}: set OBSTACLE_TASK_DIR to the group's final/robotnik_arm_task "
-                     "of branch feature/step9-obstacle-lidar")
+    raise SystemExit(f"obstacle_task not found in {TASK_DIR}: set OBSTACLE_TASK_DIR to a folder holding the group's "
+                     "obstacle_task package, collect_data.py and evaluate_policy.py")
 if TASK_DIR not in sys.path:
     sys.path.insert(0, TASK_DIR)
 

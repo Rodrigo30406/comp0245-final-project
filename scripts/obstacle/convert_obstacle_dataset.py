@@ -1,7 +1,7 @@
 """Convert an obstacle collection (static: the group's `obstacle_task/collect.py` sets through collect_static_obstacle.py;
 moving: dynamic_obstacle.py; one cylinder and a 64-beam lidar) into this project's dataset layout, so the egocentric / GRU / transformer trainers can learn it.
 
-Source set folder (`final/robotnik_arm_task/data/obstacle/<set>/`): scenarios.json, config.json, index.csv and one
+Source set folder (`controlled_experiments/data/obstacle/<set>/`, or a dynamic_obstacle.py output folder): scenarios.json, config.json, index.csv and one
 ep_XXXX.npz per episode with collect_data.LOG_FIELDS arrays (t, base_pos, base_bearing, q_mes (17), qd_mes (17),
 wheel_cmds (4), torque_arm (7), their executed twins, q_des_arm, qd_des_arm, phase, nav_done, ee_pos, segment),
 target and a JSON meta (status, collided, nav_timed_out, the full scenario with obstacles and side, noise settings).

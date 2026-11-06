@@ -429,7 +429,8 @@ $PY scripts/data/make_bank_split.py BANK_DIR OUT.json [HOLDBACK=5]            # 
 
 ### Static obstacle: `scripts/obstacle/collect_static_obstacle.py`
 
-Runs the group's collector (`python -m obstacle_task.collect`, from the group's `final/robotnik_arm_task`) with the hold
+Runs the group's collector (`python -m obstacle_task.collect`, from `controlled_experiments/`, the group's obstacle task
+code, identical to the version used for the report) with the hold
 added; it takes all of the group's options, the useful ones being:
 
 | option | meaning |
@@ -443,7 +444,8 @@ added; it takes all of the group's options, the useful ones being:
 
 Environment variables of the wrapper: `OBSTACLE_HOLD_S` (hold after the first reach, default 10 s, 0 = stop at the reach),
 `OBSTACLE_HOLD_WHEEL_NOISE` (rad/s per wheel side during the hold, default 0 = off; 0.5 for set B),
-`OBSTACLE_TASK_DIR` (the group's task folder). Then `convert_obstacle_dataset.py --source RAW --output DS --split-out SPLIT
+`OBSTACLE_TASK_DIR` (the group's task folder, default `controlled_experiments/`; it needs the robot models once per clone:
+`ln -s <RoboEnv>/models controlled_experiments/models`). Then `convert_obstacle_dataset.py --source RAW --output DS --split-out SPLIT
 [--validation-fraction 0.15] [--split-seed 20261104] [--workers 8]`.
 
 ### Dynamic obstacle: `scripts/obstacle/dynamic_obstacle.py`
@@ -488,8 +490,9 @@ $PY scripts/data/make_train_val_split.py runs/splits/reaching_train_val.json NOM
 $PY scripts/data/make_train_val_split.py runs/splits/reaching_validation_random_start.json VALIDATION_RANDOM_START_DIR
 $PY scripts/data/make_bank_split.py OOD_DIR runs/splits/bank_<name>.json
 
-# 3. static obstacle, set B (needs the group's final/robotnik_arm_task with obstacle_task: OBSTACLE_TASK_DIR)
-cd $OBSTACLE_TASK_DIR && OBSTACLE_HOLD_WHEEL_NOISE=0.5 $PY <project>/scripts/obstacle/collect_static_obstacle.py \
+# 3. static obstacle, set B (the group's obstacle code is in controlled_experiments/; link the robot models once)
+ln -s ../../RoboEnv/models controlled_experiments/models
+cd controlled_experiments && OBSTACLE_HOLD_WHEEL_NOISE=0.5 $PY <project>/scripts/obstacle/collect_static_obstacle.py \
     --set-name train2 --workers 12 --noise-frac 1.0 --noise-v 0.0389 --noise-w 0.1178 --noise-torque 1.0 \
     --noise-hold 0.05 --noise-fade-base 0 --noise-fade-arm 0 --out-dir <project>/datasets/static_obstacle/raw/set_B
 cd <project> && pixi run --manifest-path ../RoboEnv/pixi.toml -e ml python scripts/obstacle/convert_obstacle_dataset.py \
