@@ -1962,8 +1962,8 @@
   "main_model": "C3"
  },
  "step6_DEV_verdict_unchanged": "KEEP C3",
- "design_context": "\u672c\u5b9e\u9a8c\u5728\u770b\u8fc7 P \u7684 DEV \u540e\u8bbe\u8ba1\uff0c\u5047\u8bbe\u6765\u81ea DEV\uff1bDEV \u4e0e\u672c\u5b9e\u9a8c\u4e00\u8d77\u5448\u73b0\u3002",
- "limitations": "\u5408\u5e76\u540e 10 \u5bf9 10 \u4e2a seed\uff1bHARD \u5206\u5e03\u4e0e DEV \u4e0d\u540c\uff1b\u5408\u5e76\u5e73\u5747\u4e24\u96c6\u6548\u5e94\uff1b\u540c\u4e00\u6539\u52a8\u7b2c\u4e8c\u6b21\u68c0\u9a8c\u3002",
+ "design_context": "This experiment was designed after seeing P's DEV results; the hypothesis comes from DEV; DEV is presented together with this experiment.",
+ "limitations": "10 vs 10 seeds after pooling; the HARD distribution differs from DEV; the effect is the pooled average over the two sets; second test of the same change.",
  "descriptive_predictions": {
   "descriptive_only": true,
   "low_z_success_increase": true,
@@ -1971,6 +1971,6 @@
   "reach_2cm_increase": true,
   "low_z_circling_decrease": true,
   "low_z_reach_2cm_increase": true,
-  "extended_not_reached": "\u6ca1\u6709\u9884\u6ce8\u518c\u786e\u5b9a\u65b9\u5411"
+  "extended_not_reached": "no direction was pre-registered"
  }
 }
