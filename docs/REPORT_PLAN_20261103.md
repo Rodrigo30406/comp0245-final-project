@@ -1069,3 +1069,13 @@ after an in-place turn), so a parked base can leave the dock with no command at 
   The GRU avoids some of the conflicts the blind template hits (contacts in 25 of the 54 blind-contact scenes) but
   also hits 8 scenes the blind template passes; its contacts come at 10.9 s median (the meeting) and on the wheels.
   Without a contact it never finishes: the base ends 0.87 m from the dock (median; p10–p90 0.22–3.0 m) after 75 s.
+- **06:01, MLP result: better than the GRU, against the prediction.** MLP-Ego-IC + lidar seed 0 (best epoch 17,
+  validation NRMSE 0.239) on the same 100 seed-4 scenes: **success 34**, contacts 26, not reached 35, reached then
+  left 5; closest EE approach median 5.0 cm. It succeeds in 16 of the 54 scenes where the blind template collides
+  (the avoidance is real, not luck of the timing) and 18 of the 46 it passes; contacts in 22 of the 54 blind-contact
+  scenes and in 4 of the 46 others, at 12.0 s median (the meeting), on the wheels. Without a contact the base often
+  does not finish: base-to-dock distance at the end median 1.43 m (p10 0.10 m). Reading: one scan plus the clock and
+  the goal geometry is enough to imitate part of the avoidance, so the single-scan argument of the prediction was too
+  strong; the GRU's 0 / 100 goes with its poor fit (0.200) and its training recipe (whole episodes, 8 per update), the
+  same approach defect the recurrent models had on A-to-B (§6v). Both clones lose the recovery after the detour
+  (the base does not return to the dock), the phase the expert itself needed a one-cost planner to solve.
