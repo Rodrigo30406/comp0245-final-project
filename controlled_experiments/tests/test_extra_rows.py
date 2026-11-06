@@ -12,6 +12,13 @@ import train_policy as tp
 import test_training as tt
 
 
+NEEDS_DATA = unittest.skipUnless(  # recorded demonstrations are not in git
+    all(os.path.exists(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data", d, "index.csv"))
+        for d in ("train", "pilot")),
+    "needs data/train and data/pilot (collect_data.py, see DATA_COLLECTION.md)")
+
+
+@NEEDS_DATA
 class TestExtraRows(unittest.TestCase):
     @classmethod
     def setUpClass(cls):

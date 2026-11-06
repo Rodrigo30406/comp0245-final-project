@@ -14,8 +14,12 @@ for m in $MODELS; do until [ -f "$m" ]; do sleep 20; done; done
 until ! pgrep -f "train_policy.py train" > /dev/null; do sleep 20; done
 echo "== $(date +%T) models ready"
 $PY - <<'EOF'
+import os
 import numpy as np
 for s in (0, 1, 2):
+    if not os.path.exists(f"trained/pilot_models/ego_s{s}.npz"):  # pilot models are not in git
+        print(f"ego seed {s}: pilot model not in this copy, bit-identity check skipped")
+        continue
     a, b = np.load(f"trained/ego_s{s}.npz"), np.load(f"trained/pilot_models/ego_s{s}.npz")
     keys = [k for k in a.files if k[0] in "Wb" or k.startswith(("x_", "y_"))]
     same = all(np.array_equal(a[k], b[k]) for k in keys)

@@ -97,6 +97,12 @@ def train_episode_paths(n_clean=3, n_noisy=3, n_far=2):
     return [os.path.join(tp.TRAIN_DIR, info[str(e)]["file"]) for e in clean + noisy + far]
 
 
+NEEDS_DATA = unittest.skipUnless(  # recorded demonstrations are not in git
+    all(os.path.exists(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data", d, "index.csv"))
+        for d in ("train", "pilot")),
+    "needs data/train and data/pilot (collect_data.py, see DATA_COLLECTION.md)")
+
+
 class TestClipAndFeatures(unittest.TestCase):
     def test_clip(self):
         rng = np.random.default_rng(0)
@@ -255,6 +261,7 @@ class TestOldModelsUnchanged(unittest.TestCase):
     """The deployed outputs of an existing model are bit-identical with the committed (HEAD) bc_features.py and
     bc_policy.py: the C3 control runs stay valid for the current code."""
 
+    @NEEDS_DATA
     def test_bitwise_against_head(self):
         model = os.path.join(TASK_DIR, "trained", "ego-novw-trig_s0.npz")
         if not os.path.exists(model):
@@ -300,6 +307,7 @@ class TestOldModelsUnchanged(unittest.TestCase):
             shutil.rmtree(tmp)
 
 
+@NEEDS_DATA
 class TestEeCacheAndTraining(unittest.TestCase):
     """The ee side cache of the small test cache (3 training, 1 validation episode) and ego-novw-trig-ee training."""
 

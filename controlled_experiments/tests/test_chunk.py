@@ -83,6 +83,12 @@ def save_linear(path, k, delta, weights=None, bias=None):
                    np.ones(width), [weights], [bias], meta)
 
 
+NEEDS_DATA = unittest.skipUnless(  # recorded demonstrations are not in git
+    all(os.path.exists(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data", d, "index.csv"))
+        for d in ("train", "pilot")),
+    "needs data/train and data/pilot (collect_data.py, see DATA_COLLECTION.md)")
+
+
 @unittest.skipUnless((TASK_DIR / "results" / "step3" / "cache" / "manifest.json").exists()
                      and (TASK_DIR / "results" / "step3" / "cache" / "trigger" / "manifest.json").exists(),
                      "needs the step-3 feature caches (train_policy.py build-cache, build-trigger-cache)")
@@ -143,6 +149,7 @@ class TestChunkRecordedLabels(unittest.TestCase):
             "forced_terminal_checks": extra_terminal_checks}
 
 
+@NEEDS_DATA
 class TestChunkTrainingMatrices(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -183,6 +190,7 @@ class TestChunkTrainingMatrices(unittest.TestCase):
                                            "trigger_copies": 16, "sha256": hashes}
 
 
+@NEEDS_DATA
 class TestChunkTemporalEnsembling(unittest.TestCase):
     @classmethod
     def setUpClass(cls):

@@ -116,6 +116,12 @@ def make_test_models(force=False):
     return TEST_MODELS
 
 
+NEEDS_DATA = unittest.skipUnless(  # recorded demonstrations are not in git
+    all(os.path.exists(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data", d, "index.csv"))
+        for d in ("train", "pilot")),
+    "needs data/train and data/pilot (collect_data.py, see DATA_COLLECTION.md)")
+
+
 class TestWheelRoundTrip(unittest.TestCase):
     """(b) (v, w) -> wheel speeds -> (v, w)."""
 
@@ -221,6 +227,7 @@ class TestSignConventions(unittest.TestCase):
         self.assertGreater(step @ heading, 0.05)
         self.assertLess(abs(step @ np.array([-heading[1], heading[0]])), 0.3 * (step @ heading))
 
+    @NEEDS_DATA
     def test_d2_beta_sign(self):
         """beta > 0 (target to the left) -> the expert's first non-zero w label is positive (turn left)."""
         from analyze_dataset import mode_of
@@ -247,6 +254,7 @@ class TestSignConventions(unittest.TestCase):
             checked += 1
         self.assertGreaterEqual(checked, 15, "too few qualifying pilot episodes for a meaningful check")
 
+    @NEEDS_DATA
     def test_d3_measured_speeds_follow_labels(self):
         """The measured (v_mes, w_mes) features follow the commanded (v, w) with the same sign and scale (wheel
         order of qd_mes = that of the commands), pooled over 5 clean pilot episodes, one step later."""
@@ -265,6 +273,7 @@ class TestSignConventions(unittest.TestCase):
             self.assertTrue(0.8 < slope < 1.2, f"{name}: measured / commanded slope {slope:.3f}")
 
 
+@NEEDS_DATA
 class TestTrainDeployConsistency(unittest.TestCase):
     """(e) BCPolicy.act(obs) == build_features(measured_signals(arrays)) -> forward -> wheel_speeds."""
 
