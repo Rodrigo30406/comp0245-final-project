@@ -105,7 +105,10 @@ stages skip every run folder that has a `summary.txt` (all committed runs do), a
 read-outs, and training stages refuse to overwrite a committed model. To re-run something from scratch, move its
 models or run folders away and regenerate the data sets it uses (`DATA_COLLECTION.md`, `EVALUATION.md`,
 `results/step9/run_step9_sets.sh`) and the feature caches (`train_policy.py build-cache`, `build-trigger-cache`).
-Experiment B is run as `MODEL=ego-novw bash results/step3/run_expB.sh` (the arm adopted in experiment A).
+Experiment B is run as `MODEL=ego-novw bash results/step3/run_expB.sh` (the arm adopted in experiment A); PC as
+`bash results/step7/run_expPC.sh all --allow-confirm`. Re-running every chain in a fresh clone reproduces the
+committed read-outs exactly, except figure metadata, recorded absolute paths and timestamps, and the few
+descriptive numbers computed from per-episode logs or 1 kHz trajectories, which are not in git.
 
 During the experiments, the chains of F, G/P and PC refused to start if the frozen plan, the notebook section or the
 code had changed since the freeze (sha256 gates). This folder is a cleaned copy made after the experiments: comments

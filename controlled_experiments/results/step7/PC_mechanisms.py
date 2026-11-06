@@ -132,6 +132,10 @@ def combine_statistics(hard, confirm, n_hard=200, n_confirm=300, level=.95):
             "weights": {"hard": weights[0], "confirm": weights[1]}}
 
 
+# English glosses of the frozen verdict strings of conditions() (kept verbatim there, see test_step7)
+VERDICT_EN = {"P 在留出集上得到确认": " (P confirmed on the held-out sets)", "没有得到确认": " (not confirmed)"}
+
+
 def conditions(hard, confirm, combined):
     """Only STEP7 §3's three conditions and mirror rule determine the verdict."""
     success = combined["success"]
@@ -335,7 +339,8 @@ def analyze(task_root=TASK, out_dir=None, allow_confirm=False, smoke=False):
               f"(2) HARD Δsuccess {100 * hard['success']['diff']:+.6f} pp, CONFIRM "
               f"{100 * confirm['success']['diff']:+.6f} pp, both > 0: {decision['condition_2']}",
               f"(3) pooled crash + left_or_overshot Δ {100 * risk['diff']:+.6f} pp ≤ +3 pp: {decision['condition_3']}",
-              "Verdict: " + decision["verdict"] + (", KEEP C3" if decision["keep_c3"] else ""),
+              "Verdict: " + decision["verdict"] + VERDICT_EN.get(decision["verdict"], "")
+              + (", KEEP C3" if decision["keep_c3"] else ""),
               f"Mirror: bootstrap upper bound {100 * success['hi']:+.6f} pp, Welch upper bound "
               f"{100 * success['welch_hi']:+.6f} pp, both < 0: {decision['mirror_worse']}",
               *([decision["mirror_verdict"]] if decision["mirror_verdict"] else []),
