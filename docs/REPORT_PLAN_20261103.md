@@ -995,3 +995,23 @@ seed 2 the worst of the hold family (141/300, 122 "stalled" stops: the base stop
 highest ceiling and the highest variance; B (80 ± 8, held 77 ± 9) remains the stable choice for the report's table,
 with F reported alongside as mean ± sd and range. No run of F ends with the fade hypothesis refuted: the
 misaligned-park failures stay low in all three seeds (dev2 stop reasons: timeout 32/9/35, stalled 6/0/122).
+
+**6 Nov 04:30 — `chain_story_s34.sh`: five seeds for the storyline (all 12 trainings complete; `mlp28clean_trig144`
+seeds 3–4 evaluating).** Stable arrivals of 205, seeds 0 / 1 / 2 / 3 / 4 at 1 cm, mean ± sd (min–max) from `seed_stats.py`
+over the seed 0–2 and `_s34_ … _20261105` directories:
+
+| policy | nominal bank, 1 cm per seed | nominal 1 cm | nominal 5 cm | random-start 1 cm | random-start 5 cm |
+|---|---|---|---|---|---|
+| MLP-Base (`mlp22raw_control`) | 8 / 0 / 0 / 0 / 0 | 1.6 ± 3.6 (0–8) | 27.4 ± 22.2 (16–67) | 0.8 ± 1.8 (0–4) | 23.2 ± 19.0 (12–57) |
+| MLP-Ego (`mlp28_control`) | 1 / 0 / 2 / 3 / 4 | 2.0 ± 1.6 (0–4) | 39.0 ± 4.6 (31–42) | 1.4 ± 1.1 (0–3) | 38.2 ± 4.2 (31–41) |
+| MLP-Ego-IC +DB | 198 / 195 / 190 / 189 / 174 | 189.2 ± 9.3 (174–198) | 200.6 ± 2.7 (197–204) | 185.6 ± 12.6 (164–197) | 200.4 ± 1.8 (198–202) |
+| MLP-Ego-Cat (`mlp28_cat41_trig144`) | 176 / 176 / 195 / 199 / 195 | 188.2 ± 11.3 (176–199) | 202.0 ± 1.4 (201–204) | 189.0 ± 9.8 (179–200) | 203.4 ± 1.1 (202–205) |
+| nominal starts only (`mlp28nom_trig144`) | 178 / 115 / 170 / 156 / 143 | 152.4 ± 24.8 (115–178) | 196.8 ± 3.2 (193–201) | 61.8 ± 14.6 (40–79) | 106.6 ± 20.9 (84–127) |
+| no DART (`mlp28clean_control`) | 0 / 0 / 0 / 2 / 1 | 0.6 ± 0.9 (0–2) | 27.6 ± 17.2 (18–58) | 0.2 ± 0.4 (0–1) | 19.0 ± 8.1 (13–33) |
+
+Seeds 3–4 sit inside or at the edge of the seed 0–2 ranges for every family; no chapter's claim changes. The no-DART
+seeds 3–4 again run away (median final distance 447 m and 21 m, wheels clipped 66–75% of the time), as seeds 0–2 did.
+Offline NRMSE of the new seeds: MLP-Base 0.158 / 0.162, MLP-Ego 0.120 / 0.120, Cat 0.148 / 0.150, nominal-only
+0.184 / 0.184, no-DART control 0.080 / 0.089, no-DART + IC 0.093 / 0.095 (no DART again has the lowest offline error and the
+worst closed loop). Note: Cat seeds 0 and 1 give the same nominal counts (176 / 190 / 201) but differ on the
+random-start bank (179 / 193 / 202 vs 179 / 191 / 203), so they are distinct models.
