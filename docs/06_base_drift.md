@@ -11,6 +11,17 @@ controller); its base only moves by the reaction of its own arm (~1 cm). A regre
 is a small command, so the base keeps creeping after parking, and without an arm to finish the task the policy
 eventually drives off again.
 
+![final stop, three stages](figures/problems/final_stop_three.png)
+
+*The three stages, one episode (episode_000024, seed 0): wheel command (black) and distance to the expert's dock (blue
+dashed; dotted: the 8 cm stop box). Expert: align, drive, orient, then done with the wheels at exactly zero from 8.5 s.
+MLP-Ego: parks at the same time but keeps a small non-zero command that grows; from ~28 s the base leaves the dock and
+the navigation restarts. MLP-Ego-IC: parks and stays (residual ~0.04 rad/s, base within a few centimetres of the dock),
+because its arm has started and finishes the task. (MLP-Base, not shown, never stops: 2.4 rad/s and 8 m driven after
+10 s in the same episode.)*
+
+The same episode with every model:
+
 ![final stop](figures/problems/2_final_stop.png)
 
 *One episode in time: wheel command (black) and distance to the expert's dock (blue dashed; dotted: the 8 cm stop box).
