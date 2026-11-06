@@ -1,0 +1,485 @@
+{
+  "time": "2026-11-02T03:56:55.824455+00:00",
+  "scope": "Read-only diagnosis of existing F0 result files only; no evaluation data or new simulations.",
+  "sets": {
+    "dev": {
+      "n_seeds": 5,
+      "n_per_seed": [
+        300,
+        300,
+        300,
+        300,
+        300
+      ],
+      "raw_success": 0.6046666666666667,
+      "stalled_rerun_inventory": [
+        {
+          "run": "ego-novw-trig_s0_dev",
+          "n_stalled": 6,
+          "episodes": [
+            103,
+            157,
+            209,
+            230,
+            232,
+            282
+          ],
+          "complete_rerun": "results/step3/nostall/ego-novw-trig_s0_dev",
+          "required_candidates": [
+            "results/step3/nostall/ego-novw-trig_s0_dev",
+            "results/step5/nostall/ego-novw-trig_s0_dev"
+          ]
+        },
+        {
+          "run": "ego-novw-trig_s1_dev",
+          "n_stalled": 24,
+          "episodes": [
+            1,
+            10,
+            13,
+            39,
+            41,
+            51,
+            64,
+            87,
+            92,
+            109,
+            123,
+            130,
+            164,
+            190,
+            193,
+            195,
+            199,
+            204,
+            220,
+            232,
+            253,
+            288,
+            293,
+            298
+          ],
+          "complete_rerun": "results/step3/nostall/ego-novw-trig_s1_dev",
+          "required_candidates": [
+            "results/step3/nostall/ego-novw-trig_s1_dev",
+            "results/step5/nostall/ego-novw-trig_s1_dev"
+          ]
+        },
+        {
+          "run": "ego-novw-trig_s2_dev",
+          "n_stalled": 36,
+          "episodes": [
+            1,
+            36,
+            39,
+            54,
+            55,
+            65,
+            68,
+            71,
+            79,
+            87,
+            92,
+            104,
+            108,
+            123,
+            128,
+            131,
+            137,
+            139,
+            140,
+            147,
+            157,
+            158,
+            186,
+            194,
+            217,
+            219,
+            235,
+            239,
+            249,
+            253,
+            266,
+            280,
+            282,
+            288,
+            293,
+            296
+          ],
+          "complete_rerun": "results/step3/nostall/ego-novw-trig_s2_dev",
+          "required_candidates": [
+            "results/step3/nostall/ego-novw-trig_s2_dev",
+            "results/step5/nostall/ego-novw-trig_s2_dev"
+          ]
+        },
+        {
+          "run": "ego-novw-trig_s3_dev",
+          "n_stalled": 8,
+          "episodes": [
+            1,
+            87,
+            92,
+            123,
+            131,
+            140,
+            165,
+            205
+          ],
+          "complete_rerun": "results/step3/nostall/ego-novw-trig_s3_dev",
+          "required_candidates": [
+            "results/step3/nostall/ego-novw-trig_s3_dev",
+            "results/step5/nostall/ego-novw-trig_s3_dev"
+          ]
+        },
+        {
+          "run": "ego-novw-trig_s4_dev",
+          "n_stalled": 22,
+          "episodes": [
+            0,
+            15,
+            16,
+            31,
+            39,
+            40,
+            51,
+            62,
+            71,
+            79,
+            82,
+            87,
+            92,
+            104,
+            119,
+            126,
+            148,
+            155,
+            169,
+            194,
+            201,
+            233
+          ],
+          "complete_rerun": "results/step3/nostall/ego-novw-trig_s4_dev",
+          "required_candidates": [
+            "results/step3/nostall/ego-novw-trig_s4_dev",
+            "results/step5/nostall/ego-novw-trig_s4_dev"
+          ]
+        }
+      ],
+      "merged_success": 0.608,
+      "replacement_notes": [
+        "ego-novw-trig_s0_dev: replaced 6 stalled rows from results/step3/nostall/ego-novw-trig_s0_dev",
+        "ego-novw-trig_s1_dev: replaced 24 stalled rows from results/step3/nostall/ego-novw-trig_s1_dev",
+        "ego-novw-trig_s2_dev: replaced 36 stalled rows from results/step3/nostall/ego-novw-trig_s2_dev",
+        "ego-novw-trig_s3_dev: replaced 8 stalled rows from results/step3/nostall/ego-novw-trig_s3_dev",
+        "ego-novw-trig_s4_dev: replaced 22 stalled rows from results/step3/nostall/ego-novw-trig_s4_dev"
+      ],
+      "changed_success_rows": [
+        {
+          "seed": 1,
+          "episode": 39,
+          "original_stop_reason": "stalled",
+          "original_success": false,
+          "replacement_success": true
+        },
+        {
+          "seed": 1,
+          "episode": 199,
+          "original_stop_reason": "stalled",
+          "original_success": false,
+          "replacement_success": true
+        },
+        {
+          "seed": 2,
+          "episode": 217,
+          "original_stop_reason": "stalled",
+          "original_success": false,
+          "replacement_success": true
+        },
+        {
+          "seed": 4,
+          "episode": 31,
+          "original_stop_reason": "stalled",
+          "original_success": false,
+          "replacement_success": true
+        },
+        {
+          "seed": 4,
+          "episode": 155,
+          "original_stop_reason": "stalled",
+          "original_success": false,
+          "replacement_success": true
+        }
+      ]
+    },
+    "hard": {
+      "n_seeds": 5,
+      "n_per_seed": [
+        200,
+        200,
+        200,
+        200,
+        200
+      ],
+      "raw_success": 0.563,
+      "stalled_rerun_inventory": [
+        {
+          "run": "ego-novw-trig_s0_hard",
+          "n_stalled": 6,
+          "episodes": [
+            45,
+            93,
+            96,
+            111,
+            116,
+            173
+          ],
+          "complete_rerun": null,
+          "required_candidates": [
+            "results/step3/nostall/ego-novw-trig_s0_hard",
+            "results/step5/nostall/ego-novw-trig_s0_hard"
+          ]
+        },
+        {
+          "run": "ego-novw-trig_s1_hard",
+          "n_stalled": 16,
+          "episodes": [
+            8,
+            25,
+            56,
+            80,
+            128,
+            131,
+            136,
+            141,
+            150,
+            166,
+            168,
+            180,
+            181,
+            184,
+            195,
+            196
+          ],
+          "complete_rerun": null,
+          "required_candidates": [
+            "results/step3/nostall/ego-novw-trig_s1_hard",
+            "results/step5/nostall/ego-novw-trig_s1_hard"
+          ]
+        },
+        {
+          "run": "ego-novw-trig_s2_hard",
+          "n_stalled": 28,
+          "episodes": [
+            2,
+            15,
+            21,
+            32,
+            38,
+            56,
+            59,
+            71,
+            74,
+            77,
+            78,
+            80,
+            117,
+            133,
+            135,
+            138,
+            140,
+            154,
+            159,
+            165,
+            166,
+            168,
+            176,
+            180,
+            193,
+            195,
+            196,
+            197
+          ],
+          "complete_rerun": null,
+          "required_candidates": [
+            "results/step3/nostall/ego-novw-trig_s2_hard",
+            "results/step5/nostall/ego-novw-trig_s2_hard"
+          ]
+        },
+        {
+          "run": "ego-novw-trig_s3_hard",
+          "n_stalled": 3,
+          "episodes": [
+            71,
+            77,
+            167
+          ],
+          "complete_rerun": null,
+          "required_candidates": [
+            "results/step3/nostall/ego-novw-trig_s3_hard",
+            "results/step5/nostall/ego-novw-trig_s3_hard"
+          ]
+        },
+        {
+          "run": "ego-novw-trig_s4_hard",
+          "n_stalled": 8,
+          "episodes": [
+            50,
+            52,
+            77,
+            96,
+            109,
+            135,
+            186,
+            197
+          ],
+          "complete_rerun": null,
+          "required_candidates": [
+            "results/step3/nostall/ego-novw-trig_s4_hard",
+            "results/step5/nostall/ego-novw-trig_s4_hard"
+          ]
+        }
+      ],
+      "merged_error": "missing stalled rerun: ego-novw-trig_s0_hard"
+    },
+    "confirm": {
+      "n_seeds": 5,
+      "n_per_seed": [
+        300,
+        300,
+        300,
+        300,
+        300
+      ],
+      "raw_success": 0.6426666666666667,
+      "stalled_rerun_inventory": [
+        {
+          "run": "ego-novw-trig_s100_confirm",
+          "n_stalled": 6,
+          "episodes": [
+            16,
+            32,
+            201,
+            209,
+            235,
+            249
+          ],
+          "complete_rerun": null,
+          "required_candidates": [
+            "results/step3/nostall/ego-novw-trig_s100_confirm",
+            "results/step5/nostall/ego-novw-trig_s100_confirm"
+          ]
+        },
+        {
+          "run": "ego-novw-trig_s101_confirm",
+          "n_stalled": 12,
+          "episodes": [
+            16,
+            48,
+            57,
+            78,
+            107,
+            128,
+            142,
+            158,
+            169,
+            186,
+            274,
+            294
+          ],
+          "complete_rerun": null,
+          "required_candidates": [
+            "results/step3/nostall/ego-novw-trig_s101_confirm",
+            "results/step5/nostall/ego-novw-trig_s101_confirm"
+          ]
+        },
+        {
+          "run": "ego-novw-trig_s102_confirm",
+          "n_stalled": 3,
+          "episodes": [
+            46,
+            177,
+            270
+          ],
+          "complete_rerun": null,
+          "required_candidates": [
+            "results/step3/nostall/ego-novw-trig_s102_confirm",
+            "results/step5/nostall/ego-novw-trig_s102_confirm"
+          ]
+        },
+        {
+          "run": "ego-novw-trig_s103_confirm",
+          "n_stalled": 18,
+          "episodes": [
+            20,
+            24,
+            26,
+            58,
+            65,
+            78,
+            80,
+            89,
+            98,
+            127,
+            133,
+            142,
+            154,
+            159,
+            192,
+            196,
+            280,
+            290
+          ],
+          "complete_rerun": null,
+          "required_candidates": [
+            "results/step3/nostall/ego-novw-trig_s103_confirm",
+            "results/step5/nostall/ego-novw-trig_s103_confirm"
+          ]
+        },
+        {
+          "run": "ego-novw-trig_s104_confirm",
+          "n_stalled": 32,
+          "episodes": [
+            7,
+            19,
+            28,
+            45,
+            64,
+            68,
+            71,
+            75,
+            78,
+            79,
+            85,
+            97,
+            100,
+            104,
+            111,
+            120,
+            129,
+            134,
+            142,
+            143,
+            148,
+            160,
+            166,
+            171,
+            194,
+            200,
+            214,
+            216,
+            229,
+            232,
+            240,
+            268
+          ],
+          "complete_rerun": null,
+          "required_candidates": [
+            "results/step3/nostall/ego-novw-trig_s104_confirm",
+            "results/step5/nostall/ego-novw-trig_s104_confirm"
+          ]
+        }
+      ],
+      "merged_error": "missing stalled rerun: ego-novw-trig_s100_confirm"
+    }
+  }
+}

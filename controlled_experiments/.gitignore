@@ -1,0 +1,60 @@
+# collected datasets and robot models are large and regenerable (see DATA_COLLECTION.md)
+/data
+/models
+__pycache__/
+# per-episode console logs and trajectories of evaluation runs (rollouts.csv / summary.txt are kept)
+/results/*/logs/
+/results/*/traj/
+# per-episode scan cache of analyze_dataset.py (large, regenerable)
+/results/*/cache/
+# step 3: smoke-test folders, console logs of runs and training, duplicate pilot models (regenerable / not needed)
+/results/tmp_*/
+/results/*.log
+/results/step3/*.log
+/results/step3/*.stdout
+/results/step3/offline_*.txt
+/results/step3/nostall/*/logs/
+/results/step3/cache_ref_*.csv
+/trained/*.log
+/trained/pilot_models/
+/results/step3/nostall/*.log
+/results/step3/C0/*.err
+/results/step3/C3_pilot/*/logs/
+/results/step3/C3_pilot/*.log
+/results/step3/cache_s*/
+/results/tmp_retrain/
+# step 5: 1 kHz trajectories, per-episode logs and chain/console logs of the DAgger runs (large / regenerable)
+/results/step5/**/traj/
+/results/step5/**/logs/
+/results/step5/**/*.log
+/results/step5/pilot_cache/
+# step 6: isolated smoke artifacts, training logs and regenerable trajectories
+/results/step6/smoke/
+/results/step6/**/*.log
+/results/step6/**/traj/
+/results/step6/**/logs/
+/results/step7/smoke/
+/results/step7/**/*.log
+/results/step7/**/traj/
+/results/step7/**/logs/
+/results/step7/mplcfg/
+/results/step7/existing_files_baseline.json
+/results/step6/.gp_figures.lock
+# step 9: smoke artifacts, training feature cache, console/training logs and regenerable trajectories
+/results/step9/train_cache/
+/results/step9/**/*.log
+/results/step9/**/traj/
+/results/step9/**/logs/
+/trained/step9/*.log
+# step 10 / 11: trajectories, per-episode and console logs, analysis stdout and reference caches (regenerable);
+# results/step11/cache/ (the placebo cache) is covered by /results/*/cache/ and rebuilt by step11.py build-placebo-cache
+/results/step10_cross/**/traj/
+/results/step10_cross/**/logs/
+/results/step10_cross/**/*.log
+/results/step11/**/traj/
+/results/step11/**/logs/
+/results/step11/**/*.log
+/results/step11/analysis/*.stdout
+/results/step11/analysis/cache_ref_*.csv
+# the repository root ignores configs/ (RoboEnv copies); this folder ships the robot configs it was run with
+!configs/

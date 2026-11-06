@@ -1,0 +1,41 @@
+Experiment P: frozen pre-registered numbers and verdicts; differences are P minus C3.
+Two-level bootstrap with 10000 draws, seed 0; Welch by seed; DEV primary verdict/mirror 97.5%, all others 95%.
+
+DEV
+ego-novw-trig_s0_dev: replaced 6 stalled rows from results/step3/nostall/ego-novw-trig_s0_dev
+ego-novw-trig_s1_dev: replaced 24 stalled rows from results/step3/nostall/ego-novw-trig_s1_dev
+ego-novw-trig_s2_dev: replaced 36 stalled rows from results/step3/nostall/ego-novw-trig_s2_dev
+ego-novw-trig_s3_dev: replaced 8 stalled rows from results/step3/nostall/ego-novw-trig_s3_dev
+ego-novw-trig_s4_dev: replaced 22 stalled rows from results/step3/nostall/ego-novw-trig_s4_dev
+ego-novw-trig_s5_dev: original rows; no stalled replacement needed
+ego-novw-trig_s6_dev: original rows; no stalled replacement needed
+ego-novw-trig_s7_dev: original rows; no stalled replacement needed
+ego-novw-trig_s8_dev: original rows; no stalled replacement needed
+ego-novw-trig_s9_dev: original rows; no stalled replacement needed
+success: C3 62.133333%, P 70.933333%; Δ +8.800000 pp; bootstrap 97.5% [-0.300833, +17.067083], Welch 97.5% [-0.567595, +18.167595] pp
+reach_2cm: C3 80.633333%, P 88.266667%; Δ +7.633333 pp; bootstrap 95% [+2.933333, +12.334167], Welch 95% [+3.000392, +12.266274] pp
+reach_5cm: C3 91.866667%, P 94.933333%; Δ +3.066667 pp; bootstrap 95% [-0.033333, +6.333333], Welch 95% [-0.059985, +6.193318] pp
+held_10s: C3 25.233333%, P 33.266667%; Δ +8.033333 pp; bootstrap 95% [-3.700000, +19.633333], Welch 95% [-4.785803, +20.852470] pp
+arm_extended_toward: C3 81.200000%, P 81.200000%; Δ +0.000000 pp; bootstrap 95% [-1.933333, +1.933333], Welch 95% [-1.467940, +1.467940] pp
+crash: C3 1.833333%, P 2.800000%; Δ +0.966667 pp; bootstrap 95% [-1.533333, +3.600000], Welch 95% [-1.691517, +3.624850] pp
+no_start: C3 0.000000%, P 0.000000%; Δ +0.000000 pp; bootstrap 95% [+0.000000, +0.000000], Welch 95% [+0.000000, +0.000000] pp
+runaway: C3 0.000000%, P 0.000000%; Δ +0.000000 pp; bootstrap 95% [+0.000000, +0.000000], Welch 95% [+0.000000, +0.000000] pp
+no_progress: C3 0.000000%, P 0.033333%; Δ +0.033333 pp; bootstrap 95% [+0.000000, +0.200000], Welch 95% [-0.042072, +0.108739] pp
+never_other: C3 0.000000%, P 0.000000%; Δ +0.000000 pp; bootstrap 95% [+0.000000, +0.000000], Welch 95% [+0.000000, +0.000000] pp
+circling: C3 13.533333%, P 6.233333%; Δ -7.300000 pp; bootstrap 95% [-12.766667, -1.900000], Welch 95% [-13.017010, -1.582990] pp
+left_or_overshot: C3 1.800000%, P 3.000000%; Δ +1.200000 pp; bootstrap 95% [-0.500000, +3.000000], Welch 95% [-0.352206, +2.752206] pp
+parked_no_arm: C3 0.133333%, P 0.066667%; Δ -0.066667 pp; bootstrap 95% [-0.366667, +0.200000], Welch 95% [-0.214729, +0.081396] pp
+extended_not_reached: C3 17.966667%, P 15.500000%; Δ -2.466667 pp; bootstrap 95% [-8.266667, +3.467500], Welch 95% [-8.467565, +3.534232] pp
+approached_other: C3 2.600000%, P 1.433333%; Δ -1.166667 pp; bootstrap 95% [-2.933333, +0.333333], Welch 95% [-2.689027, +0.355693] pp
+crash + left_or_overshot: C3 3.633333%, P 5.800000%; Δ +2.166667 pp; bootstrap 95% [-0.666667, +5.267500], Welch 95% [-0.782879, +5.116212] pp
+target z < 0.45 m success: C3 20.579710%, P 43.913043%; Δ +23.333333 pp; bootstrap 95% [+12.318841, +34.637681], Welch 95% [+13.004394, +33.662273] pp
+policy_ms (ms): {"a": 0.1432240252743071, "b": 0.21332382220993124, "diff": 0.07009979693562413, "lo": 0.06289534964660491, "hi": 0.07818770697614158, "p_boot": 0.0001, "level": 0.95, "welch_lo": 0.061609232455216434, "welch_hi": 0.0785903614160317, "p_welch": 6.708315980609433e-12, "per_seed_a": [0.13763602502848765, 0.13756588705083098, 0.1392435790546241, 0.14621888280152548, 0.12875747470625173, 0.15035084015255454, 0.1434841278607681, 0.14898702357863206, 0.14920744769920286, 0.15078896481019374], "per_seed_b": [0.2123858018155314, 0.20547739457762398, 0.21165347108078875, 0.21019993742443385, 0.20832548989342234, 0.22384786587781197, 0.2358612248903546, 0.2183471318755836, 0.20784652408232743, 0.19929338058143398]}
+Secondary Holm (6 metrics, descriptive): {"names": ["reach_2cm", "reach_5cm", "held_10s", "arm_extended_toward", "low_z_success", "policy_ms"], "combined_p": [0.0027985656938848713, 0.054093343130163375, 0.20163000843360604, 1.0, 0.00018199131943376595, 0.0001], "holm": [[0.011194262775539485, 0.16228002939049013, 0.4032600168672121, 1.0, 0.0009099565971688298, 0.0006000000000000001], [true, false, false, false, true, true]], "descriptive_only": true}
+C3 original early-stop rows sensitivity (not used for verdict): C3 61.966667%, P 70.933333%; Δ +8.966667 pp; bootstrap 97.5% [-0.200000, +17.266667], Welch 97.5% [-0.457388, +18.390721] pp
+condition_1: False
+condition_2: True
+mirror_worse: False
+mechanism_predictions: {'MP1': False, 'MP2': False, 'MP3': False, 'MP4': 'see P_offline_table.json; descriptive'}
+
+Final/current verdict: KEEP C3
+The G + P combination is not tested (pre-registration limitation).

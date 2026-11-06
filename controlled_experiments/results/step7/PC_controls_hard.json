@@ -1,0 +1,27 @@
+[
+  {
+    "run": "ego-novw-trig_s0_hard",
+    "stalled": 6,
+    "source": "results/step7/nostall/ego-novw-trig_s0_hard"
+  },
+  {
+    "run": "ego-novw-trig_s1_hard",
+    "stalled": 16,
+    "source": "results/step7/nostall/ego-novw-trig_s1_hard"
+  },
+  {
+    "run": "ego-novw-trig_s2_hard",
+    "stalled": 28,
+    "source": "results/step7/nostall/ego-novw-trig_s2_hard"
+  },
+  {
+    "run": "ego-novw-trig_s3_hard",
+    "stalled": 3,
+    "source": "results/step7/nostall/ego-novw-trig_s3_hard"
+  },
+  {
+    "run": "ego-novw-trig_s4_hard",
+    "stalled": 8,
+    "source": "results/step7/nostall/ego-novw-trig_s4_hard"
+  }
+]

@@ -1,0 +1,66 @@
+== DEV (300 episodes, 5 seeds per arm) ==
+H-copycat
+  c1 no_start + no_progress + left_or_overshot (prediction: B - A CI upper < 0): A 45.3%  B 0.1%  B - A -45.3 [-71.5, -20.7] pp
+  c2 reach_5cm (prediction: B higher): A 0.5%  B 9.0%  B - A +8.5 [+5.5, +11.7] pp
+  c2 parked (prediction: B higher): A 10.7%  B 11.9%  B - A +1.2 [-12.1, +21.6] pp
+H-hidden-phase
+  h1 circling + left_or_overshot (prediction: B - A CI lower > 0): A 8.1%  B 32.3%  B - A +24.2 [+8.6, +44.1] pp
+     circling alone: A 6.7%  B 32.2%  B - A +25.5 [+9.9, +45.5] pp
+  h3 circling + left_or_overshot, |d0| < 1 (n 162): A 14.9%  B 45.9%  B - A +31.0 [+11.9, +51.4] pp
+     parked, |d0| < 1: A 19.8%  B 12.1%  B - A -7.7 [-24.0, +14.1] pp
+  h3 circling + left_or_overshot, |d0| >= 1 (n 138): A 0.0%  B 16.2%  B - A +16.2 [+2.2, +37.4] pp
+     parked, |d0| >= 1: A 0.0%  B 11.6%  B - A +11.6 [+0.7, +31.4] pp
+  h2 parked lower in B: see c2
+  h4 arm_extended (prediction: B lower): A 1.4%  B 0.5%  B - A -0.9 [-2.5, +0.5] pp
+  h5 hold10_base_disp_max among reached episodes: reached seed x episode A 0, B 5 -> not assessable
+H-goal (parked seed x episode rows; needs >= 30 per arm)
+  A      parked n  160: ring_dist_final median 11.9 cm; base_goal_dist_final - ring_dist_final median 0.6 cm
+  B      parked n  178: ring_dist_final median 3.8 cm; base_goal_dist_final - ring_dist_final median 2.1 cm
+  expert parked n  297: ring_dist_final median 7.2 cm; base_goal_dist_final - ring_dist_final median 0.2 cm
+  ring median difference B - A -8.1 cm (prediction |.| < 3 cm); goal-gap difference +1.5 cm (prediction |.| < 5 cm; both above the expert's 0.2 cm); assessable: True
+Rodrigo prior for ego-novw: main failure class parked_no_arm / extended_not_reached (merged base_ok_ee_not)
+  A: top classes no_progress 39.1%, never_other 33.3%, approached_other 12.0%
+  B: top classes parked_no_arm 54.3%, circling 32.2%, approached_other 6.7%
+M1 vs M2 (descriptive): parked_no_arm share among parked seed x episode rows
+  A M1: parked rows 30, parked_no_arm 0 (0%)
+  A M2: parked rows 95, parked_no_arm 27 (28%)
+  B M1: parked rows 31, parked_no_arm 19 (61%)
+  B M2: parked rows 138, parked_no_arm 120 (87%)
+
+== HARD (200 episodes, 5 seeds per arm) ==
+H-copycat
+  c1 no_start + no_progress + left_or_overshot (prediction: B - A CI upper < 0): A 36.7%  B 0.0%  B - A -36.7 [-53.6, -20.6] pp
+  c2 reach_5cm (prediction: B higher): A 1.3%  B 4.5%  B - A +3.2 [+0.6, +6.3] pp
+  c2 parked (prediction: B higher): A 25.0%  B 11.9%  B - A -13.1 [-27.0, +4.8] pp
+H-hidden-phase
+  h1 circling + left_or_overshot (prediction: B - A CI lower > 0): A 22.4%  B 52.0%  B - A +29.6 [+13.0, +48.0] pp
+     circling alone: A 18.7%  B 52.0%  B - A +33.3 [+16.7, +51.8] pp
+  h3 circling + left_or_overshot, |d0| < 1 (n 199): A 22.5%  B 52.1%  B - A +29.5 [+12.7, +47.6] pp
+     parked, |d0| < 1: A 25.1%  B 11.9%  B - A -13.3 [-27.3, +4.9] pp
+  h3 circling + left_or_overshot, |d0| >= 1 (n 1): A 0.0%  B 40.0%  B - A +40.0 [+0.0, +80.0] pp
+     parked, |d0| >= 1: A 0.0%  B 20.0%  B - A +20.0 [+0.0, +60.0] pp
+  h2 parked lower in B: see c2
+  h4 arm_extended (prediction: B lower): A 1.5%  B 0.5%  B - A -1.0 [-2.7, +0.4] pp
+  h5 hold10_base_disp_max among reached episodes: reached seed x episode A 2, B 4 -> not assessable
+H-goal (parked seed x episode rows; needs >= 30 per arm)
+  A      parked n  250: ring_dist_final median 11.1 cm; base_goal_dist_final - ring_dist_final median 0.8 cm
+  B      parked n  119: ring_dist_final median 3.7 cm; base_goal_dist_final - ring_dist_final median 4.3 cm
+  expert parked n  194: ring_dist_final median 6.1 cm; base_goal_dist_final - ring_dist_final median 0.7 cm
+  ring median difference B - A -7.4 cm (prediction |.| < 3 cm); goal-gap difference +3.5 cm (prediction |.| < 5 cm; both above the expert's 0.7 cm); assessable: True
+Rodrigo prior for ego-novw: main failure class parked_no_arm / extended_not_reached (merged base_ok_ee_not)
+  A: top classes no_progress 25.7%, approached_other 24.0%, circling 18.7%
+  B: top classes circling 52.0%, parked_no_arm 38.3%, approached_other 7.6%
+M1 vs M2 (descriptive): parked_no_arm share among parked seed x episode rows
+  A M1: parked rows 27, parked_no_arm 2 (7%)
+  A M2: parked rows 137, parked_no_arm 47 (34%)
+  B M1: parked rows 35, parked_no_arm 23 (66%)
+  B M2: parked rows 66, parked_no_arm 55 (83%)
+
+== Offline lag k (clean validation episodes; k > 0 = the prediction lags the label), per seed ==
+  ego       start         v [1, 1, 1, 1, 1]  w [1, 1, 1, 1, 1]
+  ego       align>drive   v [1, 1, 1, 1, 1]  w [1, 1, 1, 1, 1]
+  ego       drive>orient  v [1, 1, 1, 1, 1]  w [1, 1, 1, 1, 1]
+  ego-novw  start         v [-30, -30, -30, -30, -30]  w [-30, -9, 0, 0, -16]
+  ego-novw  align>drive   v [1, 2, 6, 7, 9]  w [1, 1, 1, 1, 4]
+  ego-novw  drive>orient  v [13, 14, 13, 15, 13]  w [11, 10, 12, 11, 11]
+  copycat (measured speed): start v 1 w 1, align>drive v 1 w 1, drive>orient v 1 w 1

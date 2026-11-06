@@ -1,0 +1,69 @@
+{
+  "gate": "A2",
+  "passed": true,
+  "episodes": [
+    {
+      "episode": 0,
+      "steps": 8897,
+      "status": "reached",
+      "noisy": true,
+      "mismatches": [],
+      "meta_mismatches": [],
+      "segment_all_1": true,
+      "segment_dtype": "int8"
+    },
+    {
+      "episode": 1,
+      "steps": 8001,
+      "status": "reached",
+      "noisy": true,
+      "mismatches": [],
+      "meta_mismatches": [],
+      "segment_all_1": true,
+      "segment_dtype": "int8"
+    },
+    {
+      "episode": 2,
+      "steps": 28171,
+      "status": "unreachable",
+      "noisy": true,
+      "mismatches": [],
+      "meta_mismatches": [],
+      "segment_all_1": true,
+      "segment_dtype": "int8"
+    }
+  ],
+  "fields": [
+    "t",
+    "base_pos",
+    "base_ori",
+    "base_bearing",
+    "q_mes",
+    "qd_mes",
+    "wheel_cmds",
+    "torque_arm",
+    "wheel_cmds_exec",
+    "torque_arm_exec",
+    "q_des_arm",
+    "qd_des_arm",
+    "phase",
+    "nav_done",
+    "ee_pos",
+    "target"
+  ],
+  "command_args": [
+    "--seed",
+    "909",
+    "--n-episodes",
+    "3",
+    "--noise-frac",
+    "1.0",
+    "--workers",
+    "3",
+    "--init-radius",
+    "2.0",
+    "--init-yaw-range",
+    "-180",
+    "180"
+  ]
+}

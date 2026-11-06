@@ -1,0 +1,31 @@
+{
+  "delta_star": 9,
+  "means": {
+    "9": 0.0,
+    "27": 0.0,
+    "81": 0.0
+  },
+  "c3_mean": 0.605,
+  "selected_mean": 0.0,
+  "continue": false,
+  "rule": "highest 2-seed mean; smallest delta within inclusive 5 pp; stop strictly below C3 minus 10 pp",
+  "per_seed": {
+    "9": [
+      0.0,
+      0.0
+    ],
+    "27": [
+      0.0,
+      0.0
+    ],
+    "81": [
+      0.0,
+      0.0
+    ]
+  },
+  "c3_per_seed": [
+    0.66,
+    0.55
+  ],
+  "synthetic_gate_fixture": false
+}

@@ -1,0 +1,9 @@
+# step 9 Track A smoke runs: regenerable recordings (~5 MB per episode), trajectories, logs and redirected test
+# artefacts; the evidence files (evidence.json, gates.json, rollouts.csv, summary.txt, classes.csv, index.csv,
+# scenarios.json, config.json) are kept. The root .gitignore's results/*/traj|logs patterns are one level deep only.
+smoke/**/*.npz
+smoke/**/*.npz.tmp
+smoke/**/traj/
+smoke/**/logs/
+smoke/full_suite/
+__pycache__/

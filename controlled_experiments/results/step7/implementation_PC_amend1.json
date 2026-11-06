@@ -1,0 +1,41 @@
+{
+  "after_implementation_sha256": {
+    "results/step7/PC_mechanisms.py": "8bf20dc9f30cdf9f814dc46cdde5650545f9b1fc2b3698ef3a90e4d03a9af7a0",
+    "results/step7/pc_freeze.py": "553d6d879e2924d13d0ec6d39b94d183c38dba267bff89d59a3c59707a84f775",
+    "results/step7/pc_pipeline.py": "e6315d7471038adecc9696bda7e5228257611cf0457f097c5ac16f595efd20f2",
+    "results/step7/pc_smoke.py": "116b29a27a74123367e34938808c65463676e75fbc332f7e18119f7d7ef38a3d",
+    "results/step7/run_expPC.sh": "92f7c5733b4fffd72ed9c5db2afa14cd8a1148680ea5fb9073486c26f4b76255",
+    "tests/test_step7.py": "6f2128aa14b006a44cfcae0c9812da4ec3467ab989099ee7c23da73be9d8e6dc"
+  },
+  "amendment_id": "PC-amend1",
+  "anchors": {
+    "frozen_sha256": "ea5730217df041cfdebf8f5fa18e37acd88f214611da0ab79dca02fbe9a3f7fa",
+    "plan_sha256": "38de0c766e44e178748352e1b693b232eab4f056907b2bb1ac739aeddbfe1fea",
+    "section3_sha256": "2a0ddd7077711e718059ff16c67601882e6015bf0de1bb4efb2f81202654b814"
+  },
+  "backups": {
+    "results/step7/PC_mechanisms.py": {
+      "path": "results/step7/PC_mechanisms.before_amend1.py.txt",
+      "sha256": "ec6e4759d7cd598b67cb9bc3307e5c3603fa8fb4428694c63fbd30547185d27f"
+    },
+    "results/step7/pc_freeze.py": {
+      "path": "results/step7/pc_freeze.before_amend1.py.txt",
+      "sha256": "e2982e99401e620dfbdb757d6aa29692b0f9414282e584c2b07d0a0ac9a86df5"
+    },
+    "tests/test_step7.py": {
+      "path": "results/step7/test_step7.before_amend1.py.txt",
+      "sha256": "3ee6d8c0c76569aacd0e5b69f53ab1d1c19509fc540050ef9cb22b5e878c185a"
+    }
+  },
+  "before_implementation_sha256": {
+    "results/step7/PC_mechanisms.py": "ec6e4759d7cd598b67cb9bc3307e5c3603fa8fb4428694c63fbd30547185d27f",
+    "results/step7/pc_freeze.py": "e2982e99401e620dfbdb757d6aa29692b0f9414282e584c2b07d0a0ac9a86df5",
+    "results/step7/pc_pipeline.py": "e6315d7471038adecc9696bda7e5228257611cf0457f097c5ac16f595efd20f2",
+    "results/step7/pc_smoke.py": "116b29a27a74123367e34938808c65463676e75fbc332f7e18119f7d7ef38a3d",
+    "results/step7/run_expPC.sh": "92f7c5733b4fffd72ed9c5db2afa14cd8a1148680ea5fb9073486c26f4b76255",
+    "tests/test_step7.py": "3ee6d8c0c76569aacd0e5b69f53ab1d1c19509fc540050ef9cb22b5e878c185a"
+  },
+  "created_utc": "2026-11-03T13:43:09.746494+00:00",
+  "reason": "工具调用兼容修正：analyze_rollouts.compare_arms 的 strata_analysis 需要整数 seed 做 seed+1+k，原 SeedSequence 触发 TypeError。仅通用完整描述比较改用 generate_state 派生整数；PC 主单集/合并统计及判定函数 AST 保持原样并逐位验证。追加兼容回归测试及对原冻结的可审计实现修订核验；§3、主bootstrap流、阈值、模型输入和原冻结记录均不变。",
+  "schema_version": 1
+}

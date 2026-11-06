@@ -1,0 +1,29 @@
+== Classifier validation (PRECHECK on the recorded DEV expert episodes) ==
+(recorded episode shorter than the v1 run in 243/300 episodes: columns over the recording only; held_10s unknown)
+Runs: expert expert_dev; zero 
+[PASS] no harness_error: none
+[FAIL] (i) expert failures classify as circling: 2 failures (14 expected over DEV + HARD + CONFIRM; per run {'expert_dev': 2}); classes {'left_or_overshot': 1, 'circling': 1}
+    expert_dev ep 169: left_or_overshot, stop stalled, ring min 0.000, turn excess 219 deg
+    expert failures: turn excess 219-388 deg, ring_dist_min 0.000-0.000 m
+[INFO] (ii) zero policy: no zero-policy run
+[FAIL] (iii) expert successes: no failure predicate fires: 298 successes; fired per predicate crash 0, never_approached 0, no_start 0, runaway 0, circling 0, left_or_overshot 0, parked_no_arm 5, extended_not_reached 0
+    successes with arm_extend_time NaN (EE never displaced > 0.10 m in the base frame): 58/298 (19.5%); their navdone_ee_err median 0.062 m, range 0.016-0.138 m; ee_base_disp_max median 0.058 m
+    parked_no_arm fires on: ep 9 (min_error 0.0023, navdone_ee_err 0.0215), ep 67 (min_error 0.0073, navdone_ee_err 0.0229), ep 94 (min_error 0.0025, navdone_ee_err 0.0188), ep 213 (min_error 0.0025, navdone_ee_err 0.0161), ep 222 (min_error 0.0024, navdone_ee_err 0.0173)
+[PASS] (iv) expert arm_extend_time >= recorded nav_done time: 0 of 242 episodes extend before nav_done (58 without arm_extend_time or nav_done)
+[FAIL] (v) expert arm_extend_time - nav_done < 0.2 s: median 0.468 s, p95 1.051 s, max 2.154 s, > 0.2 s: 242/242
+Prediction for zero_v11_dev: 50 episodes start within 0.3 m of the ring (cannot be no_start by the precedence), 20 within 0.15 m
+
+== Classifier validation (PRECHECK on the recorded HARD expert episodes) ==
+(recorded episode shorter than the v1 run in 120/200 episodes: columns over the recording only; held_10s unknown)
+Runs: expert expert_hard; zero 
+[PASS] no harness_error: none
+[FAIL] (i) expert failures classify as circling: 6 failures (14 expected over DEV + HARD + CONFIRM; per run {'expert_hard': 6}); classes {'circling': 5, 'left_or_overshot': 1}
+    expert_hard ep 124: left_or_overshot, stop timeout, ring min 0.000, turn excess 209 deg
+    expert failures: turn excess 209-386 deg, ring_dist_min 0.000-0.000 m
+[INFO] (ii) zero policy: no zero-policy run
+[FAIL] (iii) expert successes: no failure predicate fires: 194 successes; fired per predicate crash 0, never_approached 0, no_start 0, runaway 0, circling 2, left_or_overshot 0, parked_no_arm 0, extended_not_reached 0
+    successes with arm_extend_time NaN (EE never displaced > 0.10 m in the base frame): 21/194 (10.8%); their navdone_ee_err median 0.062 m, range 0.027-0.134 m; ee_base_disp_max median 0.073 m
+[PASS] (iv) expert arm_extend_time >= recorded nav_done time: 0 of 179 episodes extend before nav_done (21 without arm_extend_time or nav_done)
+[FAIL] (v) expert arm_extend_time - nav_done < 0.2 s: median 0.466 s, p95 1.317 s, max 2.233 s, > 0.2 s: 179/179
+Prediction for zero_v11_hard: 95 episodes start within 0.3 m of the ring (cannot be no_start by the precedence), 48 within 0.15 m
+

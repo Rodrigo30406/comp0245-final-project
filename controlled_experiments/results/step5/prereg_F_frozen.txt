@@ -1,0 +1,48 @@
+冻结时间（UTC）：2026-11-02T01:44:27.616057+00:00
+方案 SHA256：e1ea8a1b4cc6da21e979e6d4640bfd5727b7e619e2296a6c26ea37b2c7b59c86
+本节 SHA256：753a14e699d9c82421bf2c11589393f1a39f43bfe0b1dc66750b61744db6c06e
+冻结前仅有用户已确认的 F1 修订 1；删除该修订段后等于首次计划哈希。
+
+[Methodology] 第 5 步预注册：实验 F（DAgger 一轮）（2026-11-02 写下，在 F 的任何 DEV/HARD/CONFIRM 运行之前；冻结记录 results/step5/prereg_F_frozen.txt）
+------------------------------------------------------------------------------------------------------------------------
+- 问题：只用专家自己访问过的状态训练（C3）时，学习者停在离 target 1-4 cm 处、绕圈、到达后蠕动。用影子专家在学习者
+  访问的状态上打标签（DAgger 一轮，β = 0，即 rollout 完全由 C3 执行），能否提高 success？
+- 唯一变量：训练集多出 F3 的 DAgger 行（其余配方与 C3 相同）。混杂（不分开）：行数增加也改变每个 epoch 的 Adam 步数与
+  早停时机；没有"多加同样数量的专家行"的对照。
+- 主假设 H-F：影子专家的积分器在学习者停住时继续累积，标签里带有当前缺少的近处纠正力矩与偏离后的恢复动作，所以
+  success 提高。
+- 机制预测（DEV，dag1 减 C3，seed 平均，两层 bootstrap 与 Welch）：
+  - M1 精度：extended_not_reached 减少（两个 CI 上界都 < 0）。
+  - M2 分布偏移：circling 减少（点估计 < 0，描述性）。
+  - M3 保持：held_10s 增加（点估计 > 0，描述性）。
+  - M4 风险：crash（侧翻）与 left_or_overshot 之和的增加 ≤ +3 pp（点估计）。
+- 竞争假设：
+  - C1 过冲：影子标签在停住处很大（积分器领先最多 0.15 rad，约 15 N·m），学会后过冲或振荡，表现为 left_or_overshot、
+    crash 增加，success 不升。
+  - C2 标签冲突：同一观测对应不同的标签（取决于影子的历史），条件均值变平，没有改善；专家验证集损失上升。
+  - C3 只是数据更多：改善来自行数与训练步数，与学习者状态无关（本实验分不开，写进局限）。
+- 判定（主指标 success，统计单位 episode，两层 bootstrap `paired_diff` 与按 seed 的 Welch，95%）：
+  1. DEV：Δsuccess 的两个 CI 下界都 > 0。
+  2. DEV：M4 成立（crash + left_or_overshot 的增加 ≤ +3 pp）。
+  3. HARD：Δsuccess 点估计 > 0。
+  4. CONFIRM：Δsuccess 点估计 > 0 且 bootstrap 下界 > 0。
+  - (1)-(4) 全部满足 -> 采纳 dag1 为主模型。(1) 或 (2) 不满足 -> 停止，HARD 与 CONFIRM 不为 F 打开，结论 KEEP C3。
+    (3) 或 (4) 不满足 -> KEEP C3，并报告 DEV 与该集的差别。
+  - 镜像：DEV 上两个 CI 上界都 < 0 -> 报告"DAgger 一轮使 success 变差"。
+- 次要量（Holm 校正，描述性）：reach_2cm、reach_5cm、held_10s、arm_extended_toward；target z < 0.45 m 分层的 success；
+  专家验证集损失（C2 的检查）。
+- seed 数：DEV 10 对 10（与 D 相同，C3 的 seed 间标准差约 7 pp）；HARD、CONFIRM 各 5 对 5。
+
+
+F1 冻结前修订（用户已确认；§3 判定规则未修改）：
+- 修订 1（2026-11-02，冻结之前，用户确认）：上面 ≤ 1e-9 的要求假定录制是 float64，但 `collect_data.py` 把观测与标签存成
+  float32，第一次验证（`results/step5/F1_verification.json`）因此不可能通过：力矩最大误差 7.9e-5 N·m、轮速 5.2e-6 rad/s、
+  nav_done 每步相同，与 float32 量化相符。验证改为两部分，两部分都通过才继续：
+  (a) 精确验证（与 F2 同一条路径）：`evaluate_policy.py --policy expert --eval-set data/pilot --episodes <前 5 个>
+      --save-traj --traj-every 1 --workers 5`，输出到 `results/step5/F1_expert_pilot/`；先确认保存的轨迹是 float64，
+      再用 `replay_expert` 重放，影子 wheel_cmds、torque_arm 与轨迹中的每一步最大绝对误差 ≤ 1e-9，nav_done 与专家
+      在 harness 中的状态一致（若轨迹没有 nav_done，就核对影子 nav_done 的第一步与 rollouts.csv 的 arm_move 无矛盾，并说明）。
+  (b) 录制数据（float32）：仍用原来的 10 个 train episode，容差为力矩 ≤ 1e-3 N·m、轮速 ≤ 1e-4 rad/s、nav_done 每步相同。
+      依据：1e-3 N·m 比模型的力矩 RMSE（约 2 N·m）小三个数量级，比离 target 1-2 cm 时的纠正信号（约 0.1 N·m）小两个数量级。
+  第一次验证的文件保留不动，新结果用新的文件名。
+

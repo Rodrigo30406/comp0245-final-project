@@ -1,0 +1,55 @@
+== Experiment A: B (B) vs A (A), 300 common episodes, seeds A 5, B 5 ==
+Differences are B - A (seed-mean over training seeds; two-level bootstrap: seeds resampled within each arm, one shared episode resample; 10000 draws, rng seed 0; percentile 95% CI). Calibrated companion: Welch t on the per-seed rates (one-sample t when an arm is a single run), 95% CI.
+Per-seed success (Wilson 95%):
+  A: 0: 210/300 70.0 [64.6, 74.9]; 1: 157/300 52.3 [46.7, 57.9]; 2: 190/300 63.3 [57.7, 68.6]; 3: 180/300 60.0 [54.4, 65.4]; 4: 170/300 56.7 [51.0, 62.2]
+  B: wc_C3_s0_dev: 219/300 73.0 [67.7, 77.7]; wc_C3_s1_dev: 150/300 50.0 [44.4, 55.6]; wc_C3_s2_dev: 190/300 63.3 [57.7, 68.6]; wc_C3_s3_dev: 164/300 54.7 [49.0, 60.2]; wc_C3_s4_dev: 186/300 62.0 [56.4, 67.3]
+Seed-mean success: A 60.5 [53.9, 67.3]%, B 60.6 [52.8, 68.9]%; expert 99.3% on the same episodes
+Paired difference B - A: bootstrap +0.1 [-9.0, +9.6] pp, p 0.97; Welch t (per-seed rates) +0.1 [-11.4, +11.7] pp, df 7.5, p 0.98
+Floor rule (both seed-mean successes < 5%): not active
+Seed x seed (all pairs; seeds of different arms are not paired): success difference B - A in pp, exact McNemar p (descriptive) [n A fails & B succeeds / n A succeeds & B fails]:
+  A \ B           wc_C3_s0_dev          wc_C3_s1_dev          wc_C3_s2_dev          wc_C3_s3_dev          wc_C3_s4_dev
+  0       +3.0 p     0.2 [24/15] -20.0 p 5.5e-09 [24/84]  -6.7 p   0.022 [25/45] -15.3 p 1.7e-06 [23/69]  -8.0 p  0.0056 [23/47]
+  1      +20.7 p 2.7e-10 [81/19]  -2.3 p    0.46 [30/37] +11.0 p  0.0027 [74/41]  +2.3 p    0.59 [67/60]  +9.7 p  0.0046 [64/35]
+  2       +9.7 p 9.1e-04 [51/22] -13.3 p 3.3e-04 [40/80]  +0.0 p       1 [23/23]  -8.7 p   0.015 [40/66]  -1.3 p    0.76 [45/49]
+  3      +13.0 p 7.8e-05 [67/28] -10.0 p  0.0064 [42/72]  +3.3 p    0.35 [51/41]  -5.3 p   0.072 [27/43]  +2.0 p    0.62 [55/49]
+  4      +16.3 p 3.5e-07 [71/22]  -6.7 p   0.064 [43/63]  +6.7 p   0.042 [54/34]  -2.0 p    0.64 [55/61]  +5.3 p   0.044 [36/20]
+  all 25 seed-pair differences: min -20.0, median +0.0, max +20.7 pp; 12 > 0, 12 < 0
+Failure classes, seed-mean share of the episodes (A, B, B - A with CI):
+  success                A  60.5%  B  60.6%  B - A +0.1 [-9.0, +9.6] pp
+  crash                  A   3.2%  B   3.5%  B - A +0.3 [-3.3, +3.9] pp
+  circling               A  12.1%  B  11.4%  B - A -0.7 [-6.9, +5.5] pp
+  left_or_overshot       A   2.1%  B   2.3%  B - A +0.1 [-2.1, +2.4] pp
+  extended_not_reached   A  18.7%  B  19.4%  B - A +0.7 [-9.3, +10.1] pp
+  approached_other       A   3.4%  B   2.9%  B - A -0.5 [-3.7, +2.6] pp
+  flag no_motion_near_ring (failure starting within 0.15 m of the ring, base did not move; never no_start): A 0.0%  B 0.0%
+  failures on short-reach episodes (38 of 300 episodes with the expert's hold posture at parking < 0.07 m from the target: parked_no_arm cannot fire): A 1.8%  B 1.4% of the episodes; seed x episode counts A {'crash': 5, 'circling': 9, 'extended_not_reached': 13}, B {'crash': 3, 'circling': 10, 'extended_not_reached': 8}
+Merged classes, seed-mean share (A, B, B - A): arrive_stay 26.9 / 26.5 / -0.3; arrive_leave 33.6 / 34.1 / +0.5; base_ok_ee_not 22.1 / 22.3 / +0.2; base_not 14.3 / 13.7 / -0.6; crash 3.2 / 3.5 / +0.3
+Share of the net difference from parked_no_arm+circling: reduction of their share +0.7 pp / net difference +0.1 pp = 550.0% [bootstrap -866.7, 824.6] (unstable when the net difference is near 0)
+d0 strata (Holm over the 4 strata with n >= 30, reject at p_adj <= 0.05; the strata with fewer episodes are descriptive, without Holm):
+  M0             n  12 (descriptive) A  36.7%  B  33.3%  B - A -3.3 [-26.7, +21.7] pp, p 0.79, no Holm
+  M1             n  48               A  47.1%  B  44.6%  B - A -2.5 [-12.9, +7.5] pp, p 0.63, Holm 1
+  M2 0.08-0.5    n  46               A  63.9%  B  61.7%  B - A -2.2 [-17.4, +12.6] pp, p 0.79, Holm 1
+  M2 0.5-1.0     n  56               A  66.1%  B  69.3%  B - A +3.2 [-10.4, +16.1] pp, p 0.63, Holm 1
+  M2 >= 1.0      n 138               A  63.8%  B  64.6%  B - A +0.9 [-11.0, +12.8] pp, p 0.87, Holm 1
+  boundary 0.08-0.15 (descriptive, overlaps the strata): n 8, A 47.5%, B 55.0%, B - A +7.5 [-15.0, +32.5] pp
+Secondary metrics (seed-mean share; B - A paired: two-level bootstrap and Welch t; descriptive unless the floor rule is active; expert = the expert run's rate on the same episodes, the reference):
+  reach_2cm           A 79.5 [75.0, 83.9]%  B 79.0 [74.4, 83.3]%  B - A -0.5 [-5.1, +4.1] pp, p 0.83; Welch -0.5 [-5.4, +4.4] pp, p 0.81
+                      expert 99.3%; per seed A 82/76/81/83/76, B 83/76/80/81/75; worst stratum CI upper bound: n >= 30 M1 +3.8 pp, all M1 +3.8 pp
+  reach_5cm           A 92.1 [89.3, 94.5]%  B 92.3 [89.6, 94.7]%  B - A +0.2 [-2.2, +2.6] pp, p 0.9; Welch +0.2 [-2.0, +2.4] pp, p 0.84
+                      expert 99.3%; per seed A 92/91/93/94/90, B 93/91/91/94/92; worst stratum CI upper bound: n >= 30 M2 >= 1.0 +2.8 pp, all M2 >= 1.0 +2.8 pp
+  parked              A 80.7 [73.5, 87.5]%  B 79.5 [72.9, 86.0]%  B - A -1.2 [-10.3, +7.9] pp, p 0.81; Welch -1.2 [-12.5, +10.1] pp, p 0.81
+                      expert 99.0%; per seed A 69/81/82/79/92, B 70/80/78/79/91; worst stratum CI upper bound: n >= 30 M2 0.08-0.5 +8.7 pp, all M2 0.08-0.5 +8.7 pp
+  arm_extended        A 81.7 [77.3, 85.9]%  B 81.2 [76.8, 85.3]%  B - A -0.5 [-3.3, +2.3] pp, p 0.67; Welch -0.5 [-3.4, +2.3] pp, p 0.68
+                      expert 81.7%; per seed A 79/81/85/82/82, B 79/80/83/83/81; worst stratum CI upper bound: n >= 30 M2 0.5-1.0 +1.4 pp, all M2 0.5-1.0 +1.4 pp
+  arm_extended_toward A 80.8 [76.3, 85.0]%  B 80.5 [76.0, 84.7]%  B - A -0.3 [-3.1, +2.5] pp, p 0.8; Welch -0.3 [-3.2, +2.5] pp, p 0.8
+                      expert 81.7%; per seed A 78/80/84/81/81, B 79/78/83/82/81; worst stratum CI upper bound: n >= 30 M2 0.5-1.0 +2.1 pp, all M2 0.5-1.0 +2.1 pp
+  held_10s            A 26.9 [19.2, 35.1]%  B 26.5 [19.7, 34.0]%  B - A -0.3 [-10.1, +9.9] pp, p 0.96; Welch -0.3 [-13.0, +12.3] pp, p 0.95
+                      expert 98.7%; per seed A 40/14/24/28/29, B 38/16/25/27/27; worst stratum CI upper bound: n >= 30 M2 0.08-0.5 +10.9 pp, all M0 +10.0 pp
+  stable_5cm          A 90.5 [87.7, 93.0]%  B 90.7 [87.9, 93.3]%  B - A +0.3 [-1.9, +2.5] pp, p 0.82; Welch +0.3 [-1.2, +1.7] pp, p 0.68
+                      expert 99.3%; per seed A 90/91/91/92/89, B 92/90/89/91/91; worst stratum CI upper bound: n >= 30 M2 >= 1.0 +2.5 pp, all M2 >= 1.0 +2.5 pp
+  Holm over the available secondary metrics (bootstrap p | max(bootstrap p, Welch p)): reach_2cm 1 | 1, reach_5cm 1 | 1, parked 1 | 1, arm_extended 1 | 1, arm_extended_toward 1 | 1, held_10s 1 | 1, stable_5cm 1 | 1
+Adoption-rule inputs (B adopted only if (1) CI lower bound > 0, (2) share from predicted classes >= 50%, (3) every stratum CI upper bound >= -10 pp, (4) HARD same direction, (5) CONFIRM):
+  (1) CI lower bound of B - A: bootstrap -9.0 pp, Welch t (per-seed rates) -11.4 pp (upper: bootstrap +9.6, t +11.7 pp) -> bootstrap > 0 NO, t > 0 NO: condition (1) (both > 0) NOT MET
+  (2) share from predicted classes: 550.0% (parked_no_arm+circling)
+  (3) worst stratum CI upper bound (strata with n >= 30, used): M1 +7.5 pp (needs >= -10 pp); all strata (shown): M1 +7.5 pp
+  reverse direction (A better than B): B - A CI upper bound: bootstrap +9.6 pp, t +11.7 pp (both need < 0: NOT MET); highest stratum B - A CI lower bound (needs <= +10 pp): n >= 30 (used) M2 0.5-1.0 -10.4 pp, all M2 0.5-1.0 -10.4 pp

@@ -1,0 +1,8 @@
+episodes with nav_done: 284
+nav_done -> base still: median 33 ms, p10 20, p90 70; never still 0
+POST_STILL frames 8923 (episodes with >= 1: 141; per episode median 0, p90 87); with qd_arm ~ 0: 0 (episodes with >= 1: 0)
+label torque jump at nav_done ||tau[k0] - tau[k0-1]||: median 27.87 N m, p10 21.30, p90 31.79
+PRE_LOOK frames 187985
+label v,w at k0: max |v| 0.0000, max |w| 0.0000; at k0-1: median |v| 0.000, |w| 0.150
+ring dist at k0 median 0.074 p90 0.127 max 0.180; |beta| at k0 median 0.032 p90 0.050
+ego-novw look-alike (hold-labelled) frames per episode at 1 kHz: median 753, mean 662 -> at stride 9 about 74 rows/episode

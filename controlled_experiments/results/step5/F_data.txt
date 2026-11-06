@@ -1,0 +1,7 @@
+F3 descriptive check (written before any F-model DEV result)
+Cache rule: Replay every 1 kHz step, including all extended hold steps, before offset::9. default_rng(6).integers(0,9) once per trajectory in sorted (seed,episode) order. Features: build_features('ego_novw', measured_signals(...)); labels: shadow (v,w,tau). All numeric training arrays remain float64; no weighting or reach-based filtering.
+Trajectories: 400; training rows: 1277895; shadow nav_done row fraction: 0.543425712
+Torque clip fraction is computed over all rows × 7 joints; p50/p99 are pooled quantiles of |tau| (N·m).
+DAgger: {"n_rows": 1277895, "clip_fraction": 0.08787811205145962, "abs_tau_p50": 4.4073390300443815, "abs_tau_p99": 30.0, "min": -30.0, "max": 30.0}
+Original expert stride-9 rows: {"n_rows": 1764684, "clip_fraction": 0.0013878648285714933, "abs_tau_p50": 1.158294439315796, "abs_tau_p99": 21.115907993316664, "min": -30.0, "max": 30.0}
+400 C3 rollouts (background only): {"n": 400, "success": 0.6225, "classes": {"success": 249, "extended_not_reached": 79, "crash": 13, "circling": 43, "approached_other": 10, "left_or_overshot": 5, "never_other": 1}}

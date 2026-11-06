@@ -1,0 +1,7 @@
+Policy expert on data/pilot: success 5/5 = 100.0% [56.6, 100.0] (95% Wilson), settled 5/5
+Stop reasons: reached 5
+Policy step time: mean 0.087 ms, p99 0.175 ms (median over episodes; control period 1 ms)
+Recorded clean expert reached / this policy succeeded (4 episodes): both 4, expert only 0, policy only 0, neither 0
+v1.1 held_10s (EE < 15 mm for 10 s after the first reach): 5/5 = 100.0% [56.6, 100.0]; extended hold ended: completed 5
+v1.1 stable arrival (EE within tol for >= 0.5 s, ending by 40 s): 5cm 5/5 = 100.0% [56.6, 100.0], 2cm 5, 1cm 5
+v1.1 parked (ring distance < 0.2 m and base still for >= 1.0 s): 5/5 = 100.0% [56.6, 100.0]; arm extended (EE > 0.1 m from its start in the base frame): 5/5 = 100.0% [56.6, 100.0] (both up to the v1 stop point)
