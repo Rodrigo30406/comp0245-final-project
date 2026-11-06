@@ -1,0 +1,5 @@
+C3 K choice (amended rule 1): smallest K with offline gate (ii) and pilot EM arm_extended_toward > 30%
+  K 16: gate (ii) PASS; pilot EM arm_extended_toward 76/100 = 76.0% -> passes
+  K 64: gate (ii) PASS; pilot EM arm_extended_toward 79/100 = 79.0% -> passes
+  K 256: gate (ii) PASS; pilot EM arm_extended_toward 79/100 = 79.0% -> passes
+  -> chosen K = 16

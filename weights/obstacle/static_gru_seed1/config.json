@@ -1,0 +1,44 @@
+{
+  "backend": "pytorch",
+  "clock_horizon_s": 60.0,
+  "input_features": "raw21_targetpolar_clock_lidar64_v1",
+  "keep_expert_failures": false,
+  "mlp": {
+    "alpha": 0.0001,
+    "batch_size": 1024,
+    "hidden_layer_sizes": [
+      128,
+      128
+    ],
+    "learning_rate": 0.001,
+    "max_epochs": null,
+    "min_delta": 0.0,
+    "patience": 40,
+    "seed": 1
+  },
+  "model": "mlp",
+  "name": "mlp_128_128_pytorch_cuda_patience_only_seed1_expert_successes_only_patience40",
+  "normalization": "standard_scaler_training_only",
+  "primary_metric": "episode_macro_balanced_nrmse",
+  "recurrent": {
+    "cell": "gru",
+    "episodes_per_batch": 8,
+    "head_width": 128,
+    "hidden": 128,
+    "layers": 1,
+    "memory_stride_steps": 20,
+    "reaction_period_steps": 1,
+    "state_reset": "every episode; carried and detached across chunks",
+    "tbptt_chunk_decisions": 1000,
+    "tbptt_chunk_rows": 20000
+  },
+  "sample_weighting": "uniform_transition",
+  "split_seed": 20261025,
+  "torch": {
+    "data_placement": "auto",
+    "deterministic": true,
+    "device": "cuda",
+    "validation_batch_size": 16384
+  },
+  "validation_fraction": 0.2
+}

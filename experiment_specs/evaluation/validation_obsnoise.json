@@ -1,0 +1,19 @@
+{
+  "name": "development_validation_closed_loop_obsnoise",
+  "horizon_s": 40.0,
+  "dwell_s": 0.5,
+  "tolerances_m": [
+    0.01,
+    0.02,
+    0.05
+  ],
+  "trace_every_steps": 100,
+  "limits": "expert_command_envelope",
+  "failure_distance_penalty_m": 10.0,
+  "observation_noise": {
+    "base_m": 0.02,
+    "yaw_rad": 0.02,
+    "q_rad": 0.01,
+    "qd_rad_s": 0.05
+  }
+}

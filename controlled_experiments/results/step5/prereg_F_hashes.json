@@ -1,0 +1,12 @@
+{
+  "frozen_at": "2026-11-02T01:44:27.616057+00:00",
+  "plan_sha256": "e1ea8a1b4cc6da21e979e6d4640bfd5727b7e619e2296a6c26ea37b2c7b59c86",
+  "section_sha256": "753a14e699d9c82421bf2c11589393f1a39f43bfe0b1dc66750b61744db6c06e",
+  "report_header": "[Methodology] 第 5 步预注册：实验 F（DAgger 一轮）（2026-11-02 写下，在 F 的任何 DEV/HARD/CONFIRM 运行之前；冻结记录 results/step5/prereg_F_frozen.txt）",
+  "amendment": 1,
+  "original_plan_sha256": "5b2a10886548e433a760ab5c1145d68f26399daa6db44b45c0e090a04976d02a",
+  "evidence": [
+    "F1_amend1_exact_v2.json",
+    "F1_amend1_recorded_v2.json"
+  ]
+}

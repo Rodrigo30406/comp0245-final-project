@@ -1,0 +1,30 @@
+step-3 continued, experiment C3 amendment 1 frozen 2026-10-30 19:41:26 (before K 16's pilot run)
+section: report.txt '[Methodology] 第 3 步续预注册修订 1' .. before the next line starting with '[' ([References] 参考文献（已核对出处）...)
+sha256 f915b7d27368e7debe6f5988ed07d1fe3a3160cffa0b9a4896de6abc7aeb045d
+files (sha256; run_expC3.sh and C3_mechanisms.py replace the hashes of prereg_C3_frozen.txt; the rest of that record holds):
+  3e6e00aeef8283bc2d1b4d7da4c30b63c83c46d598a95de3a6543997661a499e  results/step3/C3_K_choice.py
+  bbace39c2fac42c43d3cc653fc6029b9b886898830d12c7a8da144485dab8530  results/step3/run_expC3.sh
+  9df02715938f74372681f2b5ec679419d6eb321fb7ecec579d91912441331715  results/step3/C3_mechanisms.py
+  0c03759e2f4f8e2bc81b51b911d582d28dd098e6aac6bb47d7dd0dd7c6cc4695  results/step3/C3_probe.json
+  ba0ff9c5d1f3bba75519b76e0e7c1524bc1d2b781fc6d2e2474a457e79f63d0d  train_policy.py
+  ae5dff82c3cc79254afa025223ad1c34accb47365ec57a7e18c9aec30d36811c  results/step3/C3_pilot.py
+  11d9bf22eeef1bc9aa98043a6021ebe9d2a92a2ee2cde1367b9b74c602b24c8f  results/step3/C3_pilot/B-EM_ego-novw-trig-k64_s0_pilot/rollouts.csv
+  d790ffc2a49159bb0e2a08d04d05955dc01d19459890973c544f6e9d0280e7c2  results/step3/C3_pilot/B-EM_ego-novw-trig-k256_s0_pilot/rollouts.csv
+  7ad8dd505236598303de50681e3dcc7627bb8166c32c01bffc2f860d9310d116  results/step3/C3_pilot/B-EM_ego-novw_s0_pilot/rollouts.csv
+[Methodology] 第 3 步续预注册修订 1：实验 C3 的 K 选择规则（2026-10-30，事后修改：看过 K 校准与 K 64 / K 256 的 pilot 诊断之后、K 16 的 pilot 运行之前；用户确认；冻结记录 results/step3/prereg_C3_amend1_frozen.txt）
+------------------------------------------------------------------------------------------------------------------------
+1) 为什么改：预注册的离线门槛 (i)（FROZEN(EM) r 中位 >= 0.5）三个 K 都没过（上一节），但 pilot 闭环里 K 64、K 256 都能启动伸臂
+   （arm_extended_toward 79%，对照 0%）：约 0.3-0.5 的部分响应已经足够，门槛 (i) 比闭环需要的严。这是看过 pilot 结果之后的修改，
+   不是预先的计划；pilot 不是 DEV / HARD / CONFIRM，那三个集合上仍然没有任何 C3 结果。
+2) 新规则（只替换预注册 2) 中"选 K"的门槛，其余不变）：K = {16, 64, 256} 中同时满足下面两条的最小 K（三个 K 都要有两项结果）：
+   (a) 离线门槛 (ii)（不误触发，C3_probe.json，不变）；
+   (b) seed 0 校准模型在 data/pilot 上的 EM 格（hybrid base=expert，--no-early-stop）中，arm_extended_toward 的比例 > 30%
+       （点估计，100 个 episode；30% 取自 C3-EM 预注册的"触发"阈值）。
+   门槛 (i) 不再用于选 K，FROZEN r 照常报告。为此在 pilot 上补跑 K 16（results/step3/C3_pilot/B-EM_ego-novw-trig-k16_s0_pilot）。
+   计算：results/step3/C3_K_choice.py -> C3_K_choice.json / .txt。
+3) 随之改的代码（只改 K 的来源，判定规则不变）：run_expC3.sh 的 train 阶段从 C3_K_choice.json 读 K（原来读 C3_probe.json）；
+   C3_mechanisms.py 的模型一致性检查同样改读 C3_K_choice.json。新的 sha256 记在修订的冻结记录里。
+4) 不变：预注册 1) 与 3)-8) 的全部内容（C3-EM 判定、H-trajectory、H-cooperation、H-premature、地板规则、采纳规则 (1)-(5)、
+   CONFIRM 在 (4) 之后、决定表）；选定 K 的 seed 0 必须与校准模型逐位相同；10 个正式 seed。
+5) 修订之前已看到的（如实记录）：K 校准的全部探针值；K 64、K 256、对照在 pilot 上的结果（上一节第 6) 条）。pilot 上 K 64 的成功
+   比 K 256 多（52% 对 36%）；新规则只看触发（> 30%）并取最小的 K，不按 pilot 成功率选。若 K 16 也满足，就选 K 16。

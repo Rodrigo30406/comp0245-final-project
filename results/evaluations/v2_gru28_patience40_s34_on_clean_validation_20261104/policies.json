@@ -1,0 +1,17 @@
+{
+  "expert": {
+    "kind": "expert"
+  },
+  "gru28_patience40_seed3": {
+    "artifact": "models/gru28_patience40_seed3.npz",
+    "kind": "gru_regressor",
+    "sha256": "796b138cdf7a6b793d8d1c55216226a5179b4014771c3bf40a392ae4ac5e305d",
+    "training_run": "/home/labia10/repos/comp0245-final-project/runs/training/v2_gru28_patience40_seed3"
+  },
+  "gru28_patience40_seed4": {
+    "artifact": "models/gru28_patience40_seed4.npz",
+    "kind": "gru_regressor",
+    "sha256": "e8f6d02456485d57ebf2084cd5c3e03dc80219cf1c61846abba7a2168850a7b6",
+    "training_run": "/home/labia10/repos/comp0245-final-project/runs/training/v2_gru28_patience40_seed4"
+  }
+}

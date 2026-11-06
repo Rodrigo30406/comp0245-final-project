@@ -1,0 +1,44 @@
+models checked against the D freeze record (found): 20; all ok
+
+== D-EM (DEV, expert base, model arm, --no-early-stop): A = C3-EM, B = D-EM, seeds 0-4 ==
+  trigger check: arm_extended_toward A 79.3%, B 77.8% (per seed B 78.3/79.7/77.0/76.0/78.0%); B - A bootstrap -1.5 [-3.7, +0.2] pp, Welch -1.5 [-3.2, +0.2] pp -> PASS (non-inferiority: both CI lower bounds >= -5 pp and every seed >= 70%)
+  reach-required episodes (expert navdone_ee_err >= 0.07 m): 262 (descriptive):
+    success: A 59.7%, B 67.1%, B - A bootstrap +7.4 [-8.9, +23.1] pp, Welch +7.4 [-13.5, +28.3] pp
+    precision pool: A 32.9%, B 22.0%, B - A bootstrap -10.9 [-24.5, +2.6] pp, Welch -10.9 [-28.1, +6.2] pp
+    fine precision (< 15 mm): A 72.1%, B 75.7%, B - A bootstrap +3.6 [-8.4, +14.4] pp, Welch +3.6 [-11.9, +19.1] pp
+    success among extended-toward cells A: 691/1190 = 58.1% (conditioned on extension; descriptive, not pre-registered as a test)
+    success among extended-toward cells B: 801/1167 = 68.6% (conditioned on extension; descriptive, not pre-registered as a test)
+
+== D-MM (DEV): A = C3 ego-novw-trig (no early stop), B = D ego-novw-trig-ee, seeds [0, 1, 2, 3, 4, 5, 6, 7, 8, 9] ==
+  C3 rows: ego-novw-trig_s0_dev: 6 stalled rows replaced by the re-runs (0 of them succeed); ego-novw-trig_s1_dev: 24 stalled rows replaced by the re-runs (2 of them succeed); ego-novw-trig_s2_dev: 36 stalled rows replaced by the re-runs (1 of them succeed); ego-novw-trig_s3_dev: 8 stalled rows replaced by the re-runs (0 of them succeed); ego-novw-trig_s4_dev: 22 stalled rows replaced by the re-runs (2 of them succeed); ego-novw-trig_s5_dev: as run (no early stop); ego-novw-trig_s6_dev: as run (no early stop); ego-novw-trig_s7_dev: as run (no early stop); ego-novw-trig_s8_dev: as run (no early stop); ego-novw-trig_s9_dev: as run (no early stop)
+  decision metric success: A 62.1%  B 69.7%  B - A bootstrap +7.5 [-4.5, +17.7] pp, Welch +7.5 [-5.3, +20.4] pp
+    per seed A 70.0/53.0/63.7/60.0/57.3/55.7/63.0/76.3/65.0/57.3, B 70.0/73.7/30.7/49.0/73.3/76.0/71.7/79.7/88.3/84.3%
+  (1) CI lower bounds: bootstrap -4.5, Welch -5.3 pp -> NOT MET
+  (2) cells failing success and in the precision pool (share of all cells): A 22.8%, B 13.1%, reduction +9.7 pp / net +7.5 pp = 129.2% [bootstrap -568.1, 782.6] -> MET; ENR only (reported): 138.1%
+  (3) worst n >= 30 stratum CI upper bound: M1 +17.1 pp -> MET
+  mirrored: (1) False, (2) False, (3) True
+  H-precision: precision pool A 22.8%, B 13.1%, B - A bootstrap -9.7 [-15.6, -3.2] pp, Welch -9.7 [-16.2, -3.3] pp; fine precision (262 reach-required episodes) A 71.4%, B 76.1%, B - A bootstrap +4.8 [-5.3, +13.6] pp, Welch +4.8 [-5.8, +15.4] pp -> does not hold
+  H-label: z >= 0.45 (231 episodes) bootstrap +3.0 [-10.3, +13.9] pp, Welch +3.0 [-10.9, +16.9] pp; z < 0.45 (69) bootstrap +22.6 [+10.0, +35.3] pp, Welch +22.6 [+9.5, +35.7] pp; difference high - low bootstrap [-31.4, -7.9] pp, Welch -19.6 [-30.8, -8.3] pp -> not decidable (the high-z difference is not significant)
+  H-coverage: precision-pool reduction (A - B) +9.7 pp, CI bootstrap [+3.2, +15.6], Welch [+3.3, +16.2] pp (holds when H-precision does not and the point estimate < 3 pp: 'no reduction seen') -> does not hold
+  H-shortcut: extended cells 2419, ring_dist_at_arm_extend > 0.2 m pooled 1.8% (per seed 0.4/1.3/1.6/0.8/3.4/1.7/0.0/2.9/1.2/5.2%) -> does not hold; circling + left_or_overshot B - A bootstrap +3.0 [-4.1, +10.9] pp, Welch +3.0 [-5.3, +11.2] pp -> base not affected
+    extended_not_reached: A 18.0%  B 7.6%  B - A bootstrap -10.4 [-15.9, -4.4] pp, p 0.001; Welch -10.4 [-16.4, -4.4] pp, p 0.002
+    circling: A 13.5%  B 17.0%  B - A bootstrap +3.4 [-4.2, +11.8] pp, p 0.4; Welch +3.4 [-5.5, +12.3] pp, p 0.42
+    crash: A 1.8%  B 3.0%  B - A bootstrap +1.2 [-2.0, +5.6] pp, p 0.62; Welch +1.2 [-3.3, +5.6] pp, p 0.58
+    approached_other: A 2.6%  B 1.3%  B - A bootstrap -1.3 [-3.1, +0.3] pp, p 0.13; Welch -1.3 [-2.9, +0.4] pp, p 0.12
+    left_or_overshot: A 1.8%  B 1.3%  B - A bootstrap -0.5 [-1.9, +1.0] pp, p 0.5; Welch -0.5 [-1.7, +0.8] pp, p 0.45
+  secondary family (Holm, bootstrap p | max(bootstrap, Welch) p):
+    held_10s: bootstrap +3.6 [-7.6, +14.7] pp, Welch +3.6 [-8.6, +15.7] pp; Holm 1 | 1
+    crash (tipping): bootstrap +1.2 [-2.0, +5.6] pp, Welch +1.2 [-3.3, +5.6] pp; Holm 1 | 1
+    reach_2cm: bootstrap +1.9 [-6.4, +9.4] pp, Welch +1.9 [-6.9, +10.7] pp; Holm 1 | 1
+    arm_extended_toward: bootstrap -1.4 [-3.6, +0.7] pp, Welch -1.4 [-3.0, +0.1] pp; Holm 0.88 | 0.88
+    fine precision: bootstrap +4.8 [-5.3, +13.6] pp, Welch +4.8 [-5.8, +15.4] pp; Holm 1 | 1
+  sensitivity (C3 early-stop rows): success B - A bootstrap +7.7 [-4.4, +18.0] pp, Welch +7.7 [-5.2, +20.6] pp -> (1) NOT MET; (2) share 126.4% -> MET; differs from the main analysis: no (the main analysis without the early stop decides)
+
+== D-MM (HARD): A = C3 ego-novw-trig (no early stop), B = D ego-novw-trig-ee, seeds [0, 1, 2, 3, 4, 5, 6, 7, 8, 9] ==
+  missing: results/ego-novw-trig_s5_hard, results/ego-novw-trig_s6_hard, results/ego-novw-trig_s7_hard, results/ego-novw-trig_s8_hard, results/ego-novw-trig_s9_hard, results/ego-novw-trig-ee_s0_hard, results/ego-novw-trig-ee_s1_hard, results/ego-novw-trig-ee_s2_hard, results/ego-novw-trig-ee_s3_hard, results/ego-novw-trig-ee_s4_hard, results/ego-novw-trig-ee_s5_hard, results/ego-novw-trig-ee_s6_hard, results/ego-novw-trig-ee_s7_hard, results/ego-novw-trig-ee_s8_hard, results/ego-novw-trig-ee_s9_hard
+
+== D-MM (CONFIRM): not opened (no --allow-confirm) ==
+
+== Adoption and next step (decision table, STEP4_PLAN_PROMPT.md 6; the 'stop' rows take precedence) ==
+  conditions (0)-(5): (0) True, (1) False, (2) True, (3) True, (4) None, (5) None
+  -> KEEP C3: no difference detected at a resolution of about 12.9 pp (+7.5 [-4.5, +17.7] pp); report the reasons

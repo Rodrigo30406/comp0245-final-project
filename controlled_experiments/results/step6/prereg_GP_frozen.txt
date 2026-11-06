@@ -1,0 +1,76 @@
+冻结时间（UTC）: 2026-11-02T18:35:22+00:00
+冻结时间 sha256: cf58db92e9a5808b8c84a2107ae873c530b3663fb76b67074591cc2d160d6073
+STEP6_PLAN_PROMPT.md sha256: cd4f0143e9af4e9d93c09a266655365e1d267167f944f879a20968e857598387
+冻结节 sha256: e4024931fcf64fd96bfdf048e94b27b47b5c6210dbb36e08147469d6ef9fcc57
+
+[Methodology] 第 6 步预注册：实验 G（action chunking）与 P（关节参考输出）
+（2026-11-02 写下，在 G、P 的任何 pilot / DEV / HARD / CONFIRM 运行之前；冻结记录 results/step6/prereg_GP_frozen.txt）
+------------------------------------------------------------------------------------------------------------------------
+## 6. 预注册（冻结时把本节原文复制进 report.txt）
+
+### 共同
+- 统计单位 episode；两层 bootstrap `paired_diff` 与按 seed 的 Welch。G 与 P 同时对同一个对照做比较，所以条件 (1) 与镜像
+  条件用 97.5% CI（Bonferroni，2 个比较）；其他 CI 为 95%。次要量在每个实验内做 Holm 校正，描述性。
+- 判定（每个实验分别，主指标 success）：
+  1. DEV：Δsuccess 的两个 97.5% CI 下界都 > 0。
+  2. DEV：crash + left_or_overshot 的增加 ≤ +3 pp（点估计）。
+  3. HARD：Δsuccess 点估计 > 0。
+  4. CONFIRM：Δsuccess 点估计 > 0 且 bootstrap 95% 下界 > 0。
+  - (1)-(4) 全部满足 -> 采纳。(1) 或 (2) 不满足 -> 该实验停止，HARD、CONFIRM 不为它打开，KEEP C3。
+    (3) 或 (4) 不满足 -> KEEP C3，报告 DEV 与该集的差别。
+  - 镜像：DEV 上两个 97.5% CI 上界都 < 0 -> 报告"该改动使 success 变差"。
+  - G、P 都被采纳时：DEV 上 G 对 P 的配对差（seed 平均，两层 bootstrap 95%）不含 0 -> 主模型取较高者；含 0 -> 主模型取 G
+    （G 不依赖"固定 PD 输出层是否符合作业要求"），P 作为另一个被采纳的变体报告。G + P 的组合不检验（时间不够，写进局限）。
+- 次要量（Holm，描述性）：reach_2cm、reach_5cm、held_10s、arm_extended_toward、低处（z < 0.45 m）success、policy_ms。
+
+### 实验 G（action chunking + temporal ensembling）
+- 问题：一次预测未来 10 个动作、执行时对重叠的预测加权平均，能否提高 success？
+- 唯一变量：输出从当前动作变成 10 段的动作块，部署加 temporal ensembling；块的间隔 Δ 按 G5 在 pilot 上选定。混杂：当前动作在
+  损失中的份额降为 1/10；chunking 与 ensembling 不分开检验。
+- 主假设 H-G：块预测与平均让底盘和机械臂的指令在时间上一致，减少闭环中的抖动和误差累积，所以底盘层面的失败减少。
+- 机制预测（DEV，G 减 C3）：
+  - MG1：circling 减少（点估计 < 0）。
+  - MG2：held_10s 增加（点估计 > 0）。
+  - MG3（来自"隐藏积分器"的诊断，预测不变）：extended_not_reached 的两个 95% CI 都在 ±7 pp 之内。
+  - MG4：reach 阶段力矩的相邻差变小（点估计，描述性）。
+- 竞争假设：
+  - CG1 延迟：最旧的预测权重最大，反应变慢，过冲与 circling 增加；pilot 上大的 Δ 变差。
+  - CG2 无效：相邻观测的预测误差高度相关，平均几乎不减小误差；success 与失败类都不变。
+  - CG3 当前动作变差：j = 0 段的验证损失高于 C3（同一个量，可直接比），精度变差，extended_not_reached 增加。
+  - CG4 积分器诊断不对：extended_not_reached 明显减少（MG3 不成立）。这会否定 Discussion 中"最后 1-2 cm 来自隐藏状态"的说法。
+- Δ 的选择规则与停止规则：G5（冻结时连同本节一起冻结）。
+
+### 实验 P（输出关节参考 + 固定 PD）
+- 问题：让模型输出专家的关节参考（q_des - q、qd_des），由专家的 PD + 重力补偿换成力矩，能否提高 success？
+- 唯一变量：机械臂的输出表示（力矩 -> 参考 + 固定输出层）；底盘输出、特征、数据、K 都不变。混杂：输出维数 9 -> 16
+  （用 1/√2 的权重保持底盘 / 机械臂的损失占比）。
+- 主假设 H-P：固定层给出精确的刚度 kp、阻尼 kd 与重力补偿，参考误差 δe 只造成约 δe 的位置误差；C3 在 target 附近的有效刚度
+  是学出来的、未知的。所以最后几厘米更准，侧翻更少。
+- 机制预测（DEV，P 减 C3）：
+  - MP1：extended_not_reached 减少（两个 95% CI 上界都 < 0）。
+  - MP2：crash 减少（点估计 < 0）。
+  - MP3：circling 不变（两个 95% CI 都在 ±7 pp 之内；底盘输出没变）。
+  - MP4：离线 reach_hold 的力矩 RMSE 低于 C3（10 个 seed 的中位数，描述性）。
+- 竞争假设：
+  - CP1 放大：e 的误差经 kp = 100 放大（0.01 rad = 1 N·m），而 PD 部分本身的方差比力矩大（Discussion 第 2 条），离线力矩 RMSE
+    不低于 C3，success 不升。
+  - CP2 积分器仍然看不到：e 的"领先"部分依赖历史，机械臂仍停在离 target 1-2 cm 处，extended_not_reached 不变。
+  - CP3 触发处的跳变：专家开始伸臂时关节 6 的参考被限位截断从 1.0 抬到约 1.18 rad（e 跳变约 0.18 rad，约 18 N·m），
+    这个跳变取决于锁存的 reach 状态；学习者若把它学平，伸臂的起始会变化。看 arm_extended_toward 与 parked_no_arm。
+
+### G5 Δ 的校准（pilot，data/pilot，100 个 episode；不是 DEV / HARD / CONFIRM）
+- 训练 Δ = 9、27、81 各 seed 0、1（6 个模型）；在 data/pilot 上跑完整模型（MM，`--no-early-stop`）。同时在 pilot 上跑
+  C3 s0、s1 作为参照（如果 pilot 上还没有 C3 的 MM 运行）。
+- 规则（冻结在 §6）：Δ* = pilot success（2 个 seed 平均）最高的 Δ；与最高值相差 ≤ 5 pp 的 Δ 中取最小的。
+  停止规则：若 success(Δ*) < C3 pilot success - 10 pp，G 停止，不跑 DEV，报告"在 pilot 上三个块长都明显变差"。
+- 选定 Δ* 后，seed 0、1 的校准模型直接作为正式模型（必须与用相同参数重训的结果逐位相同，抽查 seed 0）；再训练 seed 2-9 与
+  100-104。
+- 输出 `results/step6/G_pilot.txt/.json`、`fig_G_pilot.{png,pdf}`（pilot success 对块时长，C3 画在 0 ms）。
+
+- 修订 1（2026-11-02，冻结之前；Claude 在执行者的 P2(b) 失败后写下，用户事先授权"直接跑、完成任务优先"，事后告知）：
+  原方案要求固定层总是做 ±0.15 的 lead 截断和关节限位截断。P2(b) 在 train episode 4 上失败（最大差 18.4 N·m）：机械臂初始
+  关节 6 为 1.0 rad，低于下限 1.134 + margin 0.05，专家在导航分支直接用 q_hold、不截断，固定层却把参考抬到 1.184 rad；
+  在 reach 分支，限位截断也让 |e| 超过 0.15（10 个 episode 中 0.6% 的步）。Claude 的复核（只读 data/train 的 10 个 P2 episode）：
+  去掉参考截断、只保留最后的 ±30 N·m 力矩截断，重建力矩与录制值的最大差为 1.9e-5 N·m（float32 量化）。改动只涉及固定层
+  的定义，在任何 G/P 训练或闭环运行之前；P 的问题、变量与判定规则不变；竞争假设 CP3 相应改写。第一次失败的证据文件保留。
+

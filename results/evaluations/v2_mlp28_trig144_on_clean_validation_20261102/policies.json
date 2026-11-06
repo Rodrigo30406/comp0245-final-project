@@ -1,0 +1,23 @@
+{
+  "expert": {
+    "kind": "expert"
+  },
+  "mlp28_trig144_seed0": {
+    "artifact": "models/mlp28_trig144_seed0.npz",
+    "kind": "egocentric_mlp_regressor",
+    "sha256": "27a7b69e65579de36f20263308b8a23b07f1e4ea46e4c827017829d72350caa4",
+    "training_run": "/home/labia10/repos/comp0245-final-project/runs/training/v2_mlp28_trig144_seed0"
+  },
+  "mlp28_trig144_seed1": {
+    "artifact": "models/mlp28_trig144_seed1.npz",
+    "kind": "egocentric_mlp_regressor",
+    "sha256": "0ca0112e517c87c03fcdde16b25a5eaf988d62b0e9e84d3617e1d4c6367039ba",
+    "training_run": "/home/labia10/repos/comp0245-final-project/runs/training/v2_mlp28_trig144_seed1"
+  },
+  "mlp28_trig144_seed2": {
+    "artifact": "models/mlp28_trig144_seed2.npz",
+    "kind": "egocentric_mlp_regressor",
+    "sha256": "f9244e1e463f7e845dcf22c4c5bd017db9bbcb6ef890b17cb78ae3c4cf232d2e",
+    "training_run": "/home/labia10/repos/comp0245-final-project/runs/training/v2_mlp28_trig144_seed2"
+  }
+}

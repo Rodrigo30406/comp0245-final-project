@@ -1,0 +1,14 @@
+{
+  "time": "2026-11-03T14:19:28+00:00",
+  "plan_sha256": "38de0c766e44e178748352e1b693b232eab4f056907b2bb1ac739aeddbfe1fea",
+  "frozen_sha256": "ea5730217df041cfdebf8f5fa18e37acd88f214611da0ab79dca02fbe9a3f7fa",
+  "seeds": [
+    100,
+    101,
+    102,
+    103,
+    104
+  ],
+  "episodes_per_seed": 300,
+  "rule": "one PC opening; completed runs skip, owned interrupted runs resume"
+}

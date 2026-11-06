@@ -1,0 +1,30 @@
+== still+look (reach): 8802 frames (8802 used, 8802 with |label - hold| > 0.5 N m), |label - hold| median 11.18 N m
+   ego       median alpha (0 = hold, 1 = reach label): 1.01 1.01 0.98 1.02 1.00
+   ego-novw  median alpha (0 = hold, 1 = reach label): 0.99 1.00 1.00 1.00 1.01
+== moving+look, not reach: 187985 frames (20000 used, 19373 with |label - hold| > 0.5 N m), |label - hold| median 2.83 N m
+   ego       median |pred - hold| N m: 2.84 2.83 2.83 2.84 2.84
+   ego-novw  median |pred - hold| N m: 2.82 2.84 2.83 2.84 2.83
+== split the still+look frames by arm joint speed (max |qd_arm|) ==
+  max|qd_arm| in [0, 0.05) rad/s: 1 frames in 1 episodes; time since nav_done median -219 ms; |label-hold| median 6.5 N m; ego alpha 1.00 0.99 1.00 0.99 1.00; ego-novw alpha 1.00 1.02 1.02 1.00 1.01
+  qd in [0.05,0.2): 0 frames
+  max|qd_arm| in [0.2, 1000000000.0) rad/s: 8801 frames in 139 episodes; time since nav_done median 69 ms; |label-hold| median 11.2 N m; ego alpha 1.01 1.01 0.98 1.02 1.00; ego-novw alpha 0.99 1.00 1.00 1.00 1.01
+  first 1 ms after nav_done: 284 frames; still share 0%; max|qd_arm| median 0.087; ego alpha 0.01 0.00 0.00 0.01 0.01; ego-novw alpha 0.00 0.00 0.00 -0.00 0.00
+  first 5 ms after nav_done: 1420 frames; still share 0%; max|qd_arm| median 0.175; ego alpha 0.97 0.95 0.94 0.96 0.97; ego-novw alpha 0.92 0.93 0.91 0.94 0.95
+  first 10 ms after nav_done: 2840 frames; still share 0%; max|qd_arm| median 0.298; ego alpha 0.99 0.97 0.96 0.98 0.98; ego-novw alpha 0.97 0.97 0.96 0.98 0.97
+== the trigger frame (nav_done step) itself ==
+  n 284; |v_mes| median 0.0018 p90 0.0786; |w_mes| median 0.1381 p10 0.0805; |beta| median 1.82 deg; ring median 7.4 cm; max|qd_arm| median 0.087; look 85%
+  baseline before nav_done (look frames): max|qd_arm| median 0.054 p90 0.142
+  base first 'still' (|v|<0.01, |w|<0.02) after nav_done: median 33 ms, p10 20, p90 70; never 0 of 284
+  look & arm quiet (qd<p90 baseline): 169596 frames, reach-labelled 0.2% (409 frames)
+    ... & |v_mes| < 0.01: 33631 frames, reach-labelled 1.1% (368 frames)
+    ... & |v_mes| < 0.01 & |beta| < 0.05: 16311 frames, reach-labelled 2.1% (335 frames)
+    ... & still (|v|<0.01,|w|<0.02): 1 frames, reach-labelled 0.0% (0 frames)
+== counterfactual at the nav_done frame: same state, but v_mes = w_mes = 0 and qd_arm = 0 (the C1 'still' state) ==
+  |label - hold| at nav_done: median 27.8 N m (n 284)
+  as recorded      ego alpha median/share>0.5: 0.01/0% 0.00/0% 0.00/0% 0.01/0% 0.01/0%; ego-novw alpha median/share>0.5: 0.00/0% 0.00/0% 0.00/0% -0.00/0% 0.00/0%
+  v=w=0            ego alpha median/share>0.5: 0.01/0% 0.01/0% 0.01/0% 0.01/0% 0.01/0%; ego-novw alpha median/share>0.5: 0.00/0% 0.00/0% 0.00/0% -0.00/0% 0.00/0%
+  v=w=0, qd_arm=0  ego alpha median/share>0.5: 0.01/0% 0.01/0% 0.02/0% 0.01/0% 0.01/0%; ego-novw alpha median/share>0.5: 0.00/0% 0.00/0% 0.00/0% -0.00/0% 0.00/0%
+== does the switch to reach torques key on the arm's own motion (qd_arm)? frames 3-10 ms after nav_done ==
+  as recorded  (1988 frames): ego alpha 1.00 0.97 0.97 1.00 0.98; ego-novw alpha 0.99 0.98 0.98 1.00 0.99
+  qd_arm = 0   (1988 frames): ego alpha 0.00 0.00 0.01 -0.00 0.01; ego-novw alpha -0.00 -0.01 -0.00 -0.01 -0.01
+  v=w=0        (1988 frames): ego alpha 1.00 0.97 0.97 1.00 0.99; ego-novw alpha 0.99 0.98 0.98 1.00 0.99

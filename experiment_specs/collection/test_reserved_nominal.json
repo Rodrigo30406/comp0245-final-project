@@ -1,0 +1,11 @@
+{
+  "name": "test_reserved_nominal_start",
+  "episodes": 64,
+  "seed": 20261027,
+  "split": "test",
+  "headless": true,
+  "max_steps": 40000,
+  "record_every_steps": 1,
+  "target_box": {"x": [-2.0, 2.0], "y": [-2.0, 2.0], "z": [0.3, 0.8]},
+  "initial_base": {"mode": "nominal"}
+}

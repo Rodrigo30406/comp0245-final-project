@@ -1,0 +1,23 @@
+{
+  "expert": {
+    "kind": "expert"
+  },
+  "gru28_patience40_seed0": {
+    "artifact": "models/gru28_patience40_seed0.npz",
+    "kind": "gru_regressor",
+    "sha256": "f23daadae7d42d49828adbe2c28eb06f33eceb9e093b08aa87fd798901fe875a",
+    "training_run": "/home/labia10/repos/comp0245-final-project/runs/training/v2_gru28_patience40_seed0"
+  },
+  "gru28_patience40_seed1": {
+    "artifact": "models/gru28_patience40_seed1.npz",
+    "kind": "gru_regressor",
+    "sha256": "f2bbae794dc127e2aaae5f560ef823d53a4f921ba5ab0417a32ba6ee156b0262",
+    "training_run": "/home/labia10/repos/comp0245-final-project/runs/training/v2_gru28_patience40_seed1"
+  },
+  "gru28_patience40_seed2": {
+    "artifact": "models/gru28_patience40_seed2.npz",
+    "kind": "gru_regressor",
+    "sha256": "4b88ac7576b500db749615363b2bdc4f21e662d697afea74d62cbe4338454393",
+    "training_run": "/home/labia10/repos/comp0245-final-project/runs/training/v2_gru28_patience40_seed2"
+  }
+}

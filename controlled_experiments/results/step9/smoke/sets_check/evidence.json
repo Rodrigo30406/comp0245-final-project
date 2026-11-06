@@ -1,0 +1,7 @@
+{
+  "check": "run_step9_sets.sh (2 batches of 50, resume) vs the single pilot2 run",
+  "episodes_differing": [],
+  "index_equal_except_wall_time": true,
+  "scenarios_json_equal": true,
+  "passed": true
+}

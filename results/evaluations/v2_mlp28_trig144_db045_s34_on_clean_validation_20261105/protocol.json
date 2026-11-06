@@ -1,0 +1,14 @@
+{
+  "dwell_s": 0.5,
+  "failure_distance_penalty_m": 10.0,
+  "horizon_s": 40.0,
+  "limits": "expert_command_envelope",
+  "name": "development_validation_closed_loop_wheel_dead_band_0.45",
+  "tolerances_m": [
+    0.01,
+    0.02,
+    0.05
+  ],
+  "trace_every_steps": 100,
+  "wheel_dead_band_rad_s": 0.45
+}

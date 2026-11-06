@@ -1,0 +1,16 @@
+{
+  "created_utc": "2026-11-02T18:35:22+00:00",
+  "time_sha256": "cf58db92e9a5808b8c84a2107ae873c530b3663fb76b67074591cc2d160d6073",
+  "plan_sha256": "cd4f0143e9af4e9d93c09a266655365e1d267167f944f879a20968e857598387",
+  "section_sha256": "e4024931fcf64fd96bfdf048e94b27b47b5c6210dbb36e08147469d6ef9fcc57",
+  "report_header": "[Methodology] 第 6 步预注册：实验 G（action chunking）与 P（关节参考输出）\n（2026-11-02 写下，在 G、P 的任何 pilot / DEV / HARD / CONFIRM 运行之前；冻结记录 results/step6/prereg_GP_frozen.txt）",
+  "frozen_sha256": "880cf8f833a08dd90ecb5e887e623149342cd2f9d9b4c95a4982c98ea5a844fe",
+  "report_before_sha256": "3eb6c9e425da460e9ed169316f1bf89148e87836ac13e12f5cd15e13ad022af1",
+  "section_length": 3800,
+  "includes": [
+    "§6 verbatim",
+    "G5 verbatim",
+    "§4 P1 revision 1 verbatim"
+  ],
+  "verification_sha256": "34a5362bb0f265816a46d82b38e3ac570ecfa974f5aa63527aa21a1ab957353f"
+}

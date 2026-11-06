@@ -1,0 +1,17 @@
+{
+  "expert": {
+    "kind": "expert"
+  },
+  "tf28_p40_seed3": {
+    "artifact": "models/tf28_p40_seed3.npz",
+    "kind": "transformer_regressor",
+    "sha256": "df75c25ba05beefced2934514c3bec608814c1f114418795dde1f5c8414d6ff6",
+    "training_run": "/home/labia10/repos/comp0245-final-project/runs/training/v2_tf28_p40_seed3"
+  },
+  "tf28_p40_seed4": {
+    "artifact": "models/tf28_p40_seed4.npz",
+    "kind": "transformer_regressor",
+    "sha256": "7d11703f793a4e937a15bdfdcedd382e76a3f285f05c69df237d7bbf9469a861",
+    "training_run": "/home/labia10/repos/comp0245-final-project/runs/training/v2_tf28_p40_seed4"
+  }
+}

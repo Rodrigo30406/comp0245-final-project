@@ -1,0 +1,7 @@
+{
+  "peak_rss_mib": 5557.7578125,
+  "jobs_requested": 5,
+  "jobs_cap": 5,
+  "reserve_mib": 2048,
+  "limit_mib": 6144
+}

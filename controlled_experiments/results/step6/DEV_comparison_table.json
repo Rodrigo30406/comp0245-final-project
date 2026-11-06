@@ -1,0 +1,505 @@
+{
+  "set": "dev",
+  "confidence_level": 0.95,
+  "n_boot": 10000,
+  "bootstrap_seed": 0,
+  "software_smoke": false,
+  "models": {
+    "C3": {
+      "runs": [
+        "/home/w/comp0245/LAB_SESSION_COMP_0245_2026_PUBLIC/.claude/worktrees/eval-protocol/final/robotnik_arm_task/results/ego-novw-trig_s0_dev",
+        "/home/w/comp0245/LAB_SESSION_COMP_0245_2026_PUBLIC/.claude/worktrees/eval-protocol/final/robotnik_arm_task/results/ego-novw-trig_s1_dev",
+        "/home/w/comp0245/LAB_SESSION_COMP_0245_2026_PUBLIC/.claude/worktrees/eval-protocol/final/robotnik_arm_task/results/ego-novw-trig_s2_dev",
+        "/home/w/comp0245/LAB_SESSION_COMP_0245_2026_PUBLIC/.claude/worktrees/eval-protocol/final/robotnik_arm_task/results/ego-novw-trig_s3_dev",
+        "/home/w/comp0245/LAB_SESSION_COMP_0245_2026_PUBLIC/.claude/worktrees/eval-protocol/final/robotnik_arm_task/results/ego-novw-trig_s4_dev",
+        "/home/w/comp0245/LAB_SESSION_COMP_0245_2026_PUBLIC/.claude/worktrees/eval-protocol/final/robotnik_arm_task/results/ego-novw-trig_s5_dev",
+        "/home/w/comp0245/LAB_SESSION_COMP_0245_2026_PUBLIC/.claude/worktrees/eval-protocol/final/robotnik_arm_task/results/ego-novw-trig_s6_dev",
+        "/home/w/comp0245/LAB_SESSION_COMP_0245_2026_PUBLIC/.claude/worktrees/eval-protocol/final/robotnik_arm_task/results/ego-novw-trig_s7_dev",
+        "/home/w/comp0245/LAB_SESSION_COMP_0245_2026_PUBLIC/.claude/worktrees/eval-protocol/final/robotnik_arm_task/results/ego-novw-trig_s8_dev",
+        "/home/w/comp0245/LAB_SESSION_COMP_0245_2026_PUBLIC/.claude/worktrees/eval-protocol/final/robotnik_arm_task/results/ego-novw-trig_s9_dev"
+      ],
+      "replacement_notes": [
+        "ego-novw-trig_s0_dev: replaced 6 stalled rows from /home/w/comp0245/LAB_SESSION_COMP_0245_2026_PUBLIC/.claude/worktrees/eval-protocol/final/robotnik_arm_task/results/step3/nostall/ego-novw-trig_s0_dev",
+        "ego-novw-trig_s1_dev: replaced 24 stalled rows from /home/w/comp0245/LAB_SESSION_COMP_0245_2026_PUBLIC/.claude/worktrees/eval-protocol/final/robotnik_arm_task/results/step3/nostall/ego-novw-trig_s1_dev",
+        "ego-novw-trig_s2_dev: replaced 36 stalled rows from /home/w/comp0245/LAB_SESSION_COMP_0245_2026_PUBLIC/.claude/worktrees/eval-protocol/final/robotnik_arm_task/results/step3/nostall/ego-novw-trig_s2_dev",
+        "ego-novw-trig_s3_dev: replaced 8 stalled rows from /home/w/comp0245/LAB_SESSION_COMP_0245_2026_PUBLIC/.claude/worktrees/eval-protocol/final/robotnik_arm_task/results/step3/nostall/ego-novw-trig_s3_dev",
+        "ego-novw-trig_s4_dev: replaced 22 stalled rows from /home/w/comp0245/LAB_SESSION_COMP_0245_2026_PUBLIC/.claude/worktrees/eval-protocol/final/robotnik_arm_task/results/step3/nostall/ego-novw-trig_s4_dev"
+      ],
+      "metrics": {
+        "success": {
+          "mean": 0.6213333333333333,
+          "lo": 0.5663333333333334,
+          "hi": 0.679,
+          "per_seed": [
+            0.7,
+            0.53,
+            0.6366666666666667,
+            0.6,
+            0.5733333333333334,
+            0.5566666666666666,
+            0.63,
+            0.7633333333333333,
+            0.65,
+            0.5733333333333334
+          ],
+          "n_seeds": 10,
+          "n_episodes": 300
+        },
+        "crash": {
+          "mean": 0.018333333333333333,
+          "lo": 0.005333333333333334,
+          "hi": 0.036000000000000004,
+          "per_seed": [
+            0.07666666666666666,
+            0.023333333333333334,
+            0.02666666666666667,
+            0.03333333333333333,
+            0.0,
+            0.0,
+            0.0,
+            0.0033333333333333335,
+            0.0033333333333333335,
+            0.016666666666666666
+          ],
+          "n_seeds": 10,
+          "n_episodes": 300
+        },
+        "no_start": {
+          "mean": 0.0,
+          "lo": 0.0,
+          "hi": 0.0,
+          "per_seed": [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "n_seeds": 10,
+          "n_episodes": 300
+        },
+        "runaway": {
+          "mean": 0.0,
+          "lo": 0.0,
+          "hi": 0.0,
+          "per_seed": [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "n_seeds": 10,
+          "n_episodes": 300
+        },
+        "no_progress": {
+          "mean": 0.0,
+          "lo": 0.0,
+          "hi": 0.0,
+          "per_seed": [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "n_seeds": 10,
+          "n_episodes": 300
+        },
+        "never_other": {
+          "mean": 0.0,
+          "lo": 0.0,
+          "hi": 0.0,
+          "per_seed": [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "n_seeds": 10,
+          "n_episodes": 300
+        },
+        "circling": {
+          "mean": 0.13533333333333333,
+          "lo": 0.09466666666666668,
+          "hi": 0.18100000000000002,
+          "per_seed": [
+            0.15,
+            0.14,
+            0.08,
+            0.18666666666666668,
+            0.06,
+            0.27666666666666667,
+            0.15333333333333332,
+            0.09666666666666666,
+            0.07,
+            0.14
+          ],
+          "n_seeds": 10,
+          "n_episodes": 300
+        },
+        "left_or_overshot": {
+          "mean": 0.018,
+          "lo": 0.009333333333333334,
+          "hi": 0.028666666666666667,
+          "per_seed": [
+            0.01,
+            0.04,
+            0.023333333333333334,
+            0.01,
+            0.03,
+            0.0033333333333333335,
+            0.013333333333333334,
+            0.023333333333333334,
+            0.02,
+            0.006666666666666667
+          ],
+          "n_seeds": 10,
+          "n_episodes": 300
+        },
+        "parked_no_arm": {
+          "mean": 0.0013333333333333333,
+          "lo": 0.0,
+          "hi": 0.004008333333333213,
+          "per_seed": [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0033333333333333335,
+            0.0,
+            0.0033333333333333335,
+            0.0033333333333333335,
+            0.0033333333333333335
+          ],
+          "n_seeds": 10,
+          "n_episodes": 300
+        },
+        "extended_not_reached": {
+          "mean": 0.17966666666666667,
+          "lo": 0.13533333333333336,
+          "hi": 0.22600000000000003,
+          "per_seed": [
+            0.06333333333333334,
+            0.23333333333333334,
+            0.19,
+            0.16333333333333333,
+            0.27,
+            0.14666666666666667,
+            0.16,
+            0.09666666666666666,
+            0.24,
+            0.23333333333333334
+          ],
+          "n_seeds": 10,
+          "n_episodes": 300
+        },
+        "approached_other": {
+          "mean": 0.026,
+          "lo": 0.012333333333333335,
+          "hi": 0.043000000000000003,
+          "per_seed": [
+            0.0,
+            0.03333333333333333,
+            0.043333333333333335,
+            0.006666666666666667,
+            0.06666666666666667,
+            0.013333333333333334,
+            0.043333333333333335,
+            0.013333333333333334,
+            0.013333333333333334,
+            0.02666666666666667
+          ],
+          "n_seeds": 10,
+          "n_episodes": 300
+        },
+        "policy_ms": {
+          "mean": 0.1432240252743071,
+          "lo": 0.13855604159119642,
+          "hi": 0.14745895880435528,
+          "per_seed": [
+            0.13763602502848765,
+            0.13756588705083098,
+            0.1392435790546241,
+            0.14621888280152548,
+            0.12875747470625173,
+            0.15035084015255454,
+            0.1434841278607681,
+            0.14898702357863206,
+            0.14920744769920286,
+            0.15078896481019374
+          ],
+          "n_seeds": 10,
+          "n_episodes": 300
+        }
+      }
+    },
+    "P": {
+      "runs": [
+        "/home/w/comp0245/LAB_SESSION_COMP_0245_2026_PUBLIC/.claude/worktrees/eval-protocol/final/robotnik_arm_task/results/ego-novw-trig-pd_s0_dev",
+        "/home/w/comp0245/LAB_SESSION_COMP_0245_2026_PUBLIC/.claude/worktrees/eval-protocol/final/robotnik_arm_task/results/ego-novw-trig-pd_s1_dev",
+        "/home/w/comp0245/LAB_SESSION_COMP_0245_2026_PUBLIC/.claude/worktrees/eval-protocol/final/robotnik_arm_task/results/ego-novw-trig-pd_s2_dev",
+        "/home/w/comp0245/LAB_SESSION_COMP_0245_2026_PUBLIC/.claude/worktrees/eval-protocol/final/robotnik_arm_task/results/ego-novw-trig-pd_s3_dev",
+        "/home/w/comp0245/LAB_SESSION_COMP_0245_2026_PUBLIC/.claude/worktrees/eval-protocol/final/robotnik_arm_task/results/ego-novw-trig-pd_s4_dev",
+        "/home/w/comp0245/LAB_SESSION_COMP_0245_2026_PUBLIC/.claude/worktrees/eval-protocol/final/robotnik_arm_task/results/ego-novw-trig-pd_s5_dev",
+        "/home/w/comp0245/LAB_SESSION_COMP_0245_2026_PUBLIC/.claude/worktrees/eval-protocol/final/robotnik_arm_task/results/ego-novw-trig-pd_s6_dev",
+        "/home/w/comp0245/LAB_SESSION_COMP_0245_2026_PUBLIC/.claude/worktrees/eval-protocol/final/robotnik_arm_task/results/ego-novw-trig-pd_s7_dev",
+        "/home/w/comp0245/LAB_SESSION_COMP_0245_2026_PUBLIC/.claude/worktrees/eval-protocol/final/robotnik_arm_task/results/ego-novw-trig-pd_s8_dev",
+        "/home/w/comp0245/LAB_SESSION_COMP_0245_2026_PUBLIC/.claude/worktrees/eval-protocol/final/robotnik_arm_task/results/ego-novw-trig-pd_s9_dev"
+      ],
+      "replacement_notes": [],
+      "metrics": {
+        "success": {
+          "mean": 0.7093333333333334,
+          "lo": 0.6420000000000001,
+          "hi": 0.7706666666666666,
+          "per_seed": [
+            0.8266666666666667,
+            0.7766666666666666,
+            0.7766666666666666,
+            0.49333333333333335,
+            0.6833333333333333,
+            0.77,
+            0.7533333333333333,
+            0.7266666666666667,
+            0.6466666666666666,
+            0.64
+          ],
+          "n_seeds": 10,
+          "n_episodes": 300
+        },
+        "crash": {
+          "mean": 0.028,
+          "lo": 0.009666666666666667,
+          "hi": 0.05033333333333334,
+          "per_seed": [
+            0.0,
+            0.05333333333333334,
+            0.023333333333333334,
+            0.043333333333333335,
+            0.09333333333333334,
+            0.0,
+            0.05333333333333334,
+            0.006666666666666667,
+            0.0,
+            0.006666666666666667
+          ],
+          "n_seeds": 10,
+          "n_episodes": 300
+        },
+        "no_start": {
+          "mean": 0.0,
+          "lo": 0.0,
+          "hi": 0.0,
+          "per_seed": [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "n_seeds": 10,
+          "n_episodes": 300
+        },
+        "runaway": {
+          "mean": 0.0,
+          "lo": 0.0,
+          "hi": 0.0,
+          "per_seed": [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "n_seeds": 10,
+          "n_episodes": 300
+        },
+        "no_progress": {
+          "mean": 0.0003333333333333333,
+          "lo": 0.0,
+          "hi": 0.002,
+          "per_seed": [
+            0.0033333333333333335,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "n_seeds": 10,
+          "n_episodes": 300
+        },
+        "never_other": {
+          "mean": 0.0,
+          "lo": 0.0,
+          "hi": 0.0,
+          "per_seed": [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "n_seeds": 10,
+          "n_episodes": 300
+        },
+        "circling": {
+          "mean": 0.06233333333333333,
+          "lo": 0.03,
+          "hi": 0.10133333333333336,
+          "per_seed": [
+            0.016666666666666666,
+            0.03,
+            0.0033333333333333335,
+            0.18333333333333332,
+            0.06666666666666667,
+            0.023333333333333334,
+            0.056666666666666664,
+            0.12333333333333334,
+            0.09333333333333334,
+            0.02666666666666667
+          ],
+          "n_seeds": 10,
+          "n_episodes": 300
+        },
+        "left_or_overshot": {
+          "mean": 0.03,
+          "lo": 0.016333333333333335,
+          "hi": 0.04633333333333334,
+          "per_seed": [
+            0.03,
+            0.006666666666666667,
+            0.0,
+            0.04,
+            0.043333333333333335,
+            0.016666666666666666,
+            0.02666666666666667,
+            0.03666666666666667,
+            0.07,
+            0.03
+          ],
+          "n_seeds": 10,
+          "n_episodes": 300
+        },
+        "parked_no_arm": {
+          "mean": 0.0006666666666666666,
+          "lo": 0.0,
+          "hi": 0.002666666666666667,
+          "per_seed": [
+            0.0,
+            0.0,
+            0.0033333333333333335,
+            0.0,
+            0.0033333333333333335,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "n_seeds": 10,
+          "n_episodes": 300
+        },
+        "extended_not_reached": {
+          "mean": 0.155,
+          "lo": 0.11733333333333336,
+          "hi": 0.19733333333333336,
+          "per_seed": [
+            0.11333333333333333,
+            0.12666666666666668,
+            0.17,
+            0.22666666666666666,
+            0.1,
+            0.17666666666666667,
+            0.10333333333333333,
+            0.09333333333333334,
+            0.16,
+            0.28
+          ],
+          "n_seeds": 10,
+          "n_episodes": 300
+        },
+        "approached_other": {
+          "mean": 0.014333333333333333,
+          "lo": 0.007333333333333334,
+          "hi": 0.023008333333333218,
+          "per_seed": [
+            0.01,
+            0.006666666666666667,
+            0.023333333333333334,
+            0.013333333333333334,
+            0.01,
+            0.013333333333333334,
+            0.006666666666666667,
+            0.013333333333333334,
+            0.03,
+            0.016666666666666666
+          ],
+          "n_seeds": 10,
+          "n_episodes": 300
+        },
+        "policy_ms": {
+          "mean": 0.21332382220993124,
+          "lo": 0.20757956962855045,
+          "hi": 0.21995965972811732,
+          "per_seed": [
+            0.2123858018155314,
+            0.20547739457762398,
+            0.21165347108078875,
+            0.21019993742443385,
+            0.20832548989342234,
+            0.22384786587781197,
+            0.2358612248903546,
+            0.2183471318755836,
+            0.20784652408232743,
+            0.19929338058143398
+          ],
+          "n_seeds": 10,
+          "n_episodes": 300
+        }
+      }
+    }
+  }
+}

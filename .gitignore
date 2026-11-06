@@ -9,15 +9,15 @@ venv/
 !.env.example
 
 # Simulator assets supplied by RoboEnv
-models/
-configs/
+/models/
+/configs/
 
 # Generated datasets and trained weights
-data/
-datasets/
-checkpoints/
-runs/
-wandb/
+/data/
+/datasets/
+/checkpoints/
+/runs/
+/wandb/
 *.pt
 *.pth
 *.ckpt

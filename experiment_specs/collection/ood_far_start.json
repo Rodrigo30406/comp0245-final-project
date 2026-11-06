@@ -1,0 +1,39 @@
+{
+ "episodes": 210,
+ "headless": true,
+ "max_steps": 40000,
+ "record_every_steps": 1,
+ "split": "development",
+ "name": "ood_far_start",
+ "seed": 20261105,
+ "initial_base": {
+  "mode": "uniform_xy",
+  "x": [
+   2.3,
+   3.5
+  ],
+  "y": [
+   -3.5,
+   3.5
+  ],
+  "yaw": [
+   -3.141592653589793,
+   3.141592653589793
+  ]
+ },
+ "target_box": {
+  "x": [
+   -2.0,
+   2.0
+  ],
+  "y": [
+   -2.0,
+   2.0
+  ],
+  "z": [
+   0.3,
+   0.8
+  ]
+ },
+ "goal_reference": "start"
+}

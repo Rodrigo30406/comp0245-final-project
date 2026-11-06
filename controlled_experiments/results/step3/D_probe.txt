@@ -1,0 +1,25 @@
+D probe (H-coverage, report only): 20000 validation reach frames with EE error in [10, 40] mm from 284 episodes (low z 4541, arm at rest 5325); arm qd set to 0 for the models; push = (tau - g) . u; u = unit J^+ e (pinv) or the expert's IK direction (ik). Share of frames with push > 0 (median push, N m). Descriptive: at low z the expert labels also push < 0.
+  expert label (real qd), pinv: all  44.7% (-3.29); z >= 0.45  57.8% (+2.09); z < 0.45   0.0% (-5.17)
+  expert label at rest (max|qd_arm| < 0.05), pinv: all  40.8% (n 5325); z >= 0.45  46.2% (n 4705); z < 0.45   0.0% (n 620)
+  expert label (real qd), ik  : all  47.2% (-1.31); z >= 0.45  57.9% (+2.10); z < 0.45  10.5% (-2.81)
+  expert label at rest (max|qd_arm| < 0.05), ik: all  41.0% (n 5325); z >= 0.45  46.2% (n 4705); z < 0.45   1.6% (n 620)
+  ego-novw-trig_s0         pinv: all  45.6% (-2.72); z >= 0.45  59.0% (+2.74); z < 0.45   0.0% (-5.03); minus the expert label (median per frame): all +0.43, z >= 0.45 +0.50, z < 0.45 +0.16
+  ego-novw-trig_s0         ik  : all  45.6% (-0.79); z >= 0.45  58.7% (+2.74); z < 0.45   0.8% (-2.38); minus the expert label (median per frame): all +0.53, z >= 0.45 +0.54, z < 0.45 +0.49
+  ego-novw-trig_s1         pinv: all  45.5% (-2.85); z >= 0.45  58.8% (+2.38); z < 0.45   0.0% (-5.03); minus the expert label (median per frame): all +0.28, z >= 0.45 +0.32, z < 0.45 +0.19
+  ego-novw-trig_s1         ik  : all  45.4% (-1.38); z >= 0.45  58.7% (+2.38); z < 0.45   0.2% (-2.57); minus the expert label (median per frame): all +0.30, z >= 0.45 +0.29, z < 0.45 +0.39
+  ego-novw-trig_s2         pinv: all  45.8% (-1.99); z >= 0.45  59.2% (+3.26); z < 0.45   0.0% (-5.27); minus the expert label (median per frame): all +0.93, z >= 0.45 +1.14, z < 0.45 -0.10
+  ego-novw-trig_s2         ik  : all  46.3% (-0.94); z >= 0.45  59.4% (+3.26); z < 0.45   1.6% (-2.94); minus the expert label (median per frame): all +0.94, z >= 0.45 +1.09, z < 0.45 +0.04
+  ego-novw-trig_s3         pinv: all  45.4% (-2.61); z >= 0.45  58.8% (+2.96); z < 0.45   0.0% (-4.84); minus the expert label (median per frame): all +0.53, z >= 0.45 +0.61, z < 0.45 +0.34
+  ego-novw-trig_s3         ik  : all  45.3% (-1.02); z >= 0.45  58.6% (+2.96); z < 0.45   0.2% (-2.39); minus the expert label (median per frame): all +0.55, z >= 0.45 +0.56, z < 0.45 +0.51
+  ego-novw-trig_s4         pinv: all  45.7% (-2.15); z >= 0.45  59.1% (+2.60); z < 0.45   0.0% (-4.82); minus the expert label (median per frame): all +0.53, z >= 0.45 +0.60, z < 0.45 +0.35
+  ego-novw-trig_s4         ik  : all  45.9% (-0.95); z >= 0.45  59.1% (+2.60); z < 0.45   0.9% (-2.21); minus the expert label (median per frame): all +0.57, z >= 0.45 +0.55, z < 0.45 +0.63
+  ego-novw-trig-ee_s0      pinv: all  45.5% (-2.58); z >= 0.45  58.9% (+3.00); z < 0.45   0.0% (-5.00); minus the expert label (median per frame): all +0.59, z >= 0.45 +0.70, z < 0.45 +0.22
+  ego-novw-trig-ee_s0      ik  : all  45.7% (-1.11); z >= 0.45  59.0% (+3.00); z < 0.45   0.7% (-2.45); minus the expert label (median per frame): all +0.64, z >= 0.45 +0.70, z < 0.45 +0.37
+  ego-novw-trig-ee_s1      pinv: all  45.6% (-2.74); z >= 0.45  59.0% (+2.41); z < 0.45   0.0% (-5.17); minus the expert label (median per frame): all +0.24, z >= 0.45 +0.30, z < 0.45 -0.06
+  ego-novw-trig-ee_s1      ik  : all  45.8% (-1.06); z >= 0.45  59.2% (+2.42); z < 0.45   0.3% (-2.68); minus the expert label (median per frame): all +0.30, z >= 0.45 +0.31, z < 0.45 +0.23
+  ego-novw-trig-ee_s2      pinv: all  45.6% (-2.87); z >= 0.45  59.0% (+2.21); z < 0.45   0.0% (-4.86); minus the expert label (median per frame): all +0.19, z >= 0.45 +0.18, z < 0.45 +0.28
+  ego-novw-trig-ee_s2      ik  : all  45.6% (-1.31); z >= 0.45  59.0% (+2.21); z < 0.45   0.2% (-2.69); minus the expert label (median per frame): all +0.16, z >= 0.45 +0.14, z < 0.45 +0.30
+  ego-novw-trig-ee_s3      pinv: all  45.7% (-2.77); z >= 0.45  59.1% (+2.59); z < 0.45   0.0% (-4.89); minus the expert label (median per frame): all +0.40, z >= 0.45 +0.42, z < 0.45 +0.31
+  ego-novw-trig-ee_s3      ik  : all  45.7% (-0.99); z >= 0.45  59.1% (+2.59); z < 0.45   0.0% (-2.26); minus the expert label (median per frame): all +0.40, z >= 0.45 +0.38, z < 0.45 +0.58
+  ego-novw-trig-ee_s4      pinv: all  45.5% (-2.71); z >= 0.45  58.9% (+2.73); z < 0.45   0.0% (-4.96); minus the expert label (median per frame): all +0.42, z >= 0.45 +0.46, z < 0.45 +0.24
+  ego-novw-trig-ee_s4      ik  : all  46.2% (-0.91); z >= 0.45  59.0% (+2.73); z < 0.45   2.4% (-2.29); minus the expert label (median per frame): all +0.46, z >= 0.45 +0.44, z < 0.45 +0.56

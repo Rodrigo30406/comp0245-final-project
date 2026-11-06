@@ -1,0 +1,157 @@
+step 4, experiment D pre-registration frozen 2026-10-31 19:29:37
+section: report.txt '[Methodology] 第 4 步预注册：实验 D' .. before the next line starting with '[' ([Methodology] 第 4 步 E：学习曲线与降...)
+sha256 b3769e9c707611926b58eb5451ed2b6297008e312d889a02860b12de43367ef0
+frozen code and inputs (sha256):
+  67e410b133f1dfdaf5cfea23b1715e5f21443e32dbd2362b3ae639cc8db00f38  train_policy.py
+  db3fe5f2121ef0d4bae9be3381d4bfe9c0ba81aebb5f5c7d9e70467d425f8681  bc_features.py
+  e1e22d9825daeb41d8b05818c9907b90acb9e3a5aafc5d18a917dfb0f4cb74e6  policies/bc_policy.py
+  0808ca43ca87e3bec9e291d8c2e9b3f90f96349450ccabbc60084d9d7b6e2864  policies/hybrid.py
+  505d48720962b89f41a78a45cfa90e30b73eea94992db1f1131961859bcaf0c2  evaluate_policy.py
+  41b9bc1d3e8ec9f7e14adbccbe00f582df9b8cc5443981b3f0bc02098511ddd4  analyze_rollouts.py
+  60d1f6f2fb1363f30cc092819a35463c57a38143b1973336a2c23e9e5b633ee2  analyze_dataset.py
+  b28ef8d77925d6486d8f70449349f73058e928e982800079172b905ddd8e6ffd  tests/check_v11_against_v1.py
+  670eea286c71926ee868cc975eca02fb985e58b50229714f2170dc545c853a60  tests/test_analysis.py
+  cd17ffba4d7aa26987d3ed45167ff9cdcce8a049a20ad9966b3d11b814d2ed2d  tests/test_ee_features.py
+  70841fad355c777c8dd0ac5f05efc6cead434d2f354bbe4f39721f921f0babbe  tests/test_harness_v11.py
+  846f1345624456b018e3a05a0cad1436c89c7cbab77f80dbc1e01bb69c2c3e75  tests/test_hybrid.py
+  65473c7860bb6f0e26b4261365cf410d20c8b4e8d4333d464debd88ed219273d  tests/test_policies.py
+  bb060dbfbd1c3113edef1c763645b1b705d865090c1fca38fa1a7222aca36eaf  tests/test_training.py
+  ee8b992092ab415ddaa154e74192fb4732159a21b0c5eccfca6cdd227143bd89  results/step3/D_mechanisms.py
+  6648381913a5eb6ff3ac708ac5d95aa4f5eccbbc47f4a10f479c09dee7184b10  results/step3/D_probe.py
+  d8624a5c78274d1bbc70f917ea13ff3ea3ea25f018539abfe87689fd59af4ae9  results/step3/run_expD.sh
+  9df02715938f74372681f2b5ec679419d6eb321fb7ecec579d91912441331715  results/step3/C3_mechanisms.py
+  b3da0f4ee3131c404566fee5d4f5658989b9f725dd9edec53c5e77d5b78b44e5  trained/data_split.json
+  af5abcbfa782dbbf3babe8be841a28ab9f1d63a77314bd8ed0c83e214312bb79  results/step3/cache/manifest.json
+  8d7691746df964aca858d56a8f6a2296e81d33c8fdab24954f8c4cb7fb3a308e  results/step3/cache/trigger/manifest.json
+  e8c78ebe5eff8c7f7876f81ba3e3de18bb7f30b0b733b258b198a8fb2ec3959b  results/step3/cache/ee/manifest.json
+  866f10726b5cb37d5d6d8c7e6463d3dd0caa7da3890cb28ab7a055423d3c7a27  results/step3/cache_ref_dev.csv
+  66c3b4dd22798d034d0b97c359b9c24fa6e0d6faa9e70182bad1584949670706  results/step3/cache_ref_hard.csv
+  51ce2979bbd6e1ec2a980c70fa5e157bc816e53815255059b7e4ef3d3ad3b0ec  results/step3/cache_ref_confirm.csv
+[Methodology] 第 4 步预注册：实验 D，末端误差特征（2026-10-31 写下，在 DEV/HARD/CONFIRM 上运行 D 之前；冻结记录 results/step3/prereg_D_frozen.txt）
+------------------------------------------------------------------------------------------------------------------------
+方案：STEP4_PLAN_PROMPT.md。初稿经两个独立审查（可行性；统计设计与价值），用户 2026-10-31 确认 4 个决定：每边 10 个 seed、
+正运动学用完整底盘姿态、误差特征用近场截断版、E（第 4 步）先跑缩减版。本节冻结前又经两个独立审查（代码；本节文本），据此
+修改了代码与文本；其中 3 条判定规则改动偏离方案原文，用户 2026-10-31 确认（见 4) 的 (0)、H-label、H-coverage）。
+代码：bc_features.py（特征集 ego_novw_ee）、train_policy.py（模型 ego-novw-trig-ee、末端位置旁路缓存 build-ee-cache）、
+policies/bc_policy.py（正运动学）、tests/test_ee_features.py、results/step3/D_mechanisms.py、D_probe.py、run_expD.sh。
+冻结范围：本节，以及冻结记录中列出 sha256 的文件：train_policy.py、bc_features.py、policies/bc_policy.py、policies/hybrid.py、
+evaluate_policy.py、analyze_rollouts.py、analyze_dataset.py（Z_SPLIT）、tests/*.py、results/step3/D_mechanisms.py、D_probe.py、
+run_expD.sh、C3_mechanisms.py（D_mechanisms 用它的统计函数）、trained/data_split.json、缓存 manifest（cache、cache/trigger、
+cache/ee）、专家参照 results/step3/cache_ref_{dev,hard,confirm}.csv。冻结之后不再修改；如果必须改，写明改动、原因、改之前
+看到了什么。
+0) 预注册之前已经看过的东西（如实记录）
+   - C3 的全部结果，包括"[Results] 第 3 步续：实验 C3 结果"第 10 条的事后诊断（低处 success 20.3% 对高处 72.5% 等）。
+   - 方案审查时看到的（C3 原来的早停行；括号里是不早停的合成行，即本实验对照组用的）：
+     * C3-MM 中"失败、朝 target 伸臂、最小误差在 [1, 5) cm"的单元 458 个，类别为 ENR 271（267）、circling 125（127）、crash 35、
+       left_or_overshot 27（29）；底盘已停靠的 362 个中 ENR 248（244）。
+     * ENR 中 62.5%（65.9%）的最小误差 < 2 cm（reach_2cm 对这个机制不敏感）。
+     * 训练缓存中 nav_done 且末端误差在 10-20 mm 的行里，机械臂静止（max|qd_arm| < 0.02 rad/s）的只有 0.6%（低处
+       127/22,198）/ 1.3%（高处 846/64,523）；20-40 mm 时约为 0%。
+     * 正运动学复现录制 ee_pos：21 个 episode、6,264 步上最大差 3.9e-7 m，每步约 4 us；底盘倾斜与下沉对末端位置的影响中位
+       4.9 mm（最大 9.8 mm）。
+     * 低 z 抖动严格以 2 为周期（98.5% 的相邻抖动步异号）；直接抽取的偏差：步长 9 为 0.05 N·m，步长 8 为 0.73 N·m。
+     * 功效：C3-MM DEV success 每个 seed 的标准差 6.7 pp（合成行 6.5 pp）；每边 5 个 seed 时 Welch 半宽约 9.7 pp、80% 功效的
+       可检测差异约 14.5 pp，每边 10 个约 9 pp。这个机制最多大概带来约 10 pp（静态精度误差约占 ENR 的一半）。
+   - D 的实现检查：
+     * 旁路缓存 results/step3/cache/ee 与录制逐位相同、与主缓存逐行对齐；主缓存与触发缓存的 manifest 没有改动（C3 的冻结
+       记录仍可核对）。
+     * 用新代码重新训练 ego-novw-trig_s0（K 16），10 个数组与 trained/ego-novw-trig_s0.npz 逐位相同。
+     * 旧模型的部署输出与 HEAD 版本的 bc_features.py、bc_policy.py 逐位相同（300 个录制步）。
+     * 全部 168 个单元测试通过（2 个慢测试按设置跳过）。
+   - D_mechanisms.py 的干跑：以 C3 自己当 D 的替身，只用 DEV 与 C3-EM。C3 不早停（stalled 换成重跑行，合成行）的 DEV success
+     60.8%，精度池 24.1%，细精度（262 个需要伸臂的 episode）70.5%；判定分支用人造的结果字典逐一检查。
+   - D_probe.py 在 C3 模型 s0-4 上（results/step3/D_probe_prefreeze_C3.txt）：从静止推向 target 的帧比例（pinv 方向），高处
+     58.8-59.2%、低处 0.0%；专家标签（以真实 qd 计）高处 57.8%、低处 0.0%（专家 IK 方向：57.9% / 10.5%）。即 C3 模型与专家
+     标签几乎一样（逐帧差的中位 +0.3 到 +1.1 N·m）；低处的负号来自投影本身（下伸时重力帮忙，符号主要跟着 target 高度），
+     这个探针在低处分不开"推离"与专家的行为，只作描述。
+   - E（第 4 步）的 15 个模型在本节冻结之前已经训练完成（只看了训练日志里的验证损失，没有任何闭环结果）；它们用的
+     train_policy.py、bc_features.py 与本节冻结的版本相同（冻结时核对 sha256）。
+   - 单元测试中的小模型（3 个训练 episode、1 个 epoch 的 ego-novw-trig-ee）。
+   - 没有看过：任何用全部训练集训练的 ego-novw-trig-ee 模型的训练损失、探针值或闭环结果。
+1) 唯一变量：输入特征
+   - 特征集 ego_novw_ee（23 维）= ego_novw（20 维）+ 3 个近场截断的末端误差分量，模型名 ego-novw-trig-ee：
+     e = target - ee_pos（世界坐标）；e_c = e · min(1, 0.10 / |e|)（长度截在 10 cm，方向不变）；
+     (ee_dx, ee_dy) = e_c 的水平分量旋转到当前底盘 yaw 坐标系，ee_dz = e_c 的 z 分量。
+     截断的理由：训练行 |e| 均值 0.72 m、标准差 0.69 m；按列标准化时，不截断的 16 mm 误差只有 0.02-0.06 个标准差，截断后
+     1-2 cm 为 0.17-0.59 个标准差（ee_dx / ee_dy / ee_dz 各列不同）。远处的信息已由 ego_dx、ego_dy、target_z、rho 给出。
+   - 其余与 ego-novw-trig 相同：训练行、划分、步长 9、K = 16 的触发帧拷贝（同样的 σ_hold 与抖动 seed；拷贝的 e_c 用录制的 k0
+     步 ee_pos，抖动只改 qd）、标准化只用原来的训练行（新列也一样）、网络、超参数、early stopping、验证集。
+   - 输入维度变了，初始化与 early stopping 的轨迹也随之改变（同 C3 结果第 5 条的混杂），所以归因写成"末端误差特征及其对
+     训练的影响"。
+   - 末端位置：训练用录制的 ee_pos（专家每一步用 pinocchio 算，与 base_pos、base_ori、q_mes 同一步）；部署时 BCPolicy 在 reset
+     时从 info 取 dyn_model、ee_frame_id，每一步做与专家相同的调用（ReoderJoints2PinVec(base_pos, base_ori, q_mes) ->
+     forwardKinematics -> updateFramePlacements -> oMf[ee]）。用完整底盘姿态（含倾斜）：D = 显式正运动学 + 倾斜信息（对末端
+     位置的影响中位约 5 mm，最大约 10 mm）。
+   - 设计说明（写进 report）：policy 第一次用 info 里的机器人运动学模型（EVALUATION.md 允许，但要说明）。末端位置是当前观测
+     （q 与底盘位姿）的确定函数，不用停靠点、规划、阶段或时间；但它恰好是专家 IK 的误差输入，也是成功判据测量的量，
+     即"用已知模型做特征工程，把正运动学从学习问题里拿掉"（对应 brief 的"额外的输入有没有帮助"）。若 D 被采纳，主线不再是
+     "只用测量信号"，报告中同时给出 C3 模型作为"不用机器人模型"的结果。没有机器人模型时，ego_novw_ee 的模型拒绝运行。
+2) seed 与模型
+   - DEV、HARD：每边 10 个 seed（0-9）。D 新训练 ego-novw-trig-ee_s0-9；C3 对照用已有的 s0-4，并补训 ego-novw-trig_s5-9
+     （C3 配方、K 16，用本节冻结的 train_policy.py 训练；C3 的代码路径逐位不变，见 0) 的重训检查）。CONFIRM：每边 seed
+     100-104（D 新训练，C3 用已有的）。
+   - 训练检查（run_expD.sh 的每个阶段开始时都做）：每个新模型的特征集、K 16、自动 σ、抖动 seed 0、train_policy.py 与
+     bc_features.py 的 sha256 等于冻结值；方案没有写、这里具体化的：加入 25,808 行，触发缓存与 ee 旁路缓存的 manifest 等于冻结值，
+     已有同名模型时拒绝，训练前检查可用内存；检查不过时停下（D_mechanisms 的判定也停下）。
+3) 运行（全部新运行用 --no-early-stop）
+   - 理由：C3 这一族没通过停滞早停检查（DEV 96 个 stalled 中 5 个不早停会成功），按 EVALUATION.md 这族不能用早停。
+   - 已有的早停 C3 运行：没有被判 stalled 的 episode 与不早停时逐步相同，所以对照组 = 已有运行 + stalled episode 的不早停重跑行
+     （DEV s0-4 的重跑已有；HARD s0-4、CONFIRM s100-104 的在 hard / confirm 阶段补跑）。
+   - D-EM（诊断）：hybrid base=expert、arm=D 模型，DEV seed 0-4，对照已有的 C3-EM（seed 0-4，本来就不早停）。
+   - D-MM：DEV seed 0-9（--save-traj --traj-every 10）、HARD 0-9、CONFIRM 100-104；C3 补跑 DEV、HARD 的 seed 5-9。
+   - 判定全部由 results/step3/D_mechanisms.py 计算（输出 D_mechanisms.txt/.json，完整对照 D_MM_compare_<set>.txt、
+     D_EM_compare_dev.txt）；run_expD.sh 的每个阶段先按第 6) 条检查上一阶段的判定。
+4) 竞争假设与预测（数字在运行前写死；seed 平均；两层 bootstrap（10,000 次，rng seed 0）与按 seed 的 Welch 都要满足，另有说明
+   的除外）
+   - 定义：
+     * 需要伸臂的 episode：专家参照 navdone_ee_err >= 0.07 m（DEV 262 个），两边相同，不以处理后的变量为条件。
+     * 精度池：失败、朝 target 伸臂、底盘已停靠（parked_time 非空）、最小误差在 [1, 5) cm，不论失败类别。
+     * 细精度：需要伸臂的 episode 中最小误差 < 15 mm 的比例。
+   - (0) 先决检查（触发不变，非劣效）：D-EM - C3-EM 的 arm_extended_toward，bootstrap 与 Welch 的 CI 下界都 >= -5 pp，并且每个
+     D-EM seed >= 70%（C3-EM 每个 seed 78.7-80.0%）。方案原文写的是"上界"（只拦下明显变差 5 pp 以上的情况）；冻结前审查指出
+     非劣效的常规写法是下界，用户 2026-10-31 确认改为下界。不满足：停下报告"D 改变了触发"，D-MM 只作描述。
+   - H-precision（静态误差来自网络要从关节角隐式学正运动学）：D-MM - C3-MM 的精度池比例，两个 CI 上界都 < 0；并且细精度的
+     两个 CI 下界都 > 0。D-EM - C3-EM（需要伸臂的 262 个 episode 上，无条件的 success、精度池、细精度）只报告估计与 CI。
+   - H-label（低处被 bang-bang 标签卡住，与输入无关）：交互检验。Δ_high = z >= 0.45 的 success 差值，Δ_low = z < 0.45 的；
+     报告 Δ_high - Δ_low 的 CI（一次两层 bootstrap，两个分层在同一组重抽样里算）。成立 = Δ_high 的两个 CI 下界都 > 0，并且
+     Δ_low 的两个 95% CI 都在 ±7 pp 内；Δ_high 不显著时记为"不可判定"。方案原文的界是 ±5 pp：冻结前审查指出 10 对 10 个
+     seed 时 bootstrap 半宽约 4.9 pp，±5 pp 几乎不可能满足；用户 2026-10-31 确认放宽到 ±7 pp（约为低处基线 20% 的 1/3）。
+   - H-coverage（不利；学习者停住的状态在专家数据里几乎没有，加特征不增加这类样本）：成立 = H-precision 不成立，并且精度池
+     减少量（C3 - D）的点估计 < 3 pp（"没有看到精度池减少"），两个 CI 照常报告。方案原文要求两个 CI 上界都 < 3 pp：冻结前
+     审查指出 10 对 10 个 seed 时 CI 半宽约 6 pp，真实变化为 0 也不可能满足；用户 2026-10-31 确认改为点估计。它只决定失败时
+     的提议，不影响采纳。离线探针 D_probe.py 只报告（C3 与 D 的 seed 0-4；低处见 0) 的说明）。
+   - H-shortcut（不利；e_c 也是"离 target 多远"的信号，可能更早伸臂）：D-MM 的伸臂单元 >= 30，其中伸臂时环距离 > 0.2 m 的
+     合计比例 > 10%，并且至少 3 个 seed > 5%（C3-MM 合计 2.0%）。另：circling + left_or_overshot 差值的两个 CI 下界都 > 0 记为
+     "底盘受影响"。
+   - 次要指标（方案 2.5，D_mechanisms.py 计算）：held_10s、侧翻（失败类 crash）、reach_2cm、arm_extended_toward、细精度，
+     一族 Holm（bootstrap p，以及 max(bootstrap p, Welch p)）；z 分层见 H-label；失败类描述性。compare 的输出另有它自己的 7 个
+     次要指标的 Holm，只作参考。侧翻的方向不预测：精度提高可能减少侧翻，也可能因为伸得更深而增加。
+   - 先验：H-precision 在高处成立，低处受 H-label 或 H-coverage 限制，净改进主要来自 z >= 0.45，幅度 5-10 pp。
+5) 主指标与采纳规则（C3-MM 被 D-MM 替代，全部满足才采纳）
+   - 决定指标：DEV success（地板规则照旧，按构造不会生效）。
+   - (0) 触发不变；(1) DEV success 差值（10 对 10 个 seed）的 bootstrap 与 Welch 95% CI 下界都 > 0；(2) [C3 中精度池比例 -
+     D 中的] / 净改进 >= 50%，并且净改进 > 0（只 ENR 的份额另报）；(3) n >= 30 的 d0 分层没有一层的 CI 上界低于 -10 pp
+     （只用 bootstrap 的分层 CI，同 C3）；(4) HARD（10 对 10）点估计 > 0；(5) CONFIRM（5 对 5）点估计 > 0，只在 (0)-(4) 满足后
+     打开一次。(2) 中"并且净改进 > 0"是方案没有写、这里具体化的（份额在净变差时无意义）。
+   - 敏感性（报告项）：C3 一边改用原来的早停行重算 (1)、(2)，并写明是否满足、与主分析是否不同；不同时如实报告，以不早停的
+     主分析为准（协议）。
+   - 统计细则同 C3：bootstrap 满足而 Welch 不满足时，报告每个 seed 的差值与 Cochran Q，写成"效应只在部分 seed 上出现"，
+     不采纳；两边是不同的网络，seed 不配对，按 k 的配对 t 只作描述；看过 DEV 之后不再加 seed、不换分析方法。
+   - 反方向（C3 明显更好）：(1)-(4) 镜像成立，记为"末端误差特征有害"的证据；DEV 上镜像 (1)-(3) 成立时停下提方案，HARD 作为
+     提议的一部分。
+   - 都不满足：保留 ego-novw-trig，写成"在约 X 个百分点的分辨率下没有检测到差异"（X = Welch 与 bootstrap CI 半宽中较大的）。
+6) 决定表（几行重叠时，"停下"的那一行优先）
+   - 先决检查不过：停下报告，D-MM 只作描述。
+   - D-MM 满足 (1)-(3) 且 H-shortcut 不成立：跑 HARD；(4) 满足再跑 CONFIRM；按采纳规则决定。
+   - D-MM 满足 (1)-(3) 但 H-shortcut 也成立：先照常判定，停下与用户讨论（改进可能来自更早伸臂），HARD、CONFIRM 作为提议的一部分。
+   - bootstrap 满足、Welch 不满足：报告，不采纳，停下提方案。
+   - DEV 上镜像 (1)-(3) 成立：停下提方案。
+   - D-MM 不满足、H-label 成立：报告分解，停下提方案（例如低处的力矩标签处理）。
+   - D-MM 不满足、H-coverage 成立：报告，停下提方案（例如 reach 段的 DART 式扰动数据）。
+   - HARD (4) 不满足：不采纳，不打开 CONFIRM。
+   - 其余不满足：报告原因，保留 ego-novw-trig。任何运行出现 harness_error：重跑那个运行。
+7) 局限（写进 report）
+   - policy 用了机器人的运动学模型；误差特征恰好是专家 IK 的输入和成功判据的量。
+   - D 用完整底盘姿态，D = 显式正运动学 + 倾斜信息。
+   - D 只改输入不改标签：低处的 bang-bang 标签、学习者停住状态的数据覆盖都可能仍然限制精度。
+   - 到达后保持不住（底盘蠕动）不在本实验范围内（Rodrigo 的方向）。

@@ -1,0 +1,7 @@
+Policy rodrigo-gru40_s1_hard on data/hard: success 70/200 = 35.0% [28.7, 41.8] (95% Wilson), settled 69/200
+Stop reasons: reached 70, timeout 130
+Policy step time: mean 0.094 ms, p99 0.202 ms (median over episodes; control period 1 ms)
+Recorded clean expert reached / this policy succeeded (200 episodes): both 67, expert only 127, policy only 3, neither 3
+v1.1 held_10s (EE < 15 mm for 10 s after the first reach): 41/200 = 20.5% [15.5, 26.6]; extended hold ended: completed 70, not reached 130
+v1.1 stable arrival (EE within tol for >= 0.5 s, ending by 40 s): 5cm 133/200 = 66.5% [59.7, 72.7], 2cm 102, 1cm 70
+v1.1 parked (ring distance < 0.2 m and base still for >= 1.0 s): 195/200 = 97.5% [94.3, 98.9]; arm extended (EE > 0.1 m from its start in the base frame): 170/200 = 85.0% [79.4, 89.3] (both up to the v1 stop point)

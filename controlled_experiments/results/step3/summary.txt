@@ -1,0 +1,689 @@
+Step-3 closed-loop analysis (analyze_rollouts.py report, 2026-10-31 04:41)
+Bootstrap: 10000 draws, rng seed 0. Failure classes (precedence): crash, no_start, runaway, no_progress, never_other, circling, left_or_overshot, parked_no_arm, extended_not_reached, approached_other.
+merged classes: arrive_stay = success and held_10s; arrive_leave = success and not held_10s; base_ok_ee_not = parked_no_arm + extended_not_reached + approached_other; base_not = no_start + runaway + no_progress + never_other + circling + left_or_overshot; crash = crash
+
+== Runs ==
+expert_confirm (v1, 300 episodes): success 294/300 = 98.0% [95.7, 99.1] (protocol v1 run: not classified)
+expert_dev (v1, 300 episodes): success 298/300 = 99.3% [97.6, 99.8] (protocol v1 run: not classified)
+expert_hard (v1, 200 episodes): success 194/200 = 97.0% [93.6, 98.6] (protocol v1 run: not classified)
+B-EE_dev (v1.1, 300 episodes): success 298/300 = 99.3% [97.6, 99.8]
+  failure classes: circling 2
+  merged: arrive_stay 296, arrive_leave 2, base_not 2
+  failures on short-reach episodes (expert hold posture at parking < 0.07 m from the target: parked_no_arm cannot fire): 0 (of 38 short-reach episodes)
+B-EM_ego-novw-trig_s0_dev (v1.1, 300 episodes): success 204/300 = 68.0% [62.5, 73.0]
+  failure classes: crash 4, circling 4, left_or_overshot 1, parked_no_arm 3, extended_not_reached 69, approached_other 15
+  merged: arrive_stay 157, arrive_leave 47, base_ok_ee_not 87, base_not 5, crash 4
+  failures starting within 0.15 m of the ring (M0-like, reported separately, never no_start): 15: crash 2, extended_not_reached 7, approached_other 4, left_or_overshot 1, parked_no_arm 1; of them no_motion_near_ring (base did not move) 0
+  failures on short-reach episodes (expert hold posture at parking < 0.07 m from the target: parked_no_arm cannot fire): 1 (of 38 short-reach episodes): extended_not_reached 1
+B-EM_ego-novw-trig_s1_dev (v1.1, 300 episodes): success 151/300 = 50.3% [44.7, 56.0]
+  failure classes: circling 3, extended_not_reached 125, approached_other 21
+  merged: arrive_stay 112, arrive_leave 39, base_ok_ee_not 146, base_not 3
+  failures starting within 0.15 m of the ring (M0-like, reported separately, never no_start): 13: extended_not_reached 11, approached_other 2; of them no_motion_near_ring (base did not move) 0
+  failures on short-reach episodes (expert hold posture at parking < 0.07 m from the target: parked_no_arm cannot fire): 3 (of 38 short-reach episodes): extended_not_reached 3
+B-EM_ego-novw-trig_s2_dev (v1.1, 300 episodes): success 228/300 = 76.0% [70.9, 80.5]
+  failure classes: circling 4, extended_not_reached 60, approached_other 8
+  merged: arrive_stay 194, arrive_leave 34, base_ok_ee_not 68, base_not 4
+  failures starting within 0.15 m of the ring (M0-like, reported separately, never no_start): 10: approached_other 3, extended_not_reached 6, circling 1; of them no_motion_near_ring (base did not move) 0
+  failures on short-reach episodes (expert hold posture at parking < 0.07 m from the target: parked_no_arm cannot fire): 0 (of 38 short-reach episodes)
+B-EM_ego-novw-trig_s3_dev (v1.1, 300 episodes): success 201/300 = 67.0% [61.5, 72.1]
+  failure classes: circling 3, parked_no_arm 2, extended_not_reached 77, approached_other 17
+  merged: arrive_stay 146, arrive_leave 55, base_ok_ee_not 96, base_not 3
+  failures starting within 0.15 m of the ring (M0-like, reported separately, never no_start): 11: approached_other 4, extended_not_reached 7; of them no_motion_near_ring (base did not move) 0
+  failures on short-reach episodes (expert hold posture at parking < 0.07 m from the target: parked_no_arm cannot fire): 6 (of 38 short-reach episodes): approached_other 2, extended_not_reached 4
+B-EM_ego-novw-trig_s4_dev (v1.1, 300 episodes): success 178/300 = 59.3% [53.7, 64.7]
+  failure classes: circling 3, extended_not_reached 112, approached_other 7
+  merged: arrive_stay 149, arrive_leave 29, base_ok_ee_not 119, base_not 3
+  failures starting within 0.15 m of the ring (M0-like, reported separately, never no_start): 10: approached_other 4, extended_not_reached 5, circling 1; of them no_motion_near_ring (base did not move) 0
+  failures on short-reach episodes (expert hold posture at parking < 0.07 m from the target: parked_no_arm cannot fire): 0 (of 38 short-reach episodes)
+B-EM_ego-novw_s0_dev (v1.1, 300 episodes): success 0/300 = 0.0% [0.0, 1.3]
+  failure classes: circling 4, parked_no_arm 251, extended_not_reached 23, approached_other 22
+  merged: base_ok_ee_not 296, base_not 4
+  failures starting within 0.15 m of the ring (M0-like, reported separately, never no_start): 20: parked_no_arm 19, approached_other 1; of them no_motion_near_ring (base did not move) 0
+  failures on short-reach episodes (expert hold posture at parking < 0.07 m from the target: parked_no_arm cannot fire): 38 (of 38 short-reach episodes): extended_not_reached 23, approached_other 15
+B-EM_ego-novw_s1_dev (v1.1, 300 episodes): success 0/300 = 0.0% [0.0, 1.3]
+  failure classes: circling 1, parked_no_arm 251, extended_not_reached 25, approached_other 23
+  merged: base_ok_ee_not 299, base_not 1
+  failures starting within 0.15 m of the ring (M0-like, reported separately, never no_start): 20: parked_no_arm 17, approached_other 3; of them no_motion_near_ring (base did not move) 0
+  failures on short-reach episodes (expert hold posture at parking < 0.07 m from the target: parked_no_arm cannot fire): 38 (of 38 short-reach episodes): extended_not_reached 25, approached_other 13
+B-EM_ego-novw_s2_dev (v1.1, 300 episodes): success 0/300 = 0.0% [0.0, 1.3]
+  failure classes: circling 3, parked_no_arm 251, extended_not_reached 22, approached_other 24
+  merged: base_ok_ee_not 297, base_not 3
+  failures starting within 0.15 m of the ring (M0-like, reported separately, never no_start): 20: parked_no_arm 18, approached_other 2; of them no_motion_near_ring (base did not move) 0
+  failures on short-reach episodes (expert hold posture at parking < 0.07 m from the target: parked_no_arm cannot fire): 38 (of 38 short-reach episodes): extended_not_reached 22, approached_other 16
+B-EM_ego-novw_s3_dev (v1.1, 300 episodes): success 0/300 = 0.0% [0.0, 1.3]
+  failure classes: circling 2, parked_no_arm 253, extended_not_reached 24, approached_other 21
+  merged: base_ok_ee_not 298, base_not 2
+  failures starting within 0.15 m of the ring (M0-like, reported separately, never no_start): 20: parked_no_arm 19, approached_other 1; of them no_motion_near_ring (base did not move) 0
+  failures on short-reach episodes (expert hold posture at parking < 0.07 m from the target: parked_no_arm cannot fire): 38 (of 38 short-reach episodes): extended_not_reached 24, approached_other 14
+B-EM_ego-novw_s4_dev (v1.1, 300 episodes): success 1/300 = 0.3% [0.1, 1.9]
+  failure classes: circling 2, parked_no_arm 252, extended_not_reached 20, approached_other 25
+  merged: arrive_leave 1, base_ok_ee_not 297, base_not 2
+  failures starting within 0.15 m of the ring (M0-like, reported separately, never no_start): 20: parked_no_arm 19, approached_other 1; of them no_motion_near_ring (base did not move) 0
+  failures on short-reach episodes (expert hold posture at parking < 0.07 m from the target: parked_no_arm cannot fire): 37 (of 38 short-reach episodes): extended_not_reached 20, approached_other 17
+B-ME_ego-novw_s0_dev (v1.1, 300 episodes): success 299/300 = 99.7% [98.1, 99.9]
+  failure classes: circling 1
+  merged: arrive_stay 295, arrive_leave 4, base_not 1
+  failures on short-reach episodes (expert hold posture at parking < 0.07 m from the target: parked_no_arm cannot fire): 0 (of 38 short-reach episodes)
+B-ME_ego-novw_s1_dev (v1.1, 300 episodes): success 271/300 = 90.3% [86.5, 93.2]
+  failure classes: crash 3, circling 22, left_or_overshot 4
+  merged: arrive_stay 187, arrive_leave 84, base_not 26, crash 3
+  failures starting within 0.15 m of the ring (M0-like, reported separately, never no_start): 10: circling 7, crash 1, left_or_overshot 2; of them no_motion_near_ring (base did not move) 0
+  failures on short-reach episodes (expert hold posture at parking < 0.07 m from the target: parked_no_arm cannot fire): 0 (of 38 short-reach episodes)
+B-ME_ego-novw_s2_dev (v1.1, 300 episodes): success 296/300 = 98.7% [96.6, 99.5]
+  failure classes: crash 2, circling 2
+  merged: arrive_stay 276, arrive_leave 20, base_not 2, crash 2
+  failures starting within 0.15 m of the ring (M0-like, reported separately, never no_start): 2: crash 1, circling 1; of them no_motion_near_ring (base did not move) 0
+  failures on short-reach episodes (expert hold posture at parking < 0.07 m from the target: parked_no_arm cannot fire): 0 (of 38 short-reach episodes)
+B-ME_ego-novw_s3_dev (v1.1, 300 episodes): success 288/300 = 96.0% [93.1, 97.7]
+  failure classes: crash 1, circling 10, extended_not_reached 1
+  merged: arrive_stay 260, arrive_leave 28, base_ok_ee_not 1, base_not 10, crash 1
+  failures starting within 0.15 m of the ring (M0-like, reported separately, never no_start): 5: circling 4, crash 1; of them no_motion_near_ring (base did not move) 0
+  failures on short-reach episodes (expert hold posture at parking < 0.07 m from the target: parked_no_arm cannot fire): 0 (of 38 short-reach episodes)
+B-ME_ego-novw_s4_dev (v1.1, 300 episodes): success 296/300 = 98.7% [96.6, 99.5]
+  failure classes: crash 1, circling 3
+  merged: arrive_stay 287, arrive_leave 9, base_not 3, crash 1
+  failures starting within 0.15 m of the ring (M0-like, reported separately, never no_start): 3: circling 3; of them no_motion_near_ring (base did not move) 0
+  failures on short-reach episodes (expert hold posture at parking < 0.07 m from the target: parked_no_arm cannot fire): 0 (of 38 short-reach episodes)
+ego-novw-trig_s0_dev (v1.1, 300 episodes): success 210/300 = 70.0% [64.6, 74.9]
+  failure classes: crash 23, circling 44, left_or_overshot 1, extended_not_reached 21, approached_other 1
+  merged: arrive_stay 119, arrive_leave 91, base_ok_ee_not 22, base_not 45, crash 23
+  failures starting within 0.15 m of the ring (M0-like, reported separately, never no_start): 8: circling 5, extended_not_reached 1, crash 2; of them no_motion_near_ring (base did not move) 0
+  failures on short-reach episodes (expert hold posture at parking < 0.07 m from the target: parked_no_arm cannot fire): 1 (of 38 short-reach episodes): crash 1
+ego-novw-trig_s0_hard (v1.1, 200 episodes): success 128/200 = 64.0% [57.1, 70.3]
+  failure classes: crash 20, circling 38, extended_not_reached 14
+  merged: arrive_stay 60, arrive_leave 68, base_ok_ee_not 14, base_not 38, crash 20
+  failures starting within 0.15 m of the ring (M0-like, reported separately, never no_start): 23: circling 13, extended_not_reached 4, crash 6; of them no_motion_near_ring (base did not move) 0
+  failures on short-reach episodes (expert hold posture at parking < 0.07 m from the target: parked_no_arm cannot fire): 4 (of 12 short-reach episodes): circling 3, extended_not_reached 1
+ego-novw-trig_s100_confirm (v1.1, 300 episodes): success 180/300 = 60.0% [54.4, 65.4]
+  failure classes: crash 1, circling 69, extended_not_reached 48, approached_other 2
+  merged: arrive_stay 66, arrive_leave 114, base_ok_ee_not 50, base_not 69, crash 1
+  failures starting within 0.15 m of the ring (M0-like, reported separately, never no_start): 15: extended_not_reached 6, approached_other 2, circling 7; of them no_motion_near_ring (base did not move) 1
+  failures on short-reach episodes (expert hold posture at parking < 0.07 m from the target: parked_no_arm cannot fire): 5 (of 26 short-reach episodes): circling 5
+ego-novw-trig_s101_confirm (v1.1, 300 episodes): success 185/300 = 61.7% [56.1, 67.0]
+  failure classes: crash 1, circling 22, left_or_overshot 5, extended_not_reached 74, approached_other 13
+  merged: arrive_stay 59, arrive_leave 126, base_ok_ee_not 87, base_not 27, crash 1
+  failures starting within 0.15 m of the ring (M0-like, reported separately, never no_start): 13: approached_other 2, circling 4, left_or_overshot 1, extended_not_reached 6; of them no_motion_near_ring (base did not move) 0
+  failures on short-reach episodes (expert hold posture at parking < 0.07 m from the target: parked_no_arm cannot fire): 3 (of 26 short-reach episodes): approached_other 1, circling 2
+ego-novw-trig_s102_confirm (v1.1, 300 episodes): success 235/300 = 78.3% [73.3, 82.6]
+  failure classes: crash 17, circling 18, left_or_overshot 7, parked_no_arm 2, extended_not_reached 19, approached_other 2
+  merged: arrive_stay 138, arrive_leave 97, base_ok_ee_not 23, base_not 25, crash 17
+  failures starting within 0.15 m of the ring (M0-like, reported separately, never no_start): 9: circling 5, left_or_overshot 1, extended_not_reached 3; of them no_motion_near_ring (base did not move) 0
+  failures on short-reach episodes (expert hold posture at parking < 0.07 m from the target: parked_no_arm cannot fire): 2 (of 26 short-reach episodes): circling 1, approached_other 1
+ego-novw-trig_s103_confirm (v1.1, 300 episodes): success 183/300 = 61.0% [55.4, 66.3]
+  failure classes: crash 2, circling 63, left_or_overshot 4, extended_not_reached 41, approached_other 7
+  merged: arrive_stay 83, arrive_leave 100, base_ok_ee_not 48, base_not 67, crash 2
+  failures starting within 0.15 m of the ring (M0-like, reported separately, never no_start): 19: extended_not_reached 8, left_or_overshot 1, circling 10; of them no_motion_near_ring (base did not move) 0
+  failures on short-reach episodes (expert hold posture at parking < 0.07 m from the target: parked_no_arm cannot fire): 7 (of 26 short-reach episodes): extended_not_reached 3, circling 4
+ego-novw-trig_s104_confirm (v1.1, 300 episodes): success 181/300 = 60.3% [54.7, 65.7]
+  failure classes: circling 38, left_or_overshot 7, extended_not_reached 65, approached_other 9
+  merged: arrive_stay 51, arrive_leave 130, base_ok_ee_not 74, base_not 45
+  failures starting within 0.15 m of the ring (M0-like, reported separately, never no_start): 13: circling 6, extended_not_reached 7; of them no_motion_near_ring (base did not move) 0
+  failures on short-reach episodes (expert hold posture at parking < 0.07 m from the target: parked_no_arm cannot fire): 5 (of 26 short-reach episodes): extended_not_reached 3, circling 2
+ego-novw-trig_s1_dev (v1.1, 300 episodes): success 157/300 = 52.3% [46.7, 57.9]
+  failure classes: crash 7, circling 41, left_or_overshot 12, extended_not_reached 72, approached_other 11
+  merged: arrive_stay 42, arrive_leave 115, base_ok_ee_not 83, base_not 53, crash 7
+  failures starting within 0.15 m of the ring (M0-like, reported separately, never no_start): 13: circling 7, extended_not_reached 3, approached_other 2, crash 1; of them no_motion_near_ring (base did not move) 0
+  failures on short-reach episodes (expert hold posture at parking < 0.07 m from the target: parked_no_arm cannot fire): 5 (of 38 short-reach episodes): circling 3, extended_not_reached 1, crash 1
+ego-novw-trig_s1_hard (v1.1, 200 episodes): success 102/200 = 51.0% [44.1, 57.8]
+  failure classes: crash 8, circling 39, left_or_overshot 7, parked_no_arm 2, extended_not_reached 36, approached_other 6
+  merged: arrive_stay 34, arrive_leave 68, base_ok_ee_not 44, base_not 46, crash 8
+  failures starting within 0.15 m of the ring (M0-like, reported separately, never no_start): 32: crash 5, circling 15, extended_not_reached 9, approached_other 2, left_or_overshot 1; of them no_motion_near_ring (base did not move) 0
+  failures on short-reach episodes (expert hold posture at parking < 0.07 m from the target: parked_no_arm cannot fire): 6 (of 12 short-reach episodes): extended_not_reached 2, circling 3, crash 1
+ego-novw-trig_s2_dev (v1.1, 300 episodes): success 190/300 = 63.3% [57.7, 68.6]
+  failure classes: crash 8, circling 24, left_or_overshot 7, extended_not_reached 57, approached_other 14
+  merged: arrive_stay 72, arrive_leave 118, base_ok_ee_not 71, base_not 31, crash 8
+  failures starting within 0.15 m of the ring (M0-like, reported separately, never no_start): 16: circling 5, approached_other 2, extended_not_reached 5, crash 3, left_or_overshot 1; of them no_motion_near_ring (base did not move) 0
+  failures on short-reach episodes (expert hold posture at parking < 0.07 m from the target: parked_no_arm cannot fire): 5 (of 38 short-reach episodes): circling 2, extended_not_reached 3
+ego-novw-trig_s2_hard (v1.1, 200 episodes): success 110/200 = 55.0% [48.1, 61.7]
+  failure classes: crash 7, circling 28, left_or_overshot 7, extended_not_reached 40, approached_other 8
+  merged: arrive_stay 45, arrive_leave 65, base_ok_ee_not 48, base_not 35, crash 7
+  failures starting within 0.15 m of the ring (M0-like, reported separately, never no_start): 28: crash 2, circling 10, extended_not_reached 11, left_or_overshot 2, approached_other 3; of them no_motion_near_ring (base did not move) 0
+  failures on short-reach episodes (expert hold posture at parking < 0.07 m from the target: parked_no_arm cannot fire): 5 (of 12 short-reach episodes): circling 4, extended_not_reached 1
+ego-novw-trig_s3_dev (v1.1, 300 episodes): success 180/300 = 60.0% [54.4, 65.4]
+  failure classes: crash 10, circling 55, left_or_overshot 3, extended_not_reached 49, approached_other 3
+  merged: arrive_stay 84, arrive_leave 96, base_ok_ee_not 52, base_not 58, crash 10
+  failures starting within 0.15 m of the ring (M0-like, reported separately, never no_start): 12: extended_not_reached 2, circling 8, crash 1, left_or_overshot 1; of them no_motion_near_ring (base did not move) 0
+  failures on short-reach episodes (expert hold posture at parking < 0.07 m from the target: parked_no_arm cannot fire): 8 (of 38 short-reach episodes): extended_not_reached 3, circling 2, crash 3
+ego-novw-trig_s3_hard (v1.1, 200 episodes): success 111/200 = 55.5% [48.6, 62.2]
+  failure classes: crash 9, circling 43, left_or_overshot 1, extended_not_reached 33, approached_other 3
+  merged: arrive_stay 57, arrive_leave 54, base_ok_ee_not 36, base_not 44, crash 9
+  failures starting within 0.15 m of the ring (M0-like, reported separately, never no_start): 25: crash 5, circling 13, extended_not_reached 6, approached_other 1; of them no_motion_near_ring (base did not move) 0
+  failures on short-reach episodes (expert hold posture at parking < 0.07 m from the target: parked_no_arm cannot fire): 3 (of 12 short-reach episodes): circling 3
+ego-novw-trig_s4_dev (v1.1, 300 episodes): success 170/300 = 56.7% [51.0, 62.2]
+  failure classes: circling 18, left_or_overshot 9, extended_not_reached 81, approached_other 22
+  merged: arrive_stay 86, arrive_leave 84, base_ok_ee_not 103, base_not 27
+  failures starting within 0.15 m of the ring (M0-like, reported separately, never no_start): 10: circling 3, extended_not_reached 3, approached_other 3, left_or_overshot 1; of them no_motion_near_ring (base did not move) 0
+  failures on short-reach episodes (expert hold posture at parking < 0.07 m from the target: parked_no_arm cannot fire): 8 (of 38 short-reach episodes): circling 2, extended_not_reached 6
+ego-novw-trig_s4_hard (v1.1, 200 episodes): success 112/200 = 56.0% [49.1, 62.7]
+  failure classes: circling 17, left_or_overshot 1, extended_not_reached 60, approached_other 10
+  merged: arrive_stay 58, arrive_leave 54, base_ok_ee_not 70, base_not 18
+  failures starting within 0.15 m of the ring (M0-like, reported separately, never no_start): 27: extended_not_reached 21, circling 4, approached_other 1, left_or_overshot 1; of them no_motion_near_ring (base did not move) 0
+  failures on short-reach episodes (expert hold posture at parking < 0.07 m from the target: parked_no_arm cannot fire): 2 (of 12 short-reach episodes): extended_not_reached 1, circling 1
+ego-novw_s0_dev (v1.1, 300 episodes): success 1/300 = 0.3% [0.1, 1.9]
+  failure classes: circling 207, parked_no_arm 87, approached_other 5
+  merged: arrive_leave 1, base_ok_ee_not 92, base_not 207
+  failures starting within 0.15 m of the ring (M0-like, reported separately, never no_start): 20: circling 19, parked_no_arm 1; of them no_motion_near_ring (base did not move) 0
+  failures on short-reach episodes (expert hold posture at parking < 0.07 m from the target: parked_no_arm cannot fire): 37 (of 38 short-reach episodes): circling 33, approached_other 4
+ego-novw_s0_hard (v1.1, 200 episodes): success 0/200 = 0.0% [0.0, 1.9]
+  failure classes: crash 1, circling 162, parked_no_arm 32, approached_other 5
+  merged: base_ok_ee_not 37, base_not 162, crash 1
+  failures starting within 0.15 m of the ring (M0-like, reported separately, never no_start): 48: circling 45, approached_other 3; of them no_motion_near_ring (base did not move) 0
+  failures on short-reach episodes (expert hold posture at parking < 0.07 m from the target: parked_no_arm cannot fire): 12 (of 12 short-reach episodes): circling 12
+ego-novw_s100_confirm (v1.1, 300 episodes): success 0/300 = 0.0% [0.0, 1.3]
+  failure classes: circling 34, left_or_overshot 2, parked_no_arm 201, extended_not_reached 20, approached_other 43
+  merged: base_ok_ee_not 264, base_not 36
+  failures starting within 0.15 m of the ring (M0-like, reported separately, never no_start): 33: parked_no_arm 13, approached_other 9, circling 7, extended_not_reached 3, left_or_overshot 1; of them no_motion_near_ring (base did not move) 0
+  failures on short-reach episodes (expert hold posture at parking < 0.07 m from the target: parked_no_arm cannot fire): 26 (of 26 short-reach episodes): extended_not_reached 16, approached_other 9, circling 1
+ego-novw_s101_confirm (v1.1, 300 episodes): success 3/300 = 1.0% [0.3, 2.9]
+  failure classes: circling 131, left_or_overshot 1, parked_no_arm 141, extended_not_reached 14, approached_other 10
+  merged: arrive_stay 1, arrive_leave 2, base_ok_ee_not 165, base_not 132
+  failures starting within 0.15 m of the ring (M0-like, reported separately, never no_start): 32: circling 31, extended_not_reached 1; of them no_motion_near_ring (base did not move) 0
+  failures on short-reach episodes (expert hold posture at parking < 0.07 m from the target: parked_no_arm cannot fire): 26 (of 26 short-reach episodes): circling 9, approached_other 5, extended_not_reached 12
+ego-novw_s102_confirm (v1.1, 300 episodes): success 1/300 = 0.3% [0.1, 1.9]
+  failure classes: crash 1, circling 5, parked_no_arm 233, extended_not_reached 20, approached_other 40
+  merged: arrive_leave 1, base_ok_ee_not 293, base_not 5, crash 1
+  failures starting within 0.15 m of the ring (M0-like, reported separately, never no_start): 33: parked_no_arm 16, circling 3, approached_other 10, extended_not_reached 3, crash 1; of them no_motion_near_ring (base did not move) 1
+  failures on short-reach episodes (expert hold posture at parking < 0.07 m from the target: parked_no_arm cannot fire): 25 (of 26 short-reach episodes): extended_not_reached 16, approached_other 9
+ego-novw_s103_confirm (v1.1, 300 episodes): success 0/300 = 0.0% [0.0, 1.3]
+  failure classes: circling 102, parked_no_arm 152, extended_not_reached 19, approached_other 27
+  merged: base_ok_ee_not 198, base_not 102
+  failures starting within 0.15 m of the ring (M0-like, reported separately, never no_start): 33: circling 17, approached_other 3, parked_no_arm 9, extended_not_reached 4; of them no_motion_near_ring (base did not move) 0
+  failures on short-reach episodes (expert hold posture at parking < 0.07 m from the target: parked_no_arm cannot fire): 26 (of 26 short-reach episodes): extended_not_reached 16, approached_other 8, circling 2
+ego-novw_s104_confirm (v1.1, 300 episodes): success 0/300 = 0.0% [0.0, 1.3]
+  failure classes: circling 150, parked_no_arm 138, approached_other 12
+  merged: base_ok_ee_not 150, base_not 150
+  failures starting within 0.15 m of the ring (M0-like, reported separately, never no_start): 33: circling 25, parked_no_arm 7, approached_other 1; of them no_motion_near_ring (base did not move) 0
+  failures on short-reach episodes (expert hold posture at parking < 0.07 m from the target: parked_no_arm cannot fire): 26 (of 26 short-reach episodes): circling 26
+ego-novw_s1_dev (v1.1, 300 episodes): success 0/300 = 0.0% [0.0, 1.3]
+  failure classes: circling 116, parked_no_arm 145, extended_not_reached 22, approached_other 17
+  merged: base_ok_ee_not 184, base_not 116
+  failures starting within 0.15 m of the ring (M0-like, reported separately, never no_start): 20: circling 17, parked_no_arm 3; of them no_motion_near_ring (base did not move) 0
+  failures on short-reach episodes (expert hold posture at parking < 0.07 m from the target: parked_no_arm cannot fire): 38 (of 38 short-reach episodes): circling 6, extended_not_reached 21, approached_other 11
+ego-novw_s1_hard (v1.1, 200 episodes): success 1/200 = 0.5% [0.1, 2.8]
+  failure classes: circling 134, parked_no_arm 50, approached_other 15
+  merged: arrive_leave 1, base_ok_ee_not 65, base_not 134
+  failures starting within 0.15 m of the ring (M0-like, reported separately, never no_start): 48: parked_no_arm 7, circling 38, approached_other 3; of them no_motion_near_ring (base did not move) 0
+  failures on short-reach episodes (expert hold posture at parking < 0.07 m from the target: parked_no_arm cannot fire): 11 (of 12 short-reach episodes): circling 8, approached_other 3
+ego-novw_s2_dev (v1.1, 300 episodes): success 0/300 = 0.0% [0.0, 1.3]
+  failure classes: circling 62, parked_no_arm 190, extended_not_reached 26, approached_other 22
+  merged: base_ok_ee_not 238, base_not 62
+  failures starting within 0.15 m of the ring (M0-like, reported separately, never no_start): 20: circling 13, parked_no_arm 4, approached_other 3; of them no_motion_near_ring (base did not move) 0
+  failures on short-reach episodes (expert hold posture at parking < 0.07 m from the target: parked_no_arm cannot fire): 38 (of 38 short-reach episodes): extended_not_reached 25, approached_other 12, circling 1
+ego-novw_s2_hard (v1.1, 200 episodes): success 1/200 = 0.5% [0.1, 2.8]
+  failure classes: circling 86, parked_no_arm 91, extended_not_reached 5, approached_other 17
+  merged: arrive_leave 1, base_ok_ee_not 113, base_not 86
+  failures starting within 0.15 m of the ring (M0-like, reported separately, never no_start): 47: parked_no_arm 19, approached_other 5, circling 23; of them no_motion_near_ring (base did not move) 0
+  failures on short-reach episodes (expert hold posture at parking < 0.07 m from the target: parked_no_arm cannot fire): 11 (of 12 short-reach episodes): extended_not_reached 5, approached_other 3, circling 3
+ego-novw_s3_dev (v1.1, 300 episodes): success 1/300 = 0.3% [0.1, 1.9]
+  failure classes: crash 1, circling 35, parked_no_arm 209, extended_not_reached 24, approached_other 30
+  merged: arrive_leave 1, base_ok_ee_not 263, base_not 35, crash 1
+  failures starting within 0.15 m of the ring (M0-like, reported separately, never no_start): 20: circling 7, parked_no_arm 7, approached_other 6; of them no_motion_near_ring (base did not move) 0
+  failures on short-reach episodes (expert hold posture at parking < 0.07 m from the target: parked_no_arm cannot fire): 37 (of 38 short-reach episodes): extended_not_reached 22, approached_other 15
+ego-novw_s3_hard (v1.1, 200 episodes): success 0/200 = 0.0% [0.0, 1.9]
+  failure classes: circling 58, parked_no_arm 118, extended_not_reached 5, approached_other 19
+  merged: base_ok_ee_not 142, base_not 58
+  failures starting within 0.15 m of the ring (M0-like, reported separately, never no_start): 48: parked_no_arm 25, approached_other 6, circling 17; of them no_motion_near_ring (base did not move) 0
+  failures on short-reach episodes (expert hold posture at parking < 0.07 m from the target: parked_no_arm cannot fire): 12 (of 12 short-reach episodes): extended_not_reached 5, circling 5, approached_other 2
+ego-novw_s4_dev (v1.1, 300 episodes): success 3/300 = 1.0% [0.3, 2.9]
+  failure classes: circling 63, left_or_overshot 1, parked_no_arm 184, extended_not_reached 22, approached_other 27
+  merged: arrive_leave 3, base_ok_ee_not 233, base_not 64
+  failures starting within 0.15 m of the ring (M0-like, reported separately, never no_start): 20: circling 11, parked_no_arm 5, approached_other 4; of them no_motion_near_ring (base did not move) 0
+  failures on short-reach episodes (expert hold posture at parking < 0.07 m from the target: parked_no_arm cannot fire): 37 (of 38 short-reach episodes): approached_other 17, extended_not_reached 20
+ego-novw_s4_hard (v1.1, 200 episodes): success 2/200 = 1.0% [0.3, 3.6]
+  failure classes: circling 80, parked_no_arm 92, extended_not_reached 6, approached_other 20
+  merged: arrive_leave 2, base_ok_ee_not 118, base_not 80
+  failures starting within 0.15 m of the ring (M0-like, reported separately, never no_start): 48: parked_no_arm 12, approached_other 8, circling 27, extended_not_reached 1; of them no_motion_near_ring (base did not move) 0
+  failures on short-reach episodes (expert hold posture at parking < 0.07 m from the target: parked_no_arm cannot fire): 12 (of 12 short-reach episodes): extended_not_reached 5, circling 5, approached_other 2
+ego-ols_dev (v1.1, 300 episodes): success 0/300 = 0.0% [0.0, 1.3]
+  failure classes: crash 300
+  merged: crash 300
+  failures starting within 0.15 m of the ring (M0-like, reported separately, never no_start): 20: crash 20; of them no_motion_near_ring (base did not move) 0
+  failures on short-reach episodes (expert hold posture at parking < 0.07 m from the target: parked_no_arm cannot fire): 38 (of 38 short-reach episodes): crash 38
+ego_s0_dev (v1.1, 300 episodes): success 0/300 = 0.0% [0.0, 1.3]
+  failure classes: no_start 9, no_progress 77, never_other 148, circling 19, left_or_overshot 3, parked_no_arm 3, extended_not_reached 1, approached_other 40
+  merged: base_ok_ee_not 44, base_not 256
+  failures starting within 0.15 m of the ring (M0-like, reported separately, never no_start): 20: circling 9, approached_other 8, parked_no_arm 3; of them no_motion_near_ring (base did not move) 3
+  failures on short-reach episodes (expert hold posture at parking < 0.07 m from the target: parked_no_arm cannot fire): 38 (of 38 short-reach episodes): no_progress 11, never_other 23, approached_other 3, extended_not_reached 1
+ego_s0_hard (v1.1, 200 episodes): success 0/200 = 0.0% [0.0, 1.9]
+  failure classes: no_start 14, no_progress 46, never_other 35, circling 30, left_or_overshot 6, parked_no_arm 14, approached_other 55
+  merged: base_ok_ee_not 69, base_not 131
+  failures starting within 0.15 m of the ring (M0-like, reported separately, never no_start): 48: approached_other 22, circling 14, parked_no_arm 12; of them no_motion_near_ring (base did not move) 13
+  failures on short-reach episodes (expert hold posture at parking < 0.07 m from the target: parked_no_arm cannot fire): 12 (of 12 short-reach episodes): no_progress 3, approached_other 4, never_other 2, circling 2, no_start 1
+ego_s0_pilot (v1.1, 100 episodes): success 0/100 = 0.0% [0.0, 3.7]
+  failure classes: no_start 2, no_progress 18, never_other 56, circling 6, left_or_overshot 1, parked_no_arm 5, extended_not_reached 1, approached_other 11
+  merged: base_ok_ee_not 17, base_not 83
+  failures starting within 0.15 m of the ring (M0-like, reported separately, never no_start): 13: approached_other 3, parked_no_arm 5, circling 5; of them no_motion_near_ring (base did not move) 2
+  failures on short-reach episodes (expert hold posture at parking < 0.07 m from the target: parked_no_arm cannot fire): 12 (of 12 short-reach episodes): no_progress 3, circling 1, never_other 4, approached_other 3, no_start 1
+ego_s100_confirm (v1.1, 300 episodes): success 1/300 = 0.3% [0.1, 1.9]
+  failure classes: no_start 14, no_progress 213, never_other 1, circling 34, left_or_overshot 13, parked_no_arm 6, extended_not_reached 1, approached_other 17
+  merged: arrive_leave 1, base_ok_ee_not 24, base_not 275
+  failures starting within 0.15 m of the ring (M0-like, reported separately, never no_start): 32: circling 15, approached_other 11, parked_no_arm 5, extended_not_reached 1; of them no_motion_near_ring (base did not move) 5
+  failures on short-reach episodes (expert hold posture at parking < 0.07 m from the target: parked_no_arm cannot fire): 25 (of 26 short-reach episodes): no_start 1, no_progress 18, approached_other 2, circling 4
+ego_s101_confirm (v1.1, 300 episodes): success 0/300 = 0.0% [0.0, 1.3]
+  failure classes: no_start 16, no_progress 204, never_other 10, circling 20, left_or_overshot 11, parked_no_arm 5, extended_not_reached 1, approached_other 33
+  merged: base_ok_ee_not 39, base_not 261
+  failures starting within 0.15 m of the ring (M0-like, reported separately, never no_start): 33: approached_other 22, circling 6, parked_no_arm 5; of them no_motion_near_ring (base did not move) 19
+  failures on short-reach episodes (expert hold posture at parking < 0.07 m from the target: parked_no_arm cannot fire): 26 (of 26 short-reach episodes): no_start 3, no_progress 17, approached_other 4, circling 1, never_other 1
+ego_s102_confirm (v1.1, 300 episodes): success 0/300 = 0.0% [0.0, 1.3]
+  failure classes: no_start 9, no_progress 88, never_other 128, circling 11, left_or_overshot 6, parked_no_arm 7, extended_not_reached 1, approached_other 50
+  merged: base_ok_ee_not 58, base_not 242
+  failures starting within 0.15 m of the ring (M0-like, reported separately, never no_start): 33: approached_other 22, parked_no_arm 5, circling 6; of them no_motion_near_ring (base did not move) 15
+  failures on short-reach episodes (expert hold posture at parking < 0.07 m from the target: parked_no_arm cannot fire): 26 (of 26 short-reach episodes): approached_other 6, no_progress 6, never_other 12, no_start 2
+ego_s103_confirm (v1.1, 300 episodes): success 0/300 = 0.0% [0.0, 1.3]
+  failure classes: crash 2, no_start 23, no_progress 204, never_other 5, circling 29, left_or_overshot 9, parked_no_arm 4, approached_other 24
+  merged: base_ok_ee_not 28, base_not 270, crash 2
+  failures starting within 0.15 m of the ring (M0-like, reported separately, never no_start): 33: circling 15, approached_other 15, parked_no_arm 3; of them no_motion_near_ring (base did not move) 9
+  failures on short-reach episodes (expert hold posture at parking < 0.07 m from the target: parked_no_arm cannot fire): 26 (of 26 short-reach episodes): no_start 3, no_progress 18, circling 3, approached_other 2
+ego_s104_confirm (v1.1, 300 episodes): success 0/300 = 0.0% [0.0, 1.3]
+  failure classes: crash 3, no_start 17, no_progress 199, never_other 11, circling 33, left_or_overshot 10, extended_not_reached 1, approached_other 26
+  merged: base_ok_ee_not 27, base_not 270, crash 3
+  failures starting within 0.15 m of the ring (M0-like, reported separately, never no_start): 33: circling 15, approached_other 16, extended_not_reached 1, crash 1; of them no_motion_near_ring (base did not move) 11
+  failures on short-reach episodes (expert hold posture at parking < 0.07 m from the target: parked_no_arm cannot fire): 26 (of 26 short-reach episodes): no_progress 19, circling 2, approached_other 3, no_start 2
+ego_s1_dev (v1.1, 300 episodes): success 0/300 = 0.0% [0.0, 1.3]
+  failure classes: no_start 21, no_progress 184, never_other 43, circling 17, left_or_overshot 7, parked_no_arm 2, extended_not_reached 1, approached_other 25
+  merged: base_ok_ee_not 28, base_not 272
+  failures starting within 0.15 m of the ring (M0-like, reported separately, never no_start): 20: approached_other 12, circling 6, parked_no_arm 1, extended_not_reached 1; of them no_motion_near_ring (base did not move) 11
+  failures on short-reach episodes (expert hold posture at parking < 0.07 m from the target: parked_no_arm cannot fire): 38 (of 38 short-reach episodes): no_progress 23, never_other 9, approached_other 2, no_start 4
+ego_s1_hard (v1.1, 200 episodes): success 1/200 = 0.5% [0.1, 2.8]
+  failure classes: no_start 14, no_progress 80, never_other 7, circling 33, left_or_overshot 15, parked_no_arm 9, extended_not_reached 1, approached_other 40
+  merged: arrive_leave 1, base_ok_ee_not 50, base_not 149
+  failures starting within 0.15 m of the ring (M0-like, reported separately, never no_start): 47: approached_other 19, circling 18, parked_no_arm 9, extended_not_reached 1; of them no_motion_near_ring (base did not move) 16
+  failures on short-reach episodes (expert hold posture at parking < 0.07 m from the target: parked_no_arm cannot fire): 11 (of 12 short-reach episodes): no_progress 6, approached_other 2, circling 2, no_start 1
+ego_s1_pilot (v1.1, 100 episodes): success 0/100 = 0.0% [0.0, 3.7]
+  failure classes: no_start 3, no_progress 57, never_other 17, circling 9, left_or_overshot 3, parked_no_arm 3, approached_other 8
+  merged: base_ok_ee_not 11, base_not 89
+  failures starting within 0.15 m of the ring (M0-like, reported separately, never no_start): 13: approached_other 4, circling 6, parked_no_arm 3; of them no_motion_near_ring (base did not move) 4
+  failures on short-reach episodes (expert hold posture at parking < 0.07 m from the target: parked_no_arm cannot fire): 12 (of 12 short-reach episodes): no_progress 8, approached_other 2, circling 1, left_or_overshot 1
+ego_s2_dev (v1.1, 300 episodes): success 0/300 = 0.0% [0.0, 1.3]
+  failure classes: no_start 26, no_progress 228, circling 18, left_or_overshot 7, parked_no_arm 1, approached_other 20
+  merged: base_ok_ee_not 21, base_not 279
+  failures starting within 0.15 m of the ring (M0-like, reported separately, never no_start): 20: approached_other 9, circling 10, parked_no_arm 1; of them no_motion_near_ring (base did not move) 7
+  failures on short-reach episodes (expert hold posture at parking < 0.07 m from the target: parked_no_arm cannot fire): 38 (of 38 short-reach episodes): no_progress 35, approached_other 2, no_start 1
+ego_s2_hard (v1.1, 200 episodes): success 1/200 = 0.5% [0.1, 2.8]
+  failure classes: no_start 22, no_progress 88, circling 30, left_or_overshot 11, parked_no_arm 8, approached_other 40
+  merged: arrive_leave 1, base_ok_ee_not 48, base_not 151
+  failures starting within 0.15 m of the ring (M0-like, reported separately, never no_start): 47: approached_other 25, circling 15, parked_no_arm 7; of them no_motion_near_ring (base did not move) 16
+  failures on short-reach episodes (expert hold posture at parking < 0.07 m from the target: parked_no_arm cannot fire): 11 (of 12 short-reach episodes): no_progress 6, circling 3, approached_other 1, no_start 1
+ego_s2_pilot (v1.1, 100 episodes): success 0/100 = 0.0% [0.0, 3.7]
+  failure classes: crash 1, no_start 2, no_progress 74, circling 9, left_or_overshot 2, parked_no_arm 3, approached_other 9
+  merged: base_ok_ee_not 12, base_not 87, crash 1
+  failures starting within 0.15 m of the ring (M0-like, reported separately, never no_start): 13: approached_other 4, parked_no_arm 3, circling 6; of them no_motion_near_ring (base did not move) 3
+  failures on short-reach episodes (expert hold posture at parking < 0.07 m from the target: parked_no_arm cannot fire): 12 (of 12 short-reach episodes): no_progress 7, approached_other 2, circling 1, no_start 1, left_or_overshot 1
+ego_s3_dev (v1.1, 300 episodes): success 0/300 = 0.0% [0.0, 1.3]
+  failure classes: crash 1, no_start 7, no_progress 16, never_other 180, circling 25, left_or_overshot 2, parked_no_arm 14, extended_not_reached 2, approached_other 53
+  merged: base_ok_ee_not 69, base_not 230, crash 1
+  failures starting within 0.15 m of the ring (M0-like, reported separately, never no_start): 20: circling 8, approached_other 8, parked_no_arm 2, crash 1, extended_not_reached 1; of them no_motion_near_ring (base did not move) 5
+  failures on short-reach episodes (expert hold posture at parking < 0.07 m from the target: parked_no_arm cannot fire): 38 (of 38 short-reach episodes): approached_other 8, never_other 29, extended_not_reached 1
+ego_s3_hard (v1.1, 200 episodes): success 0/200 = 0.0% [0.0, 1.9]
+  failure classes: crash 2, no_start 9, no_progress 10, never_other 39, circling 51, left_or_overshot 3, parked_no_arm 31, approached_other 55
+  merged: base_ok_ee_not 86, base_not 112, crash 2
+  failures starting within 0.15 m of the ring (M0-like, reported separately, never no_start): 48: approached_other 12, circling 24, parked_no_arm 12; of them no_motion_near_ring (base did not move) 5
+  failures on short-reach episodes (expert hold posture at parking < 0.07 m from the target: parked_no_arm cannot fire): 12 (of 12 short-reach episodes): approached_other 4, circling 5, never_other 3
+ego_s4_dev (v1.1, 300 episodes): success 0/300 = 0.0% [0.0, 1.3]
+  failure classes: no_start 11, no_progress 81, never_other 128, circling 22, left_or_overshot 1, parked_no_arm 15, approached_other 42
+  merged: base_ok_ee_not 57, base_not 243
+  failures starting within 0.15 m of the ring (M0-like, reported separately, never no_start): 20: circling 5, approached_other 10, parked_no_arm 5; of them no_motion_near_ring (base did not move) 9
+  failures on short-reach episodes (expert hold posture at parking < 0.07 m from the target: parked_no_arm cannot fire): 38 (of 38 short-reach episodes): never_other 13, no_progress 17, approached_other 7, no_start 1
+ego_s4_hard (v1.1, 200 episodes): success 0/200 = 0.0% [0.0, 1.9]
+  failure classes: no_start 14, no_progress 33, never_other 34, circling 43, left_or_overshot 2, parked_no_arm 24, approached_other 50
+  merged: base_ok_ee_not 74, base_not 126
+  failures starting within 0.15 m of the ring (M0-like, reported separately, never no_start): 48: parked_no_arm 11, approached_other 17, circling 20; of them no_motion_near_ring (base did not move) 13
+  failures on short-reach episodes (expert hold posture at parking < 0.07 m from the target: parked_no_arm cannot fire): 12 (of 12 short-reach episodes): approached_other 3, circling 4, no_progress 2, never_other 2, no_start 1
+expert_v11_confirm (v1.1, 300 episodes): success 294/300 = 98.0% [95.7, 99.1]
+  failure classes: circling 6
+  merged: arrive_stay 292, arrive_leave 2, base_not 6
+  failures on short-reach episodes (expert hold posture at parking < 0.07 m from the target: parked_no_arm cannot fire): 0 (of 26 short-reach episodes)
+expert_v11_dev (v1.1, 300 episodes): success 298/300 = 99.3% [97.6, 99.8]
+  failure classes: circling 2
+  merged: arrive_stay 296, arrive_leave 2, base_not 2
+  failures on short-reach episodes (expert hold posture at parking < 0.07 m from the target: parked_no_arm cannot fire): 0 (of 38 short-reach episodes)
+expert_v11_hard (v1.1, 200 episodes): success 194/200 = 97.0% [93.6, 98.6]
+  failure classes: circling 6
+  merged: arrive_stay 194, base_not 6
+  failures on short-reach episodes (expert hold posture at parking < 0.07 m from the target: parked_no_arm cannot fire): 0 (of 12 short-reach episodes)
+raw-ols_dev (v1.1, 300 episodes): success 0/300 = 0.0% [0.0, 1.3]
+  failure classes: crash 300
+  merged: crash 300
+  failures starting within 0.15 m of the ring (M0-like, reported separately, never no_start): 20: crash 20; of them no_motion_near_ring (base did not move) 0
+  failures on short-reach episodes (expert hold posture at parking < 0.07 m from the target: parked_no_arm cannot fire): 38 (of 38 short-reach episodes): crash 38
+raw_s0_dev (v1.1, 300 episodes): success 0/300 = 0.0% [0.0, 1.3]
+  failure classes: no_start 27, runaway 3, no_progress 85, never_other 110, circling 62, left_or_overshot 4, approached_other 9
+  merged: base_ok_ee_not 9, base_not 291
+  failures starting within 0.15 m of the ring (M0-like, reported separately, never no_start): 20: approached_other 6, circling 14; of them no_motion_near_ring (base did not move) 1
+  failures on short-reach episodes (expert hold posture at parking < 0.07 m from the target: parked_no_arm cannot fire): 38 (of 38 short-reach episodes): no_progress 16, never_other 16, no_start 2, circling 2, approached_other 1, left_or_overshot 1
+zero_v11_dev (v1.1, 300 episodes): success 0/300 = 0.0% [0.0, 1.3]
+  failure classes: no_start 280, approached_other 20
+  merged: base_ok_ee_not 20, base_not 280
+  failures starting within 0.15 m of the ring (M0-like, reported separately, never no_start): 20: approached_other 20; of them no_motion_near_ring (base did not move) 20
+  failures on short-reach episodes (expert hold posture at parking < 0.07 m from the target: parked_no_arm cannot fire): 38 (of 38 short-reach episodes): no_start 38
+
+== Episode references (cross-check with results/data_analysis) ==
+confirm: no results/data_analysis/episodes_confirm.csv (computed from the recordings only)
+confirm: recorded nav_done time (first nav_done step of the .npz) vs index.csv nav_done_time: max |difference| 4.73e-07 s over 300 episodes (0 with only one defined)
+dev: 300/300 episodes in results/data_analysis/episodes_dev.csv; mode mismatches 0; max |difference| align_req_deg 0, orient_req_deg 0, navdone_ee_err 0, d0 0, cov_pct_world 0, cov_pct_rel 0
+dev: recorded nav_done time (first nav_done step of the .npz) vs index.csv nav_done_time: max |difference| 4.73e-07 s over 300 episodes (0 with only one defined)
+hard: 200/200 episodes in results/data_analysis/episodes_hard.csv; mode mismatches 0; max |difference| align_req_deg 0, orient_req_deg 0, navdone_ee_err 0, d0 0, cov_pct_world 0, cov_pct_rel 0
+hard: recorded nav_done time (first nav_done step of the .npz) vs index.csv nav_done_time: max |difference| 2.9e-07 s over 200 episodes (0 with only one defined)
+pilot: no results/data_analysis/episodes_pilot.csv (computed from the recordings only)
+pilot: recorded nav_done time (first nav_done step of the .npz) vs index.csv nav_done_time: max |difference| 7.78e-07 s over 100 episodes (0 with only one defined)
+
+== Classifier validation (v1.1 runs) ==
+Runs: expert expert_v11_confirm, expert_v11_dev, expert_v11_hard; zero zero_v11_dev
+[PASS] no harness_error: none
+[PASS] (i) expert failures classify as circling: 14 failures (14 expected over DEV + HARD + CONFIRM; per run {'expert_v11_confirm': 6, 'expert_v11_dev': 2, 'expert_v11_hard': 6}); classes {'circling': 14}
+    expert failures: turn excess 370-399 deg, ring_dist_min 0.000-0.000 m
+[PASS] (ii) zero_v11_dev: failures starting >= 0.15 m from the ring classify as no_start: 280/280 no_start; other classes {}; successes 0
+    of them 30 start 0.15-0.3 m from the ring (approached by construction; no_start is tested before the approach test): classes {'no_start': 30}
+    reported separately: 20 failures start within 0.15 m of the ring (M0-like, never no_start): classes {'approached_other': 20}; flag no_motion_near_ring 20
+[PASS] (iii) expert successes: no failure predicate fires except the expected exceptions: 786 successes; fired per predicate crash 0, never_approached 0, no_start 1, runaway 0, no_progress 0, circling 4, left_or_overshot 0, parked_no_arm 0, extended_not_reached 0; expected exceptions 5, unexpected 0
+    expected exceptions (genuine circling before a late success: the expert circled until the 25 s navigation timeout, parked after it and still reached; HARD 19 circling, HARD 158 circling, CONFIRM 62 circling, CONFIRM 69 circling, DEV 11 no_start): expert_v11_confirm ep 62 circling, turn excess 472 deg, parked_time 26.618 s, expert_v11_confirm ep 69 circling, turn excess 586 deg, parked_time 27.104 s, expert_v11_dev ep 11 no_start, expert_v11_hard ep 19 circling, turn excess 397 deg, parked_time 26.231 s, expert_v11_hard ep 158 circling, turn excess 596 deg, parked_time 27.015 s
+    successes with arm_extend_time NaN (EE never displaced > 0.10 m in the base frame): 121/786 (15.4%); their navdone_ee_err median 0.063 m, range 0.016-0.130 m; ee_base_disp_max median 0.066 m
+    short-reach episodes (expert hold posture at parking < 0.07 m from the target: parked_no_arm cannot fire there): {'expert_v11_confirm': 26, 'expert_v11_dev': 38, 'expert_v11_hard': 12}
+[PASS] (iv) expert arm_extend_time >= recorded nav_done time: 0 of 679 episodes extend before nav_done (121 without arm_extend_time or nav_done)
+[INFO] (v) expert arm_extend_time - nav_done (reported; the plan's < 0.2 s cannot hold): median 0.469 s, p95 1.317 s, max 2.739 s, > 0.2 s: 679/679
+
+== Experiment A: ego-novw dev (B) vs ego dev (A), 300 common episodes, seeds A 5, B 5 ==
+Differences are B - A (seed-mean over training seeds; two-level bootstrap: seeds resampled within each arm, one shared episode resample; 10000 draws, rng seed 0; percentile 95% CI). Calibrated companion: Welch t on the per-seed rates (one-sample t when an arm is a single run), 95% CI.
+Per-seed success (Wilson 95%):
+  ego dev: 0: 0/300 0.0 [0.0, 1.3]; 1: 0/300 0.0 [0.0, 1.3]; 2: 0/300 0.0 [0.0, 1.3]; 3: 0/300 0.0 [0.0, 1.3]; 4: 0/300 0.0 [0.0, 1.3]
+  ego-novw dev: 0: 1/300 0.3 [0.1, 1.9]; 1: 0/300 0.0 [0.0, 1.3]; 2: 0/300 0.0 [0.0, 1.3]; 3: 1/300 0.3 [0.1, 1.9]; 4: 3/300 1.0 [0.3, 2.9]
+Seed-mean success: ego dev 0.0 [0.0, 0.0]%, ego-novw dev 0.3 [0.0, 1.0]%; expert 99.3% on the same episodes
+Paired difference B - A: bootstrap +0.3 [+0.0, +1.0] pp, p 0.2; Welch t (per-seed rates) +0.3 [-0.2, +0.8] pp, df 4.0, p 0.14
+Floor rule (both seed-mean successes < 5%): ACTIVE: the decision moves to the secondary metrics
+Seed x seed (all pairs; seeds of different arms are not paired): success difference B - A in pp, exact McNemar p (descriptive) [n A fails & B succeeds / n A succeeds & B fails]:
+  A \ B                      0                     1                     2                     3                     4
+  0       +0.3 p       1 [1/0]  +0.0 p       1 [0/0]  +0.0 p       1 [0/0]  +0.3 p       1 [1/0]  +1.0 p    0.25 [3/0]
+  1       +0.3 p       1 [1/0]  +0.0 p       1 [0/0]  +0.0 p       1 [0/0]  +0.3 p       1 [1/0]  +1.0 p    0.25 [3/0]
+  2       +0.3 p       1 [1/0]  +0.0 p       1 [0/0]  +0.0 p       1 [0/0]  +0.3 p       1 [1/0]  +1.0 p    0.25 [3/0]
+  3       +0.3 p       1 [1/0]  +0.0 p       1 [0/0]  +0.0 p       1 [0/0]  +0.3 p       1 [1/0]  +1.0 p    0.25 [3/0]
+  4       +0.3 p       1 [1/0]  +0.0 p       1 [0/0]  +0.0 p       1 [0/0]  +0.3 p       1 [1/0]  +1.0 p    0.25 [3/0]
+  all 25 seed-pair differences: min +0.0, median +0.3, max +1.0 pp; 15 > 0, 0 < 0
+Failure classes, seed-mean share of the episodes (A, B, B - A with CI):
+  success                A   0.0%  B   0.3%  B - A +0.3 [+0.0, +1.0] pp
+  crash                  A   0.1%  B   0.1%  B - A +0.0 [-0.3, +0.3] pp
+  no_start               A   4.9%  B   0.0%  B - A -4.9 [-8.2, -2.3] pp
+  no_progress            A  39.1%  B   0.0%  B - A -39.1 [-62.4, -17.3] pp
+  never_other            A  33.3%  B   0.0%  B - A -33.3 [-52.7, -12.8] pp
+  circling               A   6.7%  B  32.2%  B - A +25.5 [+9.9, +45.5] pp
+  left_or_overshot       A   1.3%  B   0.1%  B - A -1.3 [-2.7, -0.3] pp
+  parked_no_arm          A   2.3%  B  54.3%  B - A +52.0 [+37.5, +64.5] pp
+  extended_not_reached   A   0.3%  B   6.3%  B - A +6.0 [+2.5, +9.7] pp
+  approached_other       A  12.0%  B   6.7%  B - A -5.3 [-11.1, +0.4] pp
+  flag no_motion_near_ring (failure starting within 0.15 m of the ring, base did not move; never no_start): A 2.3%  B 0.0%
+  failures on short-reach episodes (38 of 300 episodes with the expert's hold posture at parking < 0.07 m from the target: parked_no_arm cannot fire): A 12.7%  B 12.5% of the episodes; seed x episode counts A {'no_start': 6, 'no_progress': 86, 'never_other': 74, 'extended_not_reached': 2, 'approached_other': 22}, B {'circling': 40, 'extended_not_reached': 88, 'approached_other': 59}
+Merged classes, seed-mean share (A, B, B - A): arrive_leave 0.0 / 0.3 / +0.3; base_ok_ee_not 14.6 / 67.3 / +52.7; base_not 85.3 / 32.3 / -53.1; crash 0.1 / 0.1 / +0.0
+Share of the net difference from no_start+no_progress+left_or_overshot: reduction of their share +45.3 pp / net difference +0.3 pp = 13580.0% [bootstrap 3380.3, 79277.5] (unstable when the net difference is near 0)
+d0 strata (Holm over the 4 strata with n >= 30, reject at p_adj <= 0.05; the strata with fewer episodes are descriptive, without Holm):
+  M0             n  12 (descriptive) A   0.0%  B   0.0%  B - A +0.0 [+0.0, +0.0] pp, p 1, no Holm
+  M1             n  48               A   0.0%  B   0.0%  B - A +0.0 [+0.0, +0.0] pp, p 1, Holm 1
+  M2 0.08-0.5    n  46               A   0.0%  B   0.0%  B - A +0.0 [+0.0, +0.0] pp, p 1, Holm 1
+  M2 0.5-1.0     n  56               A   0.0%  B   1.1%  B - A +1.1 [+0.0, +3.6] pp, p 0.47, Holm 1
+  M2 >= 1.0      n 138               A   0.0%  B   0.3%  B - A +0.3 [+0.0, +1.3] pp, p 0.84, Holm 1
+  boundary 0.08-0.15 (descriptive, overlaps the strata): n 8, A 0.0%, B 0.0%, B - A +0.0 [+0.0, +0.0] pp
+Secondary metrics (seed-mean share; B - A paired: two-level bootstrap and Welch t; descriptive unless the floor rule is active; expert = the expert run's rate on the same episodes, the reference):
+  reach_2cm           A 0.1 [0.0, 0.4]%  B 2.1 [0.9, 3.7]%  B - A +2.1 [+0.8, +3.6] pp, p 4.0e-04; Welch +2.1 [+1.0, +3.1] pp, p 0.0046
+                      expert 99.3%; per seed A 0/0/0/0/0, B 1/3/2/3/2; worst stratum CI upper bound: n >= 30 M1 +0.0 pp, all M1 +0.0 pp
+  reach_5cm           A 0.5 [0.0, 1.3]%  B 9.0 [6.0, 12.3]%  B - A +8.5 [+5.5, +11.7] pp, p 1.0e-04; Welch +8.5 [+7.2, +9.7] pp, p 8.5e-06
+                      expert 99.3%; per seed A 1/1/0/1/0, B 7/9/10/9/9; worst stratum CI upper bound: n >= 30 M1 +8.3 pp, all M1 +8.3 pp
+  parked              A 10.7 [6.4, 15.6]%  B 11.9 [1.1, 31.8]%  B - A +1.2 [-12.1, +21.6] pp, p 0.92; Welch +1.2 [-25.3, +27.7] pp, p 0.91
+                      expert 99.0%; per seed A 10/8/5/17/13, B 0/2/3/50/4; worst stratum CI upper bound: n >= 30 M2 0.08-0.5 -4.8 pp, all M0 -8.3 pp
+  arm_extended        A 1.4 [0.3, 3.1]%  B 0.5 [0.0, 1.5]%  B - A -0.9 [-2.5, +0.5] pp, p 0.24; Welch -0.9 [-2.4, +0.7] pp, p 0.22
+                      expert 81.7%; per seed A 3/1/0/0/2, B 0/0/0/1/2; worst stratum CI upper bound: n >= 30 M1 +0.0 pp, all M0 +0.0 pp
+  arm_extended_toward A 0.9 [0.1, 2.1]%  B 0.4 [0.0, 1.3]%  B - A -0.5 [-1.7, +0.7] pp, p 0.44; Welch -0.5 [-1.5, +0.6] pp, p 0.33
+                      expert 81.7%; per seed A 1/1/0/0/2, B 0/0/0/0/2; worst stratum CI upper bound: n >= 30 M2 0.08-0.5 +0.0 pp, all M0 +0.0 pp
+  held_10s            A 0.0 [0.0, 0.0]%  B 0.0 [0.0, 0.0]%  B - A +0.0 [+0.0, +0.0] pp, p 1; Welch +0.0 [+0.0, +0.0] pp, p 1
+                      expert 98.7%; per seed A 0/0/0/0/0, B 0/0/0/0/0; worst stratum CI upper bound: n >= 30 M1 +0.0 pp, all M0 +0.0 pp
+  stable_5cm          A 0.1 [0.0, 0.5]%  B 7.5 [4.7, 10.7]%  B - A +7.4 [+4.5, +10.5] pp, p 1.0e-04; Welch +7.4 [+5.5, +9.3] pp, p 4.1e-04
+                      expert 99.3%; per seed A 0/0/0/0/0, B 5/8/9/8/8; worst stratum CI upper bound: n >= 30 M1 +6.2 pp, all M1 +6.2 pp
+  Holm over the available secondary metrics (bootstrap p | max(bootstrap p, Welch p)): reach_2cm 0.002 | 0.023, reach_5cm 7.0e-04 | 7.0e-04, parked 1 | 1, arm_extended 0.94 | 0.94, arm_extended_toward 1 | 1, held_10s 1 | 1, stable_5cm 7.0e-04 | 0.0025
+Adoption-rule inputs (B adopted only if (1) CI lower bound > 0, (2) share from predicted classes >= 50%, (3) every stratum CI upper bound >= -10 pp, (4) HARD same direction, (5) CONFIRM):
+  (1) CI lower bound of B - A: bootstrap +0.0 pp, Welch t (per-seed rates) -0.2 pp (upper: bootstrap +1.0, t +0.8 pp) -> bootstrap > 0 NO, t > 0 NO: condition (1) (both > 0) NOT MET
+  (2) share from predicted classes: 13580.0% (no_start+no_progress+left_or_overshot)
+  (3) worst stratum CI upper bound (strata with n >= 30, used): M1 +0.0 pp (needs >= -10 pp); all strata (shown): M0 +0.0 pp
+  reverse direction (A better than B): B - A CI upper bound: bootstrap +1.0 pp, t +0.8 pp (both need < 0: NOT MET); highest stratum B - A CI lower bound (needs <= +10 pp): n >= 30 (used) M1 +0.0 pp, all M0 +0.0 pp
+
+== Experiment A: ego-novw hard (B) vs ego hard (A), 200 common episodes, seeds A 5, B 5 ==
+Differences are B - A (seed-mean over training seeds; two-level bootstrap: seeds resampled within each arm, one shared episode resample; 10000 draws, rng seed 0; percentile 95% CI). Calibrated companion: Welch t on the per-seed rates (one-sample t when an arm is a single run), 95% CI.
+Per-seed success (Wilson 95%):
+  ego hard: 0: 0/200 0.0 [0.0, 1.9]; 1: 1/200 0.5 [0.1, 2.8]; 2: 1/200 0.5 [0.1, 2.8]; 3: 0/200 0.0 [0.0, 1.9]; 4: 0/200 0.0 [0.0, 1.9]
+  ego-novw hard: 0: 0/200 0.0 [0.0, 1.9]; 1: 1/200 0.5 [0.1, 2.8]; 2: 1/200 0.5 [0.1, 2.8]; 3: 0/200 0.0 [0.0, 1.9]; 4: 2/200 1.0 [0.3, 3.6]
+Seed-mean success: ego hard 0.2 [0.0, 0.9]%, ego-novw hard 0.4 [0.0, 1.2]%; expert 97.0% on the same episodes
+Paired difference B - A: bootstrap +0.2 [-0.5, +1.0] pp, p 0.7; Welch t (per-seed rates) +0.2 [-0.3, +0.7] pp, df 6.9, p 0.4
+Floor rule (both seed-mean successes < 5%): ACTIVE: the decision moves to the secondary metrics
+Seed x seed (all pairs; seeds of different arms are not paired): success difference B - A in pp, exact McNemar p (descriptive) [n A fails & B succeeds / n A succeeds & B fails]:
+  A \ B                      0                     1                     2                     3                     4
+  0       +0.0 p       1 [0/0]  +0.5 p       1 [1/0]  +0.5 p       1 [1/0]  +0.0 p       1 [0/0]  +1.0 p     0.5 [2/0]
+  1       -0.5 p       1 [0/1]  +0.0 p       1 [1/1]  +0.0 p       1 [0/0]  -0.5 p       1 [0/1]  +0.5 p       1 [2/1]
+  2       -0.5 p       1 [0/1]  +0.0 p       1 [1/1]  +0.0 p       1 [0/0]  -0.5 p       1 [0/1]  +0.5 p       1 [2/1]
+  3       +0.0 p       1 [0/0]  +0.5 p       1 [1/0]  +0.5 p       1 [1/0]  +0.0 p       1 [0/0]  +1.0 p     0.5 [2/0]
+  4       +0.0 p       1 [0/0]  +0.5 p       1 [1/0]  +0.5 p       1 [1/0]  +0.0 p       1 [0/0]  +1.0 p     0.5 [2/0]
+  all 25 seed-pair differences: min -0.5, median +0.0, max +1.0 pp; 11 > 0, 4 < 0
+Failure classes, seed-mean share of the episodes (A, B, B - A with CI):
+  success                A   0.2%  B   0.4%  B - A +0.2 [-0.5, +1.0] pp
+  crash                  A   0.2%  B   0.1%  B - A -0.1 [-0.8, +0.4] pp
+  no_start               A   7.3%  B   0.0%  B - A -7.3 [-11.0, -4.2] pp
+  no_progress            A  25.7%  B   0.0%  B - A -25.7 [-39.4, -12.8] pp
+  never_other            A  11.5%  B   0.0%  B - A -11.5 [-19.7, -4.0] pp
+  circling               A  18.7%  B  52.0%  B - A +33.3 [+16.7, +51.8] pp
+  left_or_overshot       A   3.7%  B   0.0%  B - A -3.7 [-7.0, -1.2] pp
+  parked_no_arm          A   8.6%  B  38.3%  B - A +29.7 [+14.2, +44.8] pp
+  extended_not_reached   A   0.1%  B   1.6%  B - A +1.5 [+0.0, +3.6] pp
+  approached_other       A  24.0%  B   7.6%  B - A -16.4 [-22.7, -10.0] pp
+  flag no_motion_near_ring (failure starting within 0.15 m of the ring, base did not move; never no_start): A 6.3%  B 0.0%
+  failures on short-reach episodes (12 of 200 episodes with the expert's hold posture at parking < 0.07 m from the target: parked_no_arm cannot fire): A 5.8%  B 5.8% of the episodes; seed x episode counts A {'no_start': 4, 'no_progress': 17, 'never_other': 7, 'circling': 16, 'approached_other': 14}, B {'circling': 33, 'extended_not_reached': 15, 'approached_other': 10}
+Merged classes, seed-mean share (A, B, B - A): arrive_leave 0.2 / 0.4 / +0.2; base_ok_ee_not 32.7 / 47.5 / +14.8; base_not 66.9 / 52.0 / -14.9; crash 0.2 / 0.1 / -0.1
+Share of the net difference from no_start+no_progress+left_or_overshot: reduction of their share +36.7 pp / net difference +0.2 pp = 18350.0% [bootstrap -49800.0, 44000.0] (unstable when the net difference is near 0)
+d0 strata (Holm over the 3 strata with n >= 30, reject at p_adj <= 0.05; the strata with fewer episodes are descriptive, without Holm):
+  M0             n  29 (descriptive) A   1.4%  B   0.7%  B - A -0.7 [-4.1, +1.4] pp, p 1, no Holm
+  M1             n  66               A   0.0%  B   0.0%  B - A +0.0 [+0.0, +0.0] pp, p 1, Holm 1
+  M2 0.08-0.5    n  58               A   0.0%  B   0.0%  B - A +0.0 [+0.0, +0.0] pp, p 1, Holm 1
+  M2 0.5-1.0     n  46               A   0.0%  B   0.9%  B - A +0.9 [+0.0, +3.5] pp, p 0.61, Holm 1
+  M2 >= 1.0      n   1 (descriptive) A   0.0%  B  20.0%  B - A +20.0 [+0.0, +60.0] pp, p 0.66, no Holm
+  boundary 0.08-0.15 (descriptive, overlaps the strata): n 19, A 0.0%, B 0.0%, B - A +0.0 [+0.0, +0.0] pp
+Secondary metrics (seed-mean share; B - A paired: two-level bootstrap and Welch t; descriptive unless the floor rule is active; expert = the expert run's rate on the same episodes, the reference):
+  reach_2cm           A 0.6 [0.0, 1.8]%  B 0.9 [0.0, 2.3]%  B - A +0.3 [-1.0, +1.7] pp, p 0.7; Welch +0.3 [-0.5, +1.1] pp, p 0.42
+                      expert 97.0%; per seed A 0/1/1/0/0, B 0/1/2/0/2; worst stratum CI upper bound: n >= 30 M1 +0.0 pp, all M1 +0.0 pp
+  reach_5cm           A 1.3 [0.2, 3.0]%  B 4.5 [1.9, 7.7]%  B - A +3.2 [+0.6, +6.3] pp, p 0.018; Welch +3.2 [+0.9, +5.5] pp, p 0.016
+                      expert 97.0%; per seed A 0/2/1/1/2, B 2/4/5/6/6; worst stratum CI upper bound: n >= 30 M1 +7.6 pp, all M1 +7.6 pp
+  parked              A 25.0 [17.7, 32.7]%  B 11.9 [2.3, 28.7]%  B - A -13.1 [-27.0, +4.8] pp, p 0.14; Welch -13.1 [-35.1, +8.9] pp, p 0.19
+                      expert 97.0%; per seed A 24/19/17/34/30, B 2/4/4/44/6; worst stratum CI upper bound: n >= 30 M2 0.08-0.5 -6.9 pp, all M0 -25.5 pp
+  arm_extended        A 1.5 [0.4, 3.2]%  B 0.5 [0.0, 1.5]%  B - A -1.0 [-2.7, +0.4] pp, p 0.2; Welch -1.0 [-2.3, +0.3] pp, p 0.1
+                      expert 90.5%; per seed A 2/2/0/1/2, B 0/0/0/0/2; worst stratum CI upper bound: n >= 30 M1 -0.6 pp, all M1 -0.6 pp
+  arm_extended_toward A 0.6 [0.0, 1.8]%  B 0.4 [0.0, 1.3]%  B - A -0.2 [-1.5, +0.9] pp, p 0.81; Welch -0.2 [-1.2, +0.8] pp, p 0.64
+                      expert 90.5%; per seed A 2/1/0/0/0, B 0/0/0/0/2; worst stratum CI upper bound: n >= 30 M1 +0.0 pp, all M0 +0.0 pp
+  held_10s            A 0.0 [0.0, 0.0]%  B 0.0 [0.0, 0.0]%  B - A +0.0 [+0.0, +0.0] pp, p 1; Welch +0.0 [+0.0, +0.0] pp, p 1
+                      expert 97.0%; per seed A 0/0/0/0/0, B 0/0/0/0/0; worst stratum CI upper bound: n >= 30 M1 +0.0 pp, all M0 +0.0 pp
+  stable_5cm          A 0.0 [0.0, 0.0]%  B 3.2 [1.1, 5.9]%  B - A +3.2 [+1.1, +5.9] pp, p 2.0e-04; Welch +3.2 [+1.0, +5.4] pp, p 0.016
+                      expert 97.0%; per seed A 0/0/0/0/0, B 0/4/4/2/5; worst stratum CI upper bound: n >= 30 M2 0.08-0.5 +6.6 pp, all M2 0.08-0.5 +6.6 pp
+  Holm over the available secondary metrics (bootstrap p | max(bootstrap p, Welch p)): reach_2cm 1 | 1, reach_5cm 0.11 | 0.11, parked 0.69 | 0.95, arm_extended 0.79 | 0.95, arm_extended_toward 1 | 1, held_10s 1 | 1, stable_5cm 0.0014 | 0.11
+Adoption-rule inputs (B adopted only if (1) CI lower bound > 0, (2) share from predicted classes >= 50%, (3) every stratum CI upper bound >= -10 pp, (4) HARD same direction, (5) CONFIRM):
+  (1) CI lower bound of B - A: bootstrap -0.5 pp, Welch t (per-seed rates) -0.3 pp (upper: bootstrap +1.0, t +0.7 pp) -> bootstrap > 0 NO, t > 0 NO: condition (1) (both > 0) NOT MET
+  (2) share from predicted classes: 18350.0% (no_start+no_progress+left_or_overshot)
+  (3) worst stratum CI upper bound (strata with n >= 30, used): M1 +0.0 pp (needs >= -10 pp); all strata (shown): M1 +0.0 pp
+  reverse direction (A better than B): B - A CI upper bound: bootstrap +1.0 pp, t +0.7 pp (both need < 0: NOT MET); highest stratum B - A CI lower bound (needs <= +10 pp): n >= 30 (used) M1 +0.0 pp, all M1 +0.0 pp
+
+== Experiment A: ego-novw confirm (B) vs ego confirm (A), 300 common episodes, seeds A 5, B 5 ==
+Differences are B - A (seed-mean over training seeds; two-level bootstrap: seeds resampled within each arm, one shared episode resample; 10000 draws, rng seed 0; percentile 95% CI). Calibrated companion: Welch t on the per-seed rates (one-sample t when an arm is a single run), 95% CI.
+Per-seed success (Wilson 95%):
+  ego confirm: 100: 1/300 0.3 [0.1, 1.9]; 101: 0/300 0.0 [0.0, 1.3]; 102: 0/300 0.0 [0.0, 1.3]; 103: 0/300 0.0 [0.0, 1.3]; 104: 0/300 0.0 [0.0, 1.3]
+  ego-novw confirm: 100: 0/300 0.0 [0.0, 1.3]; 101: 3/300 1.0 [0.3, 2.9]; 102: 1/300 0.3 [0.1, 1.9]; 103: 0/300 0.0 [0.0, 1.3]; 104: 0/300 0.0 [0.0, 1.3]
+Seed-mean success: ego confirm 0.1 [0.0, 0.4]%, ego-novw confirm 0.3 [0.0, 0.9]%; expert 98.0% on the same episodes
+Paired difference B - A: bootstrap +0.2 [-0.2, +0.8] pp, p 0.6; Welch t (per-seed rates) +0.2 [-0.3, +0.7] pp, df 4.9, p 0.38
+Floor rule (both seed-mean successes < 5%): ACTIVE: the decision moves to the secondary metrics
+Seed x seed (all pairs; seeds of different arms are not paired): success difference B - A in pp, exact McNemar p (descriptive) [n A fails & B succeeds / n A succeeds & B fails]:
+  A \ B                    100                   101                   102                   103                   104
+  100     -0.3 p       1 [0/1]  +0.7 p    0.62 [3/1]  +0.0 p       1 [1/1]  -0.3 p       1 [0/1]  -0.3 p       1 [0/1]
+  101     +0.0 p       1 [0/0]  +1.0 p    0.25 [3/0]  +0.3 p       1 [1/0]  +0.0 p       1 [0/0]  +0.0 p       1 [0/0]
+  102     +0.0 p       1 [0/0]  +1.0 p    0.25 [3/0]  +0.3 p       1 [1/0]  +0.0 p       1 [0/0]  +0.0 p       1 [0/0]
+  103     +0.0 p       1 [0/0]  +1.0 p    0.25 [3/0]  +0.3 p       1 [1/0]  +0.0 p       1 [0/0]  +0.0 p       1 [0/0]
+  104     +0.0 p       1 [0/0]  +1.0 p    0.25 [3/0]  +0.3 p       1 [1/0]  +0.0 p       1 [0/0]  +0.0 p       1 [0/0]
+  all 25 seed-pair differences: min -0.3, median +0.0, max +1.0 pp; 9 > 0, 3 < 0
+Failure classes, seed-mean share of the episodes (A, B, B - A with CI):
+  success                A   0.1%  B   0.3%  B - A +0.2 [-0.2, +0.8] pp
+  crash                  A   0.3%  B   0.1%  B - A -0.3 [-0.9, +0.2] pp
+  no_start               A   5.3%  B   0.0%  B - A -5.3 [-8.0, -3.0] pp
+  no_progress            A  60.5%  B   0.0%  B - A -60.5 [-72.1, -44.2] pp
+  never_other            A  10.3%  B   0.0%  B - A -10.3 [-27.1, -1.1] pp
+  circling               A   8.5%  B  28.1%  B - A +19.7 [+3.1, +36.1] pp
+  left_or_overshot       A   3.3%  B   0.2%  B - A -3.1 [-5.2, -1.3] pp
+  parked_no_arm          A   1.5%  B  57.7%  B - A +56.2 [+45.0, +68.5] pp
+  extended_not_reached   A   0.3%  B   4.9%  B - A +4.6 [+1.8, +7.9] pp
+  approached_other       A  10.0%  B   8.8%  B - A -1.2 [-7.7, +5.1] pp
+  flag no_motion_near_ring (failure starting within 0.15 m of the ring, base did not move; never no_start): A 3.9%  B 0.1%
+  failures on short-reach episodes (26 of 300 episodes with the expert's hold posture at parking < 0.07 m from the target: parked_no_arm cannot fire): A 8.6%  B 8.6% of the episodes; seed x episode counts A {'no_start': 11, 'no_progress': 78, 'never_other': 13, 'circling': 10, 'approached_other': 17}, B {'circling': 38, 'extended_not_reached': 60, 'approached_other': 31}
+Merged classes, seed-mean share (A, B, B - A): arrive_stay 0.0 / 0.1 / +0.1; arrive_leave 0.1 / 0.2 / +0.1; base_ok_ee_not 11.7 / 71.3 / +59.6; base_not 87.9 / 28.3 / -59.5; crash 0.3 / 0.1 / -0.3
+Share of the net difference from no_start+no_progress+left_or_overshot: reduction of their share +68.9 pp / net difference +0.2 pp = 34433.3% [bootstrap -111650.0, 114575.0] (unstable when the net difference is near 0)
+d0 strata (Holm over the 4 strata with n >= 30, reject at p_adj <= 0.05; the strata with fewer episodes are descriptive, without Holm):
+  M0             n  19 (descriptive) A   1.1%  B   1.1%  B - A +0.0 [-4.2, +4.2] pp, p 1, no Holm
+  M1             n  41               A   0.0%  B   0.0%  B - A +0.0 [+0.0, +0.0] pp, p 1, Holm 1
+  M2 0.08-0.5    n  46               A   0.0%  B   0.4%  B - A +0.4 [+0.0, +2.6] pp, p 1, Holm 1
+  M2 0.5-1.0     n  55               A   0.0%  B   0.0%  B - A +0.0 [+0.0, +0.0] pp, p 1, Holm 1
+  M2 >= 1.0      n 139               A   0.0%  B   0.3%  B - A +0.3 [+0.0, +1.2] pp, p 0.61, Holm 1
+  boundary 0.08-0.15 (descriptive, overlaps the strata): n 14, A 0.0%, B 0.0%, B - A +0.0 [+0.0, +0.0] pp
+Secondary metrics (seed-mean share; B - A paired: two-level bootstrap and Welch t; descriptive unless the floor rule is active; expert = the expert run's rate on the same episodes, the reference):
+  reach_2cm           A 0.1 [0.0, 0.4]%  B 1.5 [0.5, 2.5]%  B - A +1.4 [+0.5, +2.5] pp, p 0.0032; Welch +1.4 [+0.9, +1.9] pp, p 5.0e-04
+                      expert 98.0%; per seed A 0/0/0/0/0, B 1/2/2/1/1; worst stratum CI upper bound: n >= 30 M2 0.5-1.0 +0.0 pp, all M2 0.5-1.0 +0.0 pp
+  reach_5cm           A 0.5 [0.1, 1.0]%  B 7.5 [4.7, 10.6]%  B - A +7.1 [+4.3, +10.1] pp, p 1.0e-04; Welch +7.1 [+5.6, +8.5] pp, p 1.4e-04
+                      expert 98.0%; per seed A 1/0/1/0/0, B 9/8/7/7/6; worst stratum CI upper bound: n >= 30 M2 >= 1.0 +10.5 pp, all M2 >= 1.0 +10.5 pp
+  parked              A 8.7 [5.5, 12.5]%  B 42.6 [10.7, 75.1]%  B - A +33.9 [+2.3, +67.0] pp, p 0.03; Welch +33.9 [-18.0, +85.8] pp, p 0.14
+                      expert 97.7%; per seed A 7/10/13/7/7, B 70/2/100/35/6; worst stratum CI upper bound: n >= 30 M1 +60.5 pp, all M0 +23.2 pp
+  arm_extended        A 1.2 [0.3, 2.3]%  B 1.9 [0.1, 4.8]%  B - A +0.7 [-1.5, +3.6] pp, p 0.66; Welch +0.7 [-2.8, +4.1] pp, p 0.63
+                      expert 84.3%; per seed A 2/1/1/1/2, B 7/2/1/0/0; worst stratum CI upper bound: n >= 30 M2 >= 1.0 +2.9 pp, all M2 >= 1.0 +2.9 pp
+  arm_extended_toward A 1.0 [0.2, 2.1]%  B 1.9 [0.1, 4.8]%  B - A +0.9 [-1.2, +3.7] pp, p 0.55; Welch +0.9 [-2.6, +4.3] pp, p 0.53
+                      expert 84.3%; per seed A 1/1/1/1/2, B 7/2/1/0/0; worst stratum CI upper bound: n >= 30 M2 >= 1.0 +2.9 pp, all M2 >= 1.0 +2.9 pp
+  held_10s            A 0.0 [0.0, 0.0]%  B 0.1 [0.0, 0.4]%  B - A +0.1 [+0.0, +0.4] pp, p 1; Welch +0.1 [-0.1, +0.3] pp, p 0.37
+                      expert 97.3%; per seed A 0/0/0/0/0, B 0/0/0/0/0; worst stratum CI upper bound: n >= 30 M1 +0.0 pp, all M0 +0.0 pp
+  stable_5cm          A 0.3 [0.0, 0.7]%  B 6.4 [3.9, 9.3]%  B - A +6.1 [+3.6, +9.0] pp, p 1.0e-04; Welch +6.1 [+4.8, +7.5] pp, p 2.1e-04
+                      expert 98.0%; per seed A 0/0/0/0/0, B 6/8/7/6/5; worst stratum CI upper bound: n >= 30 M2 >= 1.0 +9.8 pp, all M2 >= 1.0 +9.8 pp
+  Holm over the available secondary metrics (bootstrap p | max(bootstrap p, Welch p)): reach_2cm 0.016 | 0.016, reach_5cm 7.0e-04 | 9.5e-04, parked 0.12 | 0.58, arm_extended 1 | 1, arm_extended_toward 1 | 1, held_10s 1 | 1, stable_5cm 7.0e-04 | 0.0013
+Adoption-rule inputs (B adopted only if (1) CI lower bound > 0, (2) share from predicted classes >= 50%, (3) every stratum CI upper bound >= -10 pp, (4) HARD same direction, (5) CONFIRM):
+  (1) CI lower bound of B - A: bootstrap -0.2 pp, Welch t (per-seed rates) -0.3 pp (upper: bootstrap +0.8, t +0.7 pp) -> bootstrap > 0 NO, t > 0 NO: condition (1) (both > 0) NOT MET
+  (2) share from predicted classes: 34433.3% (no_start+no_progress+left_or_overshot)
+  (3) worst stratum CI upper bound (strata with n >= 30, used): M1 +0.0 pp (needs >= -10 pp); all strata (shown): M1 +0.0 pp
+  reverse direction (A better than B): B - A CI upper bound: bootstrap +0.8 pp, t +0.7 pp (both need < 0: NOT MET); highest stratum B - A CI lower bound (needs <= +10 pp): n >= 30 (used) M1 +0.0 pp, all M1 +0.0 pp
+
+== Experiment B: base / arm 2x2 split, ego-novw dev seeds [0, 1, 2, 3, 4], 5 seeds, 300 common episodes ==
+EE = B-EE_dev; EM = expert base + model arm; ME = model base + expert arm; MM = full model. Coupling by construction: the expert arm extends at the shadow FSM's nav_done (a 'parked' signal to the model base); the expert base commands exactly 0 after nav_done (a perfect stillness signal to the model arm): the single-swap cells overestimate their half.
+Seed-mean success (two-level bootstrap 95% CI): EE 99.3 [98.3, 100.0]%; EM 0.1 [0.0, 0.4]%; ME 96.7 [93.0, 99.3]%; MM 0.3 [0.0, 1.0]%
+  per seed: EM 0/0/0/0/0; ME 100/90/99/96/99; MM 0/0/0/0/1
+ME cell by the shadow FSM's nav_done trigger (seed x episode): threshold 1284 (success 1248, failure 36, 97.2% success); timeout 215 (success 201, failure 14, 93.5% success); never 1 (success 1, failure 0, 100.0% success)
+  NOTE: a timeout-triggered ME success does not show the model base parked: the expert arm reaches from wherever the base is after the shadow FSM's 25 s timeout (e.g. an M0-like start already within reach); only a threshold trigger means the base matched the expert's parking pose
+Attribution of the 1495 MM failures (seed x episode; base cause = ME fails, arm cause = EM fails, interaction = ME and EM both succeed):
+  base_only        0  0.0% [0.0, 0.0]
+  arm_only      1444  96.6% [92.9, 99.2]
+  both            50  3.3% [0.7, 7.0]
+  interaction      1  0.1% [0.0, 0.4]
+  base cause (base_only + both) 3.3%, arm cause (arm_only + both) 99.9%
+Attribution without the 20 M0-like episodes (|d0| < 0.15 m, where an unmoved base can let the expert arm reach after the timeout): 1395 MM failures on 280 episodes:
+  base_only        0  0.0% [0.0, 0.0]
+  arm_only      1364  97.8% [95.0, 99.6]
+  both            30  2.2% [0.3, 4.9]
+  interaction      1  0.1% [0.0, 0.4]
+  base cause (base_only + both) 2.2%, arm cause (arm_only + both) 99.9%
+  of the MM failures, 10 are on episodes the expert (EE) also fails
+Independence reference p_ME x p_EM = 0.1% vs observed MM 0.3% (seed means); per seed: 0/0, 0/0, 0/0, 0/0, 0/1
+Cell - EE (paired, same episodes): two-level bootstrap and one-sample t on the per-seed differences (cell rate - EE rate, 4 df); Holm over the 3 contrasts on max(bootstrap p, t p), reject at p_adj <= 0.05:
+  ME - EE: bootstrap -2.7 [-6.5, +0.1] pp, p 0.073; t -2.7 [-7.4, +2.0] pp, p 0.19; p used 0.19, Holm 0.19
+  EM - EE: bootstrap -99.3 [-100.0, -98.2] pp, p 1.0e-04; t -99.3 [-99.5, -99.1] pp, p 1.2e-12; p used 1.0e-04, Holm 3.0e-04 (significant)
+  MM - EE: bootstrap -99.0 [-99.9, -97.8] pp, p 1.0e-04; t -99.0 [-99.5, -98.5] pp, p 6.9e-11; p used 1.0e-04, Holm 3.0e-04 (significant)
+Verdict category (Holm-adjusted max(bootstrap p, t p) <= 0.05 of ME - EE and EM - EE): only arm
+Hybrid log diagnostics:
+  EM: never extended 1500, no nav_done in the log 0
+  EE check: B-EE_dev and expert_v11_dev have the same outcome on 300/300 episodes
+
+== Descriptive analyses ==
+Seed consistency (models with >= 2 seeds): Cochran Q across seeds (chi2, S - 1 df), normalised seed lottery psi = psi_raw / psi_indep (0 outcome fixed by the episode, 1 pure seed lottery):
+  ego confirm: S 5, E 300, per-seed success 0/0/0/0/0; Q 4.0 (df 4), p 0.41; psi_raw 0.003, psi_indep 0.003, psi 1.00
+  ego dev: S 5, E 300, per-seed success 0/0/0/0/0; Q 0.0 (df 4), p 1; psi_raw 0.000, psi_indep 0.000, psi nan
+  ego hard: S 5, E 200, per-seed success 0/0/0/0/0; Q 4.0 (df 4), p 0.41; psi_raw 0.005, psi_indep 0.010, psi 0.50
+  ego pilot: S 3, E 100, per-seed success 0/0/0; Q 0.0 (df 2), p 1; psi_raw 0.000, psi_indep 0.000, psi nan
+  ego-novw confirm: S 5, E 300, per-seed success 0/1/0/0/0; Q 8.5 (df 4), p 0.075; psi_raw 0.013, psi_indep 0.013, psi 1.00
+  ego-novw dev: S 5, E 300, per-seed success 0/0/0/0/1; Q 6.7 (df 4), p 0.15; psi_raw 0.013, psi_indep 0.017, psi 0.80
+  ego-novw hard: S 5, E 200, per-seed success 0/0/0/0/1; Q 3.5 (df 4), p 0.48; psi_raw 0.020, psi_indep 0.020, psi 1.01
+  ego-novw-trig confirm: S 5, E 300, per-seed success 60/62/78/61/60; Q 44.9 (df 4), p 4.2e-09; psi_raw 0.657, psi_indep 0.888, psi 0.74
+  ego-novw-trig dev: S 5, E 300, per-seed success 70/52/63/60/57; Q 32.5 (df 4), p 1.5e-06; psi_raw 0.653, psi_indep 0.912, psi 0.72
+  ego-novw-trig hard: S 5, E 200, per-seed success 64/51/55/56/56; Q 10.7 (df 4), p 0.03; psi_raw 0.695, psi_indep 0.929, psi 0.75
+Success vs coverage percentile (seed-mean success per bin of the percentile 0-0.2-...-1, two-level bootstrap 95% CI; logistic slope per unit percentile, CI from the two-level bootstrap):
+  ego confirm cov_pct_world: 1: 0 [0, 0] (n 49); 2: 0 [0, 2] (n 71); 3: 0 [0, 0] (n 44); 4: 0 [0, 0] (n 77); 5: 0 [0, 0] (n 59); slope -3.94 [-4.61, -3.40]
+  ego confirm cov_pct_rel: 1: 0 [0, 0] (n 50); 2: 0 [0, 0] (n 55); 3: 0 [0, 2] (n 71); 4: 0 [0, 0] (n 71); 5: 0 [0, 0] (n 53); slope -1.16 [-1.61, -0.73]
+  ego dev cov_pct_world: 1: 0 [0, 0] (n 50); 2: 0 [0, 0] (n 77); 3: 0 [0, 0] (n 55); 4: 0 [0, 0] (n 63); 5: 0 [0, 0] (n 55); slope +nan [+nan, +nan]
+  ego dev cov_pct_rel: 1: 0 [0, 0] (n 60); 2: 0 [0, 0] (n 61); 3: 0 [0, 0] (n 65); 4: 0 [0, 0] (n 52); 5: 0 [0, 0] (n 62); slope +nan [+nan, +nan]
+  ego hard cov_pct_world: 1: 0 [0, 0] (n 67); 2: 0 [0, 0] (n 54); 3: 1 [0, 5] (n 37); 4: 0 [0, 0] (n 31); 5: 0 [0, 0] (n 11); slope +1.52 [+0.97, +2.12]
+  ego hard cov_pct_rel: 1: 0 [0, 0] (n 62); 2: 1 [0, 3] (n 52); 3: 0 [0, 0] (n 49); 4: 0 [0, 0] (n 24); 5: 0 [0, 0] (n 13); slope -1.39 [-2.05, -0.82]
+  ego pilot cov_pct_world: 1: 0 [0, 0] (n 28); 2: 0 [0, 0] (n 17); 3: 0 [0, 0] (n 14); 4: 0 [0, 0] (n 20); 5: 0 [0, 0] (n 21); slope +nan [+nan, +nan]
+  ego pilot cov_pct_rel: 1: 0 [0, 0] (n 21); 2: 0 [0, 0] (n 23); 3: 0 [0, 0] (n 16); 4: 0 [0, 0] (n 17); 5: 0 [0, 0] (n 23); slope +nan [+nan, +nan]
+  ego-novw confirm cov_pct_world: 1: 0 [0, 0] (n 49); 2: 0 [0, 2] (n 71); 3: 0 [0, 3] (n 44); 4: 1 [0, 2] (n 77); 5: 0 [0, 0] (n 59); slope -0.07 [-5.28, +3.48]
+  ego-novw confirm cov_pct_rel: 1: 0 [0, 2] (n 50); 2: 0 [0, 2] (n 55); 3: 0 [0, 2] (n 71); 4: 0 [0, 2] (n 71); 5: 0 [0, 0] (n 53); slope -2.06 [-10.22, +2.64]
+  ego-novw dev cov_pct_world: 1: 0 [0, 2] (n 50); 2: 1 [0, 2] (n 77); 3: 0 [0, 0] (n 55); 4: 0 [0, 2] (n 63); 5: 0 [0, 2] (n 55); slope +0.28 [-6.96, +9.73]
+  ego-novw dev cov_pct_rel: 1: 0 [0, 2] (n 60); 2: 0 [0, 0] (n 61); 3: 0 [0, 0] (n 65); 4: 0 [0, 2] (n 52); 5: 1 [0, 4] (n 62); slope +3.01 [-10.53, +13.19]
+  ego-novw hard cov_pct_world: 1: 0 [0, 0] (n 67); 2: 0 [0, 2] (n 54); 3: 1 [0, 3] (n 37); 4: 1 [0, 6] (n 31); 5: 0 [0, 0] (n 11); slope +2.66 [-2.53, +7.75]
+  ego-novw hard cov_pct_rel: 1: 0 [0, 0] (n 62); 2: 0 [0, 2] (n 52); 3: 0 [0, 2] (n 49); 4: 0 [0, 0] (n 24); 5: 3 [0, 14] (n 13); slope +4.50 [-1.62, +17.47]
+  ego-novw-trig confirm cov_pct_world: 1: 68 [55, 81] (n 49); 2: 64 [54, 75] (n 71); 3: 66 [55, 77] (n 44); 4: 62 [52, 72] (n 77); 5: 63 [51, 75] (n 59); slope -0.27 [-1.07, +0.46]
+  ego-novw-trig confirm cov_pct_rel: 1: 57 [44, 71] (n 50); 2: 68 [57, 79] (n 55); 3: 66 [56, 77] (n 71); 4: 65 [54, 75] (n 71); 5: 63 [51, 75] (n 53); slope +0.08 [-0.67, +0.78]
+  ego-novw-trig dev cov_pct_world: 1: 60 [48, 71] (n 50); 2: 62 [52, 73] (n 77); 3: 66 [55, 77] (n 55); 4: 62 [50, 74] (n 63); 5: 52 [39, 64] (n 55); slope -0.33 [-1.11, +0.50]
+  ego-novw-trig dev cov_pct_rel: 1: 67 [57, 77] (n 60); 2: 56 [45, 68] (n 61); 3: 56 [46, 66] (n 65); 4: 59 [48, 70] (n 52); 5: 64 [53, 75] (n 62); slope -0.15 [-0.77, +0.43]
+  ego-novw-trig hard cov_pct_world: 1: 59 [51, 68] (n 67); 2: 57 [46, 68] (n 54); 3: 58 [45, 72] (n 37); 4: 55 [39, 70] (n 31); 5: 33 [9, 60] (n 11); slope -0.50 [-1.44, +0.53]
+  ego-novw-trig hard cov_pct_rel: 1: 53 [43, 63] (n 62); 2: 57 [47, 67] (n 52); 3: 61 [48, 74] (n 49); 4: 57 [39, 73] (n 24); 5: 54 [29, 78] (n 13); slope +0.32 [-0.78, +1.64]
+  ego-ols dev cov_pct_world: 1: 0 [0, 0] (n 50); 2: 0 [0, 0] (n 77); 3: 0 [0, 0] (n 55); 4: 0 [0, 0] (n 63); 5: 0 [0, 0] (n 55); slope +nan [+nan, +nan]
+  ego-ols dev cov_pct_rel: 1: 0 [0, 0] (n 60); 2: 0 [0, 0] (n 61); 3: 0 [0, 0] (n 65); 4: 0 [0, 0] (n 52); 5: 0 [0, 0] (n 62); slope +nan [+nan, +nan]
+  raw dev cov_pct_world: 1: 0 [0, 0] (n 50); 2: 0 [0, 0] (n 77); 3: 0 [0, 0] (n 55); 4: 0 [0, 0] (n 63); 5: 0 [0, 0] (n 55); slope +nan [+nan, +nan]
+  raw dev cov_pct_rel: 1: 0 [0, 0] (n 60); 2: 0 [0, 0] (n 61); 3: 0 [0, 0] (n 65); 4: 0 [0, 0] (n 52); 5: 0 [0, 0] (n 62); slope +nan [+nan, +nan]
+  raw-ols dev cov_pct_world: 1: 0 [0, 0] (n 50); 2: 0 [0, 0] (n 77); 3: 0 [0, 0] (n 55); 4: 0 [0, 0] (n 63); 5: 0 [0, 0] (n 55); slope +nan [+nan, +nan]
+  raw-ols dev cov_pct_rel: 1: 0 [0, 0] (n 60); 2: 0 [0, 0] (n 61); 3: 0 [0, 0] (n 65); 4: 0 [0, 0] (n 52); 5: 0 [0, 0] (n 62); slope +nan [+nan, +nan]
+Offline validation error vs DEV closed-loop success (one point per model x seed; RMSE / nRMSE of the overall validation cell: v, w, tau_mean = mean over the 7 joints):
+  ego_s0: val_loss 0.01456, DEV success 0.0% [0.0, 1.3], RMSE v 0.00348, w 0.0222, tau_mean 0.306, nRMSE v 0.0297, w 0.0516, tau_mean 0.127
+  ego_s1: val_loss 0.01594, DEV success 0.0% [0.0, 1.3], RMSE v 0.00378, w 0.0213, tau_mean 0.322, nRMSE v 0.0323, w 0.0494, tau_mean 0.134
+  ego_s2: val_loss 0.01418, DEV success 0.0% [0.0, 1.3], RMSE v 0.00359, w 0.0198, tau_mean 0.305, nRMSE v 0.0307, w 0.0459, tau_mean 0.127
+  ego_s3: val_loss 0.01495, DEV success 0.0% [0.0, 1.3], RMSE v 0.00404, w 0.0217, tau_mean 0.313, nRMSE v 0.0345, w 0.0503, tau_mean 0.13
+  ego_s4: val_loss 0.01602, DEV success 0.0% [0.0, 1.3], RMSE v 0.00389, w 0.021, tau_mean 0.322, nRMSE v 0.0332, w 0.0488, tau_mean 0.134
+  ego-novw_s0: val_loss 0.02616, DEV success 0.3% [0.1, 1.9], RMSE v 0.0231, w 0.104, tau_mean 0.318, nRMSE v 0.197, w 0.242, tau_mean 0.132
+  ego-novw_s1: val_loss 0.02596, DEV success 0.0% [0.0, 1.3], RMSE v 0.024, w 0.102, tau_mean 0.315, nRMSE v 0.205, w 0.237, tau_mean 0.131
+  ego-novw_s2: val_loss 0.0267, DEV success 0.0% [0.0, 1.3], RMSE v 0.023, w 0.1, tau_mean 0.331, nRMSE v 0.196, w 0.232, tau_mean 0.138
+  ego-novw_s3: val_loss 0.02624, DEV success 0.3% [0.1, 1.9], RMSE v 0.0226, w 0.101, tau_mean 0.324, nRMSE v 0.193, w 0.233, tau_mean 0.135
+  ego-novw_s4: val_loss 0.02677, DEV success 1.0% [0.3, 2.9], RMSE v 0.0225, w 0.101, tau_mean 0.329, nRMSE v 0.192, w 0.235, tau_mean 0.137
+  ego-novw-trig_s0: val_loss 0.06038, DEV success 70.0% [64.6, 74.9], RMSE v 0.0259, w 0.116, tau_mean 0.515, nRMSE v 0.221, w 0.27, tau_mean 0.218
+  ego-novw-trig_s1: val_loss 0.06119, DEV success 52.3% [46.7, 57.9], RMSE v 0.0267, w 0.116, tau_mean 0.518, nRMSE v 0.228, w 0.27, tau_mean 0.22
+  ego-novw-trig_s2: val_loss 0.06178, DEV success 63.3% [57.7, 68.6], RMSE v 0.0268, w 0.112, tau_mean 0.516, nRMSE v 0.228, w 0.26, tau_mean 0.219
+  ego-novw-trig_s3: val_loss 0.05577, DEV success 60.0% [54.4, 65.4], RMSE v 0.0277, w 0.119, tau_mean 0.497, nRMSE v 0.236, w 0.276, tau_mean 0.21
+  ego-novw-trig_s4: val_loss 0.05484, DEV success 56.7% [51.0, 62.2], RMSE v 0.0254, w 0.114, tau_mean 0.493, nRMSE v 0.217, w 0.265, tau_mean 0.208
+  ego-ols: val_loss 0.2798, DEV success 0.0% [0.0, 1.3], RMSE v 0.0109, w 0.0308, tau_mean 1.31, nRMSE v 0.0929, w 0.0715, tau_mean 0.547
+  raw_s0: val_loss 0.01902, DEV success 0.0% [0.0, 1.3], RMSE v 0.00477, w 0.0251, tau_mean 0.355, nRMSE v 0.0407, w 0.0583, tau_mean 0.147
+  raw-ols: val_loss 0.2811, DEV success 0.0% [0.0, 1.3], RMSE v 0.0109, w 0.0308, tau_mean 1.31, nRMSE v 0.0931, w 0.0715, tau_mean 0.548
+  Spearman(val_loss, DEV reach_5cm) +0.63, p 0.0053, n 18 (descriptive)
+  Spearman(val_loss, DEV success) +0.54, p 0.021, n 18 (descriptive)
+M1 vs M2 (seed-mean share of the episodes of the mode; CIs two-level bootstrap within the mode; difference with one shared seed resample):
+  ego dev parked_no_arm: M1 0.0 [0.0, 0.0]% (n 48), M2 2.3 [0.2, 5.1]% (n 240), M1 - M2 -2.3 [-5.0, -0.2] pp
+  ego dev arm_extended: M1 8.3 [1.7, 17.5]% (n 48), M2 0.1 [0.0, 0.5]% (n 240), M1 - M2 +8.2 [+1.7, +17.1] pp
+  ego hard parked_no_arm: M1 0.6 [0.0, 2.7]% (n 66), M2 9.3 [1.3, 18.5]% (n 105), M1 - M2 -8.7 [-17.6, -1.3] pp
+  ego hard arm_extended: M1 3.9 [0.9, 8.5]% (n 66), M2 0.0 [0.0, 0.0]% (n 105), M1 - M2 +3.9 [+0.9, +8.5] pp
+  ego-novw dev parked_no_arm: M1 12.5 [1.7, 27.9]% (n 48), M2 64.8 [48.9, 78.1]% (n 240), M1 - M2 -52.3 [-65.8, -38.4] pp
+  ego-novw dev arm_extended: M1 1.7 [0.0, 5.4]% (n 48), M2 0.3 [0.0, 1.2]% (n 240), M1 - M2 +1.3 [-0.5, +5.0] pp
+  ego-novw hard parked_no_arm: M1 12.1 [1.2, 24.8]% (n 66), M2 59.2 [40.4, 76.8]% (n 105), M1 - M2 -47.1 [-62.7, -33.2] pp
+  ego-novw hard arm_extended: M1 0.3 [0.0, 1.8]% (n 66), M2 0.8 [0.0, 2.5]% (n 105), M1 - M2 -0.5 [-2.4, +1.2] pp
+  ego-novw-trig dev parked_no_arm: M1 0.0 [0.0, 0.0]% (n 48), M2 0.0 [0.0, 0.0]% (n 240), M1 - M2 +0.0 [+0.0, +0.0] pp
+  ego-novw-trig dev arm_extended: M1 85.4 [75.4, 93.7]% (n 48), M2 80.8 [75.9, 85.5]% (n 240), M1 - M2 +4.6 [-5.9, +13.8] pp
+  ego-novw-trig hard parked_no_arm: M1 0.3 [0.0, 1.8]% (n 66), M2 0.2 [0.0, 1.1]% (n 105), M1 - M2 +0.1 [-0.8, +1.2] pp
+  ego-novw-trig hard arm_extended: M1 83.0 [72.4, 91.5]% (n 66), M2 87.4 [81.0, 93.3]% (n 105), M1 - M2 -4.4 [-16.5, +6.6] pp
+  ego-ols dev parked_no_arm: M1 0.0 [0.0, 0.0]% (n 48), M2 0.0 [0.0, 0.0]% (n 240), M1 - M2 +0.0 [+0.0, +0.0] pp
+  ego-ols dev arm_extended: M1 100.0 [100.0, 100.0]% (n 48), M2 100.0 [100.0, 100.0]% (n 240), M1 - M2 +0.0 [-0.0, +0.0] pp
+  raw dev parked_no_arm: M1 0.0 [0.0, 0.0]% (n 48), M2 0.0 [0.0, 0.0]% (n 240), M1 - M2 +0.0 [+0.0, +0.0] pp
+  raw dev arm_extended: M1 8.3 [2.1, 16.7]% (n 48), M2 18.8 [14.2, 23.8]% (n 240), M1 - M2 -10.4 [-19.2, -0.4] pp
+  raw-ols dev parked_no_arm: M1 0.0 [0.0, 0.0]% (n 48), M2 0.0 [0.0, 0.0]% (n 240), M1 - M2 +0.0 [+0.0, +0.0] pp
+  raw-ols dev arm_extended: M1 100.0 [100.0, 100.0]% (n 48), M2 100.0 [100.0, 100.0]% (n 240), M1 - M2 +0.0 [-0.0, +0.0] pp
+Efficiency: policy step time (median over episodes of the per-episode mean / p99, ms) and parameters:
+  ego confirm: 0.1300 ms (p99 0.1637 ms), parameters 20617
+  ego dev: 0.1358 ms (p99 0.1674 ms), parameters 20617
+  ego hard: 0.1410 ms (p99 0.1719 ms), parameters 20617
+  ego pilot: 0.1545 ms (p99 0.2184 ms), parameters 20617
+  ego-novw confirm: 0.1224 ms (p99 0.1622 ms), parameters 20361
+  ego-novw dev: 0.1265 ms (p99 0.1678 ms), parameters 20361
+  ego-novw hard: 0.1230 ms (p99 0.1652 ms), parameters 20361
+  ego-novw-trig confirm: 0.1251 ms (p99 0.1611 ms), parameters 20361
+  ego-novw-trig dev: 0.1439 ms (p99 0.1803 ms), parameters 20361
+  ego-novw-trig hard: 0.1207 ms (p99 0.1610 ms), parameters 20361
+  ego-ols dev: 0.0959 ms (p99 0.1361 ms), parameters 207
+  raw dev: 0.1224 ms (p99 0.1467 ms), parameters 20745
+  raw-ols dev: 0.0784 ms (p99 0.1149 ms), parameters 216
+
+== Missing parts ==
+  none

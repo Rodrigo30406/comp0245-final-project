@@ -1,0 +1,38 @@
+F2→F3 pilot validation passed: file sizes, durations and shadow-label ranges below.
+{
+  "n_trajectories": 2,
+  "n_rows": 4207,
+  "trajectories": [
+    {
+      "episode": 1,
+      "seed": 0,
+      "offset": 4,
+      "trajectory": "results/step5/pilot/c3_s0_train/traj/ep_0001.npz",
+      "trajectory_sha256": "79c264303dff2d388be74d1b2d0f178203ae360651d43005375d2d1af4615d5b",
+      "n_steps": 23570,
+      "n_rows": 2619,
+      "trajectory_bytes": 9100667,
+      "label_s": 0.8670980930328369,
+      "shadow_tau_min": -30.0,
+      "shadow_tau_max": 30.0,
+      "row_start": 0,
+      "row_end": 2619
+    },
+    {
+      "episode": 4,
+      "seed": 1,
+      "offset": 7,
+      "trajectory": "results/step5/pilot/c3_s1_train/traj/ep_0004.npz",
+      "trajectory_sha256": "864d4caa2f115e45601df516aa3cfee66e7d2cd6d30145633b53f678ea1fd77e",
+      "n_steps": 14292,
+      "n_rows": 1588,
+      "trajectory_bytes": 5188048,
+      "label_s": 1.4511091709136963,
+      "shadow_tau_min": -30.0,
+      "shadow_tau_max": 30.0,
+      "row_start": 2619,
+      "row_end": 4207
+    }
+  ],
+  "validated": true
+}

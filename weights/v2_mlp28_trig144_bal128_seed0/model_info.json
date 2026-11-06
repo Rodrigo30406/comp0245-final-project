@@ -1,0 +1,139 @@
+{
+  "action_chunk": null,
+  "activation": "relu",
+  "backend": "pytorch",
+  "best_epoch": 14,
+  "best_validation_episode_macro_balanced_nrmse": 0.222215593984723,
+  "checkpoint_selection": "minimum validation episode-macro balanced NRMSE",
+  "constant_training_inputs": [],
+  "egocentric_options": {
+    "action_chunk": 1,
+    "action_chunk_stride": 20,
+    "prev_wheel_noise_std": 0.0,
+    "prev_wheel_shuffle_p": 0.0,
+    "stop_weight": 1.0,
+    "training_episode_cap": 0,
+    "training_target_cells": "experiment_specs/data_size/balanced_cells_128.json",
+    "trigger_copies": 144,
+    "trigger_qd_jitter": "auto",
+    "trigger_weight": 1.0,
+    "wheel_bins": 41,
+    "wheel_loss": "l2",
+    "wheel_output": "regression"
+  },
+  "episode_filter": {
+    "keep_expert_failures": false,
+    "training": {
+      "dropped_expert_failures": 341,
+      "kept": 3221
+    },
+    "training_target_cells": {
+      "cells": 128,
+      "cells_with_episodes": 128,
+      "file": "/home/labia10/repos/comp0245-final-project/experiment_specs/data_size/balanced_cells_128.json",
+      "kept_episodes": 506,
+      "sha256": "e5a3da44a3135790f84510fdeeffd34422a264019196f9ee75a3fa5baad9ac34"
+    },
+    "validation": {
+      "dropped_expert_failures": 85,
+      "kept": 802
+    }
+  },
+  "epochs_completed": 22,
+  "feature_provenance": "Deterministic functions of the 21 baseline inputs, the expert standoff table and the controller clock; no expert memory or actions",
+  "feature_spec": {
+    "dt_s": 0.001,
+    "horizon_s": 40.0,
+    "standoff_distances": [
+      0.8,
+      0.65,
+      0.65,
+      0.35
+    ],
+    "standoff_heights": [
+      0.1,
+      0.5,
+      1.1,
+      1.25
+    ],
+    "variant": "raw21_targetpolar_clock_v1"
+  },
+  "fit_and_transform_seconds": 153.79953043395653,
+  "hidden_layer_sizes": [
+    128,
+    128
+  ],
+  "independent_outputs": 9,
+  "inference_single_observation_us": {
+    "median": 34.9225,
+    "p95": 36.78785,
+    "samples": 2000
+  },
+  "input_features": 28,
+  "input_names": [
+    "base_position_x",
+    "base_position_y",
+    "base_position_z",
+    "base_bearing",
+    "arm_q_1",
+    "arm_q_2",
+    "arm_q_3",
+    "arm_q_4",
+    "arm_q_5",
+    "arm_q_6",
+    "arm_q_7",
+    "arm_qd_1",
+    "arm_qd_2",
+    "arm_qd_3",
+    "arm_qd_4",
+    "arm_qd_5",
+    "arm_qd_6",
+    "arm_qd_7",
+    "target_x",
+    "target_y",
+    "target_z",
+    "target_in_base_x",
+    "target_in_base_y",
+    "target_height_above_base",
+    "target_distance_xy",
+    "cos_heading_error_to_target",
+    "sin_heading_error_to_target",
+    "episode_clock_fraction"
+  ],
+  "kind": "egocentric_mlp_regressor",
+  "output_activation": "identity",
+  "output_limits": "none applied; the evaluator clips to the declared envelope",
+  "prev_wheel_augmentation": null,
+  "regression_parameters": 21385,
+  "stop_reason": "patience",
+  "stop_rows_in_training": 1556924,
+  "training_device": "cuda",
+  "training_episodes": 506,
+  "training_loss": "l2 on the two wheel outputs; half-sum MSE on the seven arm outputs; alpha/(2*batch_rows) weight L2 (sklearn convention)",
+  "training_rows": 5707784,
+  "trigger_copies": {
+    "copies_per_episode": 144,
+    "episodes_with_trigger_row": 506,
+    "episodes_without": 0,
+    "jitter_rule": "auto",
+    "jitter_seed": 0,
+    "qd_jitter_rad_s": [
+      0.08420424271689451,
+      0.04737588055111432,
+      0.03461349229676871,
+      0.03808655750718641,
+      0.051662545590779284,
+      0.003958290235516462,
+      0.031463647358744844
+    ],
+    "recorded_rows": 5634920,
+    "rows_added": 72864,
+    "rule": "per training episode, the first row of the terminal run of exactly-zero wheel labels, copied with its recorded features and labels; N(0, sigma_j) added to the seven arm-velocity features only; input/output scaler computed from the recorded rows before the copies were appended"
+  },
+  "trigger_weight": null,
+  "validation_episodes": 802,
+  "variant": "raw21_targetpolar_clock_v1",
+  "weight_dtype": "float32",
+  "wheel_bin_centres": null,
+  "wheel_output": "regression"
+}

@@ -1,0 +1,35 @@
+DEV descriptive table: seed mean [two-level bootstrap 95% CI]; proportions in %, policy_ms in ms.
+The primary verdict uses the 97.5% CI in mechanisms; this descriptive table is not used for verdicts.
+
+C3
+ego-novw-trig_s0_dev: replaced 6 stalled rows from /home/w/comp0245/LAB_SESSION_COMP_0245_2026_PUBLIC/.claude/worktrees/eval-protocol/final/robotnik_arm_task/results/step3/nostall/ego-novw-trig_s0_dev
+ego-novw-trig_s1_dev: replaced 24 stalled rows from /home/w/comp0245/LAB_SESSION_COMP_0245_2026_PUBLIC/.claude/worktrees/eval-protocol/final/robotnik_arm_task/results/step3/nostall/ego-novw-trig_s1_dev
+ego-novw-trig_s2_dev: replaced 36 stalled rows from /home/w/comp0245/LAB_SESSION_COMP_0245_2026_PUBLIC/.claude/worktrees/eval-protocol/final/robotnik_arm_task/results/step3/nostall/ego-novw-trig_s2_dev
+ego-novw-trig_s3_dev: replaced 8 stalled rows from /home/w/comp0245/LAB_SESSION_COMP_0245_2026_PUBLIC/.claude/worktrees/eval-protocol/final/robotnik_arm_task/results/step3/nostall/ego-novw-trig_s3_dev
+ego-novw-trig_s4_dev: replaced 22 stalled rows from /home/w/comp0245/LAB_SESSION_COMP_0245_2026_PUBLIC/.claude/worktrees/eval-protocol/final/robotnik_arm_task/results/step3/nostall/ego-novw-trig_s4_dev
+  success: 62.133333 [56.633333, 67.900000]
+  crash: 1.833333 [0.533333, 3.600000]
+  no_start: 0.000000 [0.000000, 0.000000]
+  runaway: 0.000000 [0.000000, 0.000000]
+  no_progress: 0.000000 [0.000000, 0.000000]
+  never_other: 0.000000 [0.000000, 0.000000]
+  circling: 13.533333 [9.466667, 18.100000]
+  left_or_overshot: 1.800000 [0.933333, 2.866667]
+  parked_no_arm: 0.133333 [0.000000, 0.400833]
+  extended_not_reached: 17.966667 [13.533333, 22.600000]
+  approached_other: 2.600000 [1.233333, 4.300000]
+  policy_ms: 0.143224 [0.138556, 0.147459]
+
+P
+  success: 70.933333 [64.200000, 77.066667]
+  crash: 2.800000 [0.966667, 5.033333]
+  no_start: 0.000000 [0.000000, 0.000000]
+  runaway: 0.000000 [0.000000, 0.000000]
+  no_progress: 0.033333 [0.000000, 0.200000]
+  never_other: 0.000000 [0.000000, 0.000000]
+  circling: 6.233333 [3.000000, 10.133333]
+  left_or_overshot: 3.000000 [1.633333, 4.633333]
+  parked_no_arm: 0.066667 [0.000000, 0.266667]
+  extended_not_reached: 15.500000 [11.733333, 19.733333]
+  approached_other: 1.433333 [0.733333, 2.300833]
+  policy_ms: 0.213324 [0.207580, 0.219960]

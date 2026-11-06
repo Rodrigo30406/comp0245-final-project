@@ -1,0 +1,29 @@
+{
+  "expert": {
+    "kind": "expert"
+  },
+  "mlp28_trig144_cap1600": {
+    "artifact": "models/mlp28_trig144_cap1600.npz",
+    "kind": "egocentric_mlp_regressor",
+    "sha256": "9681101d488572fa5676b3be8034f02f6d0a9d9a4eb8a9cc19566c327dfe4448",
+    "training_run": "/home/labia10/repos/comp0245-final-project/runs/training/v2_mlp28_trig144_cap1600_seed0"
+  },
+  "mlp28_trig144_cap2400": {
+    "artifact": "models/mlp28_trig144_cap2400.npz",
+    "kind": "egocentric_mlp_regressor",
+    "sha256": "aa63fcb467c7542771a4ec3f869aff97c32f41899b5f11cb80c0f6634f6e4658",
+    "training_run": "/home/labia10/repos/comp0245-final-project/runs/training/v2_mlp28_trig144_cap2400_seed0"
+  },
+  "mlp28_trig144_cap400": {
+    "artifact": "models/mlp28_trig144_cap400.npz",
+    "kind": "egocentric_mlp_regressor",
+    "sha256": "60f2fe4801346f2a9f09901470898b1685c9885b41b7b71efca05abcd4cd58ed",
+    "training_run": "/home/labia10/repos/comp0245-final-project/runs/training/v2_mlp28_trig144_cap400_seed0"
+  },
+  "mlp28_trig144_cap800": {
+    "artifact": "models/mlp28_trig144_cap800.npz",
+    "kind": "egocentric_mlp_regressor",
+    "sha256": "b2f0cac4f44c2e41c721d1b8ed668b11f368e7bf47f7e3ede0d6d979c9a7d03a",
+    "training_run": "/home/labia10/repos/comp0245-final-project/runs/training/v2_mlp28_trig144_cap800_seed0"
+  }
+}

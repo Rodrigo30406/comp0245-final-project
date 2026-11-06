@@ -1,0 +1,110 @@
+{
+  "expert": {
+    "arm_joint_limit_violation_steps": 1436714,
+    "attempted": 205,
+    "invalid_or_missing": 0,
+    "mean_final_clipping_fraction_per_command": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "mean_final_distance_valid_only_m": 0.010680925487285858,
+    "mean_penalized_final_distance_m": 0.010680925487285858,
+    "mean_penalized_time_average_distance_m": 0.14760937183517678,
+    "success_by_tolerance": {
+      "0.01": 204,
+      "0.02": 204,
+      "0.05": 204
+    },
+    "valid_full_horizon": 205
+  },
+  "gru28_patience40_seed0": {
+    "arm_joint_limit_violation_steps": 3218387,
+    "attempted": 205,
+    "invalid_or_missing": 0,
+    "mean_final_clipping_fraction_per_command": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.00047219512195122024,
+      0.0,
+      0.0002624390243902442,
+      0.0,
+      0.00042609756097560983,
+      0.0
+    ],
+    "mean_final_distance_valid_only_m": 0.06966006780331621,
+    "mean_penalized_final_distance_m": 0.06966006780331621,
+    "mean_penalized_time_average_distance_m": 0.17763331580736433,
+    "success_by_tolerance": {
+      "0.01": 141,
+      "0.02": 159,
+      "0.05": 177
+    },
+    "valid_full_horizon": 205
+  },
+  "gru28_patience40_seed1": {
+    "arm_joint_limit_violation_steps": 2126011,
+    "attempted": 205,
+    "invalid_or_missing": 0,
+    "mean_final_clipping_fraction_per_command": [
+      4.292682926829269e-05,
+      3.3658536585365864e-05,
+      3.3658536585365864e-05,
+      4.292682926829269e-05,
+      5.365853658536584e-06,
+      0.00043341463414634163,
+      1.951219512195122e-06,
+      0.0003742682926829275,
+      1.634146341463415e-05,
+      0.0005478048780487805,
+      2.073170731707317e-06
+    ],
+    "mean_final_distance_valid_only_m": 0.08018452194987989,
+    "mean_penalized_final_distance_m": 0.08018452194987989,
+    "mean_penalized_time_average_distance_m": 0.18085197095951658,
+    "success_by_tolerance": {
+      "0.01": 109,
+      "0.02": 147,
+      "0.05": 190
+    },
+    "valid_full_horizon": 205
+  },
+  "gru28_patience40_seed2": {
+    "arm_joint_limit_violation_steps": 1659606,
+    "attempted": 205,
+    "invalid_or_missing": 0,
+    "mean_final_clipping_fraction_per_command": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0005045121951219516,
+      0.0,
+      0.000309634146341464,
+      0.0,
+      0.00046097560975609796,
+      0.0
+    ],
+    "mean_final_distance_valid_only_m": 0.05778193698897871,
+    "mean_penalized_final_distance_m": 0.05778193698897871,
+    "mean_penalized_time_average_distance_m": 0.16310656498469472,
+    "success_by_tolerance": {
+      "0.01": 157,
+      "0.02": 200,
+      "0.05": 205
+    },
+    "valid_full_horizon": 205
+  }
+}

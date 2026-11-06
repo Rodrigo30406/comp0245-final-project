@@ -1,0 +1,77 @@
+Cross-evaluation on DEV (300 common episodes; protocol v1.1; seed-mean rates, two-level bootstrap 95% CI, 10000 draws)
+
+== subset all: n = 300 ==
+  expert  success per seed [99.3]  policy_ms 0.209
+          success 99.3 [98.3, 100.0]; reach_2cm 99.3 [98.3, 100.0]; reach_5cm 99.3 [98.3, 100.0]; held_10s 98.7 [97.3, 99.7]; stable_1cm 99.3 [98.3, 100.0]; stable_2cm 99.3 [98.3, 100.0]; stable_5cm 99.3 [98.3, 100.0]; tipped 0.0 [0.0, 0.0]
+          classes (seed-mean %): success 99.3, circling 0.7
+  C3      success per seed [70.0, 52.3, 63.3, 60.0, 56.7]  policy_ms 0.140
+          success 60.5 [53.9, 67.1]; reach_2cm 79.5 [74.9, 83.9]; reach_5cm 92.1 [89.2, 94.5]; held_10s 26.9 [19.1, 35.0]; stable_1cm 56.1 [49.9, 62.8]; stable_2cm 76.6 [71.8, 81.2]; stable_5cm 90.5 [87.7, 93.0]; tipped 3.2 [1.1, 6.1]
+          classes (seed-mean %): success 60.5, extended_not_reached 18.7, circling 12.1, approached_other 3.4, crash 3.2, left_or_overshot 2.1
+  P       success per seed [82.7, 77.7, 77.7, 49.3, 68.3]  policy_ms 0.210
+          success 71.1 [59.3, 80.6]; reach_2cm 88.7 [83.3, 93.1]; reach_5cm 95.3 [91.4, 98.1]; held_10s 30.3 [15.7, 44.3]; stable_1cm 62.1 [50.9, 71.8]; stable_2cm 85.2 [79.1, 90.1]; stable_5cm 94.5 [90.7, 97.3]; tipped 4.3 [1.5, 7.5]
+          classes (seed-mean %): success 71.1, extended_not_reached 14.7, circling 6.0, crash 4.3, left_or_overshot 2.4, approached_other 1.3, parked_no_arm 0.1, no_progress 0.1
+  K144    success per seed [63.3, 60.3, 54.3, 60.3, 56.3]  policy_ms 0.092
+          success 58.9 [52.9, 64.7]; reach_2cm 65.5 [60.2, 70.7]; reach_5cm 72.3 [66.3, 78.2]; held_10s 42.5 [30.6, 54.3]; stable_1cm 56.8 [50.8, 62.7]; stable_2cm 64.9 [59.5, 70.1]; stable_5cm 71.3 [65.3, 77.3]; tipped 9.9 [4.3, 16.3]
+          classes (seed-mean %): success 58.9, circling 13.7, crash 9.9, extended_not_reached 7.2, runaway 5.8, never_other 1.8, left_or_overshot 1.7, approached_other 0.7, parked_no_arm 0.1, no_progress 0.1
+  GRU40   success per seed [43.3, 32.7, 43.0, 42.7, 52.0]  policy_ms 0.087
+          success 42.7 [35.7, 49.6]; reach_2cm 58.6 [51.2, 65.3]; reach_5cm 70.4 [64.7, 75.7]; held_10s 23.7 [19.0, 29.0]; stable_1cm 41.0 [34.2, 47.8]; stable_2cm 57.3 [49.5, 64.3]; stable_5cm 70.0 [64.3, 75.4]; tipped 0.0 [0.0, 0.0]
+          classes (seed-mean %): success 42.7, extended_not_reached 26.6, approached_other 18.2, circling 5.6, left_or_overshot 4.8, parked_no_arm 1.5, no_progress 0.3, never_other 0.2
+  CTRL    success per seed [1.3]  policy_ms 0.091
+          success 1.3 [0.3, 2.7]; reach_2cm 3.7 [1.7, 6.0]; reach_5cm 11.0 [7.7, 14.7]; held_10s 0.0 [0.0, 0.0]; stable_1cm 0.3 [0.0, 1.0]; stable_2cm 3.0 [1.3, 5.0]; stable_5cm 10.7 [7.3, 14.3]; tipped 0.3 [0.0, 1.0]
+          classes (seed-mean %): parked_no_arm 38.0, circling 28.3, approached_other 17.3, extended_not_reached 7.0, left_or_overshot 3.0, never_other 2.7, runaway 2.0, success 1.3, crash 0.3
+  success expert - C3: +38.9 [+32.1, +45.5] pp (p_boot 1.0e-04); one-sample t [+30.5, +47.2] pp (p 2.0e-04)
+  success P - C3: +10.7 [-2.5, +22.1] pp (p_boot 0.11); welch t [-5.6, +27.0] pp (p 0.16)
+  success K144 - C3: -1.5 [-10.4, +6.8] pp (p_boot 0.74); welch t [-9.8, +6.7] pp (p 0.67)
+  success GRU40 - C3: -17.7 [-27.3, -8.3] pp (p_boot 2.0e-04); welch t [-27.6, -7.8] pp (p 0.0033)
+  success CTRL - C3: -59.1 [-65.9, -52.5] pp (p_boot 1.0e-04); one-sample t [-67.5, -50.8] pp (p 3.9e-05)
+
+== subset band: n = 155 ==
+  expert  success per seed [100.0]  policy_ms 0.217
+          success 100.0 [100.0, 100.0]; reach_2cm 100.0 [100.0, 100.0]; reach_5cm 100.0 [100.0, 100.0]; held_10s 98.7 [96.8, 100.0]; stable_1cm 100.0 [100.0, 100.0]; stable_2cm 100.0 [100.0, 100.0]; stable_5cm 100.0 [100.0, 100.0]; tipped 0.0 [0.0, 0.0]
+          classes (seed-mean %): success 100.0
+  C3      success per seed [72.9, 61.3, 56.8, 60.0, 62.6]  policy_ms 0.140
+          success 62.7 [55.4, 70.3]; reach_2cm 83.1 [76.9, 88.6]; reach_5cm 94.1 [90.1, 97.4]; held_10s 24.4 [15.2, 33.9]; stable_1cm 58.7 [51.1, 66.7]; stable_2cm 80.6 [74.5, 86.2]; stable_5cm 93.2 [89.3, 96.6]; tipped 4.0 [1.3, 7.6]
+          classes (seed-mean %): success 62.7, extended_not_reached 17.7, circling 11.0, crash 4.0, approached_other 2.5, left_or_overshot 2.2
+  P       success per seed [81.9, 71.6, 83.2, 68.4, 76.1]  policy_ms 0.211
+          success 76.3 [69.3, 83.0]; reach_2cm 89.9 [86.2, 93.5]; reach_5cm 96.4 [93.4, 98.6]; held_10s 31.1 [16.8, 45.3]; stable_1cm 68.5 [59.9, 77.2]; stable_2cm 87.1 [82.6, 91.2]; stable_5cm 95.6 [92.5, 98.1]; tipped 2.1 [0.3, 4.9]
+          classes (seed-mean %): success 76.3, extended_not_reached 12.5, circling 4.9, left_or_overshot 2.7, crash 2.1, approached_other 1.2, parked_no_arm 0.3, no_progress 0.1
+  K144    success per seed [96.8, 93.5, 91.0, 96.1, 90.3]  policy_ms 0.092
+          success 93.5 [89.7, 96.9]; reach_2cm 96.3 [93.8, 98.3]; reach_5cm 98.2 [96.3, 99.6]; held_10s 71.6 [53.0, 88.5]; stable_1cm 91.6 [87.0, 95.7]; stable_2cm 95.9 [93.2, 98.1]; stable_5cm 97.8 [95.9, 99.2]; tipped 0.3 [0.0, 1.0]
+          classes (seed-mean %): success 93.5, circling 3.1, extended_not_reached 1.8, left_or_overshot 0.8, approached_other 0.3, crash 0.3, parked_no_arm 0.3
+  GRU40   success per seed [72.3, 53.5, 71.6, 74.2, 83.9]  policy_ms 0.087
+          success 71.1 [60.4, 80.0]; reach_2cm 89.5 [80.8, 97.0]; reach_5cm 95.9 [91.0, 99.2]; held_10s 42.6 [34.3, 51.6]; stable_1cm 68.6 [58.6, 77.5]; stable_2cm 88.0 [77.7, 96.5]; stable_5cm 95.5 [90.3, 99.1]; tipped 0.0 [0.0, 0.0]
+          classes (seed-mean %): success 71.1, extended_not_reached 24.0, approached_other 1.9, parked_no_arm 1.8, left_or_overshot 1.0, circling 0.1
+  CTRL    success per seed [2.6]  policy_ms 0.092
+          success 2.6 [0.6, 5.2]; reach_2cm 7.1 [3.2, 11.0]; reach_5cm 21.3 [14.8, 27.7]; held_10s 0.0 [0.0, 0.0]; stable_1cm 0.6 [0.0, 1.9]; stable_2cm 5.8 [2.6, 9.7]; stable_5cm 20.6 [14.2, 27.1]; tipped 0.0 [0.0, 0.0]
+          classes (seed-mean %): parked_no_arm 42.6, circling 28.4, extended_not_reached 13.5, approached_other 11.6, success 2.6, left_or_overshot 1.3
+  success expert - C3: +37.3 [+29.7, +44.6] pp (p_boot 1.0e-04); one-sample t [+29.7, +44.9] pp (p 1.7e-04)
+  success P - C3: +13.5 [+4.4, +22.3] pp (p_boot 0.005); welch t [+4.4, +22.7] pp (p 0.009)
+  success K144 - C3: +30.8 [+23.4, +38.1] pp (p_boot 1.0e-04); welch t [+23.4, +38.3] pp (p 6.8e-05)
+  success GRU40 - C3: +8.4 [-4.3, +20.1] pp (p_boot 0.19); welch t [-5.2, +22.0] pp (p 0.18)
+  success CTRL - C3: -60.1 [-68.1, -52.6] pp (p_boot 1.0e-04); one-sample t [-67.7, -52.6] pp (p 2.5e-05)
+
+== subset band_box: n = 103 ==
+  expert  success per seed [100.0]  policy_ms 0.226
+          success 100.0 [100.0, 100.0]; reach_2cm 100.0 [100.0, 100.0]; reach_5cm 100.0 [100.0, 100.0]; held_10s 98.1 [95.1, 100.0]; stable_1cm 100.0 [100.0, 100.0]; stable_2cm 100.0 [100.0, 100.0]; stable_5cm 100.0 [100.0, 100.0]; tipped 0.0 [0.0, 0.0]
+          classes (seed-mean %): success 100.0
+  C3      success per seed [72.8, 60.2, 57.3, 59.2, 63.1]  policy_ms 0.140
+          success 62.5 [54.2, 70.9]; reach_2cm 83.5 [77.1, 89.1]; reach_5cm 94.0 [89.3, 97.7]; held_10s 24.5 [15.7, 33.8]; stable_1cm 58.3 [49.3, 67.2]; stable_2cm 80.6 [74.0, 86.8]; stable_5cm 93.0 [88.3, 96.9]; tipped 5.0 [1.6, 9.5]
+          classes (seed-mean %): success 62.5, extended_not_reached 17.7, circling 11.1, crash 5.0, approached_other 1.9, left_or_overshot 1.7
+  P       success per seed [77.7, 68.9, 78.6, 65.0, 71.8]  policy_ms 0.212
+          success 72.4 [64.7, 80.0]; reach_2cm 87.6 [82.5, 92.2]; reach_5cm 95.1 [90.9, 98.3]; held_10s 26.8 [14.0, 39.8]; stable_1cm 65.2 [56.3, 74.2]; stable_2cm 84.9 [79.0, 89.9]; stable_5cm 94.0 [89.5, 97.5]; tipped 2.5 [0.0, 6.4]
+          classes (seed-mean %): success 72.4, extended_not_reached 15.0, circling 4.9, left_or_overshot 3.1, crash 2.5, approached_other 1.6, parked_no_arm 0.4, no_progress 0.2
+  K144    success per seed [95.1, 92.2, 88.3, 96.1, 89.3]  policy_ms 0.092
+          success 92.2 [87.0, 96.5]; reach_2cm 95.0 [91.1, 98.1]; reach_5cm 97.5 [94.6, 99.6]; held_10s 71.1 [51.1, 89.1]; stable_1cm 90.9 [84.9, 95.9]; stable_2cm 94.6 [90.5, 97.7]; stable_5cm 97.1 [94.2, 99.2]; tipped 0.4 [0.0, 1.6]
+          classes (seed-mean %): success 92.2, circling 4.3, extended_not_reached 1.9, left_or_overshot 0.6, approached_other 0.4, crash 0.4, parked_no_arm 0.2
+  GRU40   success per seed [76.7, 59.2, 70.9, 72.8, 87.4]  policy_ms 0.088
+          success 73.4 [63.3, 82.7]; reach_2cm 90.3 [82.5, 96.7]; reach_5cm 96.5 [92.2, 99.4]; held_10s 45.6 [36.9, 54.6]; stable_1cm 71.3 [61.7, 80.6]; stable_2cm 88.3 [79.2, 96.1]; stable_5cm 96.1 [91.5, 99.2]; tipped 0.0 [0.0, 0.0]
+          classes (seed-mean %): success 73.4, extended_not_reached 22.1, approached_other 1.7, parked_no_arm 1.4, left_or_overshot 1.2, circling 0.2
+  CTRL    success per seed [1.9]  policy_ms 0.092
+          success 1.9 [0.0, 4.9]; reach_2cm 5.8 [1.9, 10.7]; reach_5cm 23.3 [15.5, 32.0]; held_10s 0.0 [0.0, 0.0]; stable_1cm 1.0 [0.0, 2.9]; stable_2cm 5.8 [1.9, 10.7]; stable_5cm 22.3 [14.6, 30.1]; tipped 0.0 [0.0, 0.0]
+          classes (seed-mean %): parked_no_arm 36.9, circling 33.0, extended_not_reached 14.6, approached_other 13.6, success 1.9
+  success expert - C3: +37.5 [+29.1, +45.8] pp (p_boot 1.0e-04); one-sample t [+29.9, +45.1] pp (p 1.7e-04)
+  success P - C3: +9.9 [+0.0, +19.2] pp (p_boot 0.05); welch t [+1.2, +18.6] pp (p 0.03)
+  success K144 - C3: +29.7 [+21.2, +38.1] pp (p_boot 1.0e-04); welch t [+22.1, +37.3] pp (p 6.0e-05)
+  success GRU40 - C3: +10.9 [-2.3, +23.5] pp (p_boot 0.1); welch t [-1.9, +23.6] pp (p 0.082)
+  success CTRL - C3: -60.6 [-69.1, -52.0] pp (p_boot 1.0e-04); one-sample t [-68.2, -53.0] pp (p 2.5e-05)
+

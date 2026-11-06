@@ -1,0 +1,5 @@
+Classifier validation of results/step9/expert_confirm2 (eval set data/obstacle/confirm2)
+[PASS] no harness_error: none
+[PASS] 300 successes: no failure predicate fires (fired: none)
+[INFO] 0 failures, classes {}
+[PASS] arm_extend_time >= recorded nav_done time: 0 of 227 extend earlier; lag median 0.466 s, max 2.511 s

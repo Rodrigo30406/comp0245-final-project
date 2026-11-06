@@ -1,0 +1,13 @@
+episodes with nav_done: 284
+nav_done -> base still: median 33 ms, p10 20, p90 70; never still 0
+POST_STILL frames 8923 (episodes with >= 1: 141; per episode median 0, p90 87); with qd_arm ~ 0: 0 (episodes with >= 1: 0)
+label torque jump at nav_done ||tau[k0] - tau[k0-1]||: median 27.87 N m, p10 21.30, p90 31.79
+PRE_LOOK frames 187985
+arm |qd| max during hold before nav_done: median 0.058 p90 0.139 p99 0.280
+arm |qd| max at k0-1: median 0.088, p90 0.144
+POST_STILL with max|qd_arm| < 0.05: 0 frames in 0 episodes
+POST_STILL with max|qd_arm| < 0.1: 0 frames in 0 episodes
+POST_STILL with max|qd_arm| < 0.15: 0 frames in 0 episodes
+POST_STILL with max|qd_arm| < 0.2: 0 frames in 0 episodes
+POST_STILL with max|qd_arm| < 0.3: 8 frames in 2 episodes
+per episode: still before arm qd > 0.2 rad/s in 0 of 284; delay still - arm-moving median 29 ms

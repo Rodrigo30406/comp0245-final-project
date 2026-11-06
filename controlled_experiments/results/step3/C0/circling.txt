@@ -1,0 +1,8 @@
+MM class (ego-novw DEV, 5 seeds x 300)  n   | ME same seed x episode: threshold&success  threshold&fail  timeout&success  timeout&fail
+  parked_no_arm            815 |    734 ( 90.1%)      8     71      2  none 0
+  circling                 483 |    337 ( 69.8%)     27    108     11  none 0
+  approached_other         101 |     87 ( 86.1%)      1     12      1  none 0
+  extended_not_reached      94 |     86 ( 91.5%)      0      8      0  none 0
+  success                    5 |      3 ( 60.0%)      0      1      0  none 1
+  crash                      1 |      0 (  0.0%)      0      1      0  none 0
+  left_or_overshot           1 |      1 (100.0%)      0      0      0  none 0

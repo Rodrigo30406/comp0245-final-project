@@ -1,0 +1,8 @@
+{
+  "n": 100,
+  "success": 0.76,
+  "crash": 0.0,
+  "policy_error": 0,
+  "passed": true,
+  "rule": "bug check only, not an experiment decision"
+}

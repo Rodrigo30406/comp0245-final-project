@@ -1,0 +1,40 @@
+Step 9 test2 read-out (descriptive, one opening): 300 episodes (135 in the ambiguous band), configs ['L2'], seeds [0, 1, 2, 3, 4]
+Rates (seed mean, two-level bootstrap 95% CI): overall | band | outside
+  docked_clean
+    L2     97.3% [95.7, 98.5] | 97.6% [95.7, 99.3] | 97.0% [94.7, 98.8]
+    expert 100.0%
+  success
+    L2     42.0% [33.3, 50.8] | 41.3% [31.6, 51.6] | 42.5% [33.2, 51.4]
+    expert 100.0%
+  reach_20mm
+    L2     76.4% [69.1, 82.1] | 77.0% [68.7, 83.9] | 75.9% [68.0, 82.4]
+    expert 100.0%
+  reach_50mm
+    L2     97.1% [94.7, 98.9] | 97.8% [95.4, 99.6] | 96.5% [93.3, 98.8]
+    expert 100.0%
+  collision
+    L2     0.5% [0.0, 1.4] | 0.3% [0.0, 1.2] | 0.6% [0.0, 1.9]
+    expert 0.0%
+  no_pass
+    L2     0.0% [0.0, 0.0] | 0.0% [0.0, 0.0] | 0.0% [0.0, 0.0]
+    expert 0.0%
+  crash
+    L2     0.1% [0.0, 0.4] | 0.1% [0.0, 0.9] | 0.0% [0.0, 0.0]
+    expert 0.0%
+  circling
+    L2     0.4% [0.0, 1.3] | 0.6% [0.0, 2.2] | 0.2% [0.0, 1.0]
+    expert 0.0%
+  parked_no_arm
+    L2     0.0% [0.0, 0.0] | 0.0% [0.0, 0.0] | 0.0% [0.0, 0.0]
+    expert 0.0%
+  extended_not_reached
+    L2     51.3% [41.7, 60.7] | 52.1% [41.5, 62.5] | 50.5% [41.1, 60.5]
+    expert 0.0%
+  held_10s
+    L2     5.5% [3.5, 7.7] | 6.8% [4.0, 9.9] | 4.4% [2.3, 7.0]
+    expert 100.0%
+  policy_ms_mean L2: 0.278
+  per-seed success L2: [50.7, 29.3, 38.3, 54.0, 37.7]; per-seed docked_clean: [97.0, 97.7, 96.3, 98.7, 96.7]; per-seed band docked_clean: [96.3, 98.5, 97.0, 98.5, 97.8]
+  L2 passes on the latched side: 100.0% of 1500
+  L2 failure classes (share of all units): approached_other 2.7%, circling 0.4%, collision 0.5%, crash 0.1%, extended_not_reached 51.3%, left_or_overshot 3.1%, success 42.0%
+  expert Recorded comparison: 300/300 episodes identical over the common length (float32), max differences: base_pos 0, q_mes 0, qd_mes 0, wheel_cmds 0, torque_arm 0

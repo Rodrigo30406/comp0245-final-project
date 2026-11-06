@@ -1,0 +1,157 @@
+{
+ "format": "obstacle_scenarios_v1",
+ "sampler": {
+  "FORMAT": "obstacle_scenarios_v1",
+  "STREAM": 9,
+  "TARGET_R": [
+   3.5,
+   5.0
+  ],
+  "TARGET_THETA_DEG": [
+   -180.0,
+   180.0
+  ],
+  "TARGET_Z": [
+   0.2,
+   1.2
+  ],
+  "INIT_RADIUS": 2.0,
+  "INIT_YAW_DEG": [
+   -180.0,
+   180.0
+  ],
+  "OBST_RADIUS": [
+   0.25,
+   0.35
+  ],
+  "OBST_HEIGHT": 1.5,
+  "ALONG": [
+   0.3,
+   0.7
+  ],
+  "LATERAL": 0.4,
+  "AMBIG_BAND": 0.2,
+  "CHASSIS_HALF_WIDTH": 0.31,
+  "WAYPOINT_CLEAR": 0.9,
+  "END_CLEAR": 0.9,
+  "SEGMENT_CLEAR": 0.45,
+  "TARGET_CLEAR": 0.3,
+  "MAX_TRIES": 10000
+ },
+ "extra": {
+  "set_name": "a2",
+  "seed": 909,
+  "noise_frac": 1.0,
+  "no_obstacle": true
+ },
+ "scenarios": [
+  {
+   "seed": 909,
+   "episode": 0,
+   "target": [
+    -1.5910670815445078,
+    0.1223796704993147,
+    0.5076924260857787
+   ],
+   "init_xy": [
+    0.44096579249687184,
+    -0.11425501344805042
+   ],
+   "init_yaw": 2.3408836010194745,
+   "dock_xy": [
+    -0.9454301174281016,
+    0.04719383029951145
+   ],
+   "dock_bearing": 3.0256626258066905,
+   "standoff": 0.65,
+   "obstacles": [],
+   "along": 0.0,
+   "lateral_offset": 0.0,
+   "ambiguous": false,
+   "side": 0,
+   "waypoint_xy": [
+    -0.9454301174281016,
+    0.04719383029951145
+   ],
+   "noisy": true,
+   "attempts": 1,
+   "meta": {
+    "no_obstacle": true,
+    "r": 2.0457647897135534,
+    "theta_deg": 39.23494801939186
+   }
+  },
+  {
+   "seed": 909,
+   "episode": 1,
+   "target": [
+    -0.22091982203150062,
+    -0.0016815890438440784,
+    0.5600525226882713
+   ],
+   "init_xy": [
+    0.5541707220980667,
+    0.6179590212213606
+   ],
+   "init_yaw": -0.5949087060104781,
+   "dock_xy": [
+    0.28678285316092655,
+    0.40419769547613826
+   ],
+   "dock_bearing": -2.4671915162068325,
+   "standoff": 0.65,
+   "obstacles": [],
+   "along": 0.0,
+   "lateral_offset": 0.0,
+   "ambiguous": false,
+   "side": 0,
+   "waypoint_xy": [
+    0.28678285316092655,
+    0.40419769547613826
+   ],
+   "noisy": true,
+   "attempts": 1,
+   "meta": {
+    "no_obstacle": true,
+    "r": 0.9923305081921567,
+    "theta_deg": -107.27390307914447
+   }
+  },
+  {
+   "seed": 909,
+   "episode": 2,
+   "target": [
+    -1.67691057126393,
+    0.9065035888545386,
+    0.8756600993625971
+   ],
+   "init_xy": [
+    -0.5920611936215945,
+    0.22158949220914645
+   ],
+   "init_yaw": 0.05848095703959031,
+   "dock_xy": [
+    -1.1272847078588004,
+    0.5595001158515068
+   ],
+   "dock_bearing": 2.578443735493432,
+   "standoff": 0.65,
+   "obstacles": [],
+   "along": 0.0,
+   "lateral_offset": 0.0,
+   "ambiguous": false,
+   "side": 0,
+   "waypoint_xy": [
+    -1.1272847078588004,
+    0.5595001158515068
+   ],
+   "noisy": true,
+   "attempts": 1,
+   "meta": {
+    "no_obstacle": true,
+    "r": 1.2829674555321098,
+    "theta_deg": 144.38323173546564
+   }
+  }
+ ]
+}
