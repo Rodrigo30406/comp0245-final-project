@@ -1091,3 +1091,11 @@ share 23 / 22 / 22 %. MLP-Ego-IC seed 0, same recipe as `v2_mlp28_trig144_seed0`
 (`chain_balanced_size.sh`). Prediction: at equal episode count the balanced points beat the random-subset ones
 (400 → 142 / 137, 800 → 148 / 127, 1600 → 177 / 174 at 1 cm), so the knee moves to fewer episodes; 512 targets (2000
 episodes) should be close to the full 819 (199 / 200).
+- **08:51, result: the prediction was wrong at the small end.** Stable arrivals 1 cm nominal / random start (seed 0):
+  balanced 128 targets (506 episodes) **80 / 92**, 256 targets (1011) **150 / 145**, 512 targets (2000) **190 / 190**;
+  offline NRMSE 0.222 / 0.155 / 0.141. Random subsets: 400 episodes (331 targets) 142 / 137, 800 (553) 148 / 127,
+  1600 (772) 177 / 174, 2400 (818) 195 / 187, full 3221 (819) 199 / 200. At equal episode count the balanced grid with
+  fewer distinct targets is worse (506 balanced < 400 random), equal around 1000, and on the same curve at 2000. So the
+  curve is driven by the number of distinct targets more than by balanced coverage or by start poses per target: four
+  starts on 128 well-spread targets teach less than one or two starts on 331 scattered ones. The knee is at ~500
+  targets / ~2000 episodes (balanced 512: 190 / 190, within the seed spread of the full set, 175–199). One seed per point.
