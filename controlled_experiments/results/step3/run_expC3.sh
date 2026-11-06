@@ -55,6 +55,7 @@ mechanisms() {  # mechanisms [--allow-confirm]
 
 case $STAGE in
 calib)
+  [ -f results/step3/cache/manifest.json ] || { echo "no feature cache: run 'train_policy.py build-cache' (needs data/train)"; exit 1; }
   [ -f results/step3/cache/trigger/manifest.json ] || $PY train_policy.py build-trigger-cache --workers 12
   for K in 16 64 256; do
     out=trained/$M-k${K}_s0.npz
