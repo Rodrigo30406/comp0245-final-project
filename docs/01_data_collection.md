@@ -134,13 +134,13 @@ kept on during the hold (1.6).
 
 ### Targets: a grid over a bounded box
 
-**Bounds.** The brief does not fix a range ("generalise to new targets and/or initial conditions"); the box is
-x, y ∈ [−2, 2] m (drives of up to 2.8 m from the origin), z ∈ [0.3, 0.8] m. It is inside what the expert can solve
-with margin, measured on 303 successful nominal episodes: when the base has parked, the shoulder (at 0.49 m height) is
-0.42–0.71 m from the target over the whole box, against the arm's 0.85 m reach limit (≥ 14 cm of margin at every height
-band; the standoff table puts the dock 0.72–0.78 m from the target in the plane). The z range spans roughly
-−0.2 / +0.3 m around the shoulder height. Everything outside the box is reserved for the generalisation banks (1.7),
-where the expert still succeeds (210/210, 209/210, 210/210), so the banks test the learner, not the expert.
+**Bounds.** The brief does not fix a range ("generalise to new targets and/or initial conditions"). In the plane the box
+is x, y ∈ [−2, 2] m (drives of up to 2.8 m from the origin). The **height range follows a reachability criterion**: once
+the base is parked, the target must be within the arm's reach (0.85 m from the shoulder) given the height of the
+shoulder on the base (≈ 0.49 m), so z ∈ [0.3, 0.8] m, a band of about −0.2 / +0.3 m around the shoulder, keeps every
+target reachable with margin. Measured check on 303 successful nominal episodes: with the base parked, the shoulder is
+0.42–0.71 m from the target over the whole box (≥ 14 cm below the reach limit at every height band). Everything outside
+the box is reserved for the generalisation banks (1.7).
 
 **Target grid** (`experiment_specs/collection/target_grid_16x8x8.json`, made by `robot_learning.data.sampling.stratified_grid`,
 regenerated and checked by `scripts/data/make_target_grid.py`): the box is cut into a **16 × 8 × 8 grid** (cells of
@@ -183,6 +183,19 @@ is as good from anywhere as from the origin, and better from the origin too.
 ---
 
 ## 1.5 Experiment 3: how much data
+
+**How the amount was set.** The size is not a free number: it follows from two coverage choices, and a learning curve
+then checks that it is enough.
+
+1. *Target coverage*: one target per cell of the 16 × 8 × 8 grid, i.e. 1024 target positions, one every 25 cm in x,
+   50 cm in y and 6 cm in height; 819 of them are for training.
+2. *Start coverage*: each target demonstrated once from the nominal start and three times from random starts, i.e.
+   4 × 1024 = 4096 episodes (about 40 min of collection with 28 processes).
+3. Removing the validation cells and the expert failures (re-collected once) leaves **3 221 training episodes**.
+4. *Check*: train the final model on growing random subsets of these 3 221 episodes (below). If the result were still
+   climbing steeply at the full size, more data would be needed; it is not: the last 821 episodes (+34 %) add 4
+   arrivals on the nominal validation (195 → 199) and the offline error stopped improving at 1 600 episodes. The
+   amount is therefore at the knee of the curve: enough, with little to gain from collecting more.
 
 **The training mixture** (every reaching model of the report):
 
@@ -260,7 +273,7 @@ reach the target and leave it 2–3 s later.
 ## 1.7 Evaluation banks (collected, never trained on)
 
 Out-of-distribution banks, 210 episodes each (205 evaluated, `scripts/data/make_bank_split.py`), expert recorded on each
-as the reference: `ood_far_targets` (max(|x|, |y|) from 2.2 to 3 m), `ood_target_height` (z in [0.15, 0.28] and
+as the reference (it succeeds in 210/210, 209/210 and 210/210, so the banks test the learner, not the expert): `ood_far_targets` (max(|x|, |y|) from 2.2 to 3 m), `ood_target_height` (z in [0.15, 0.28] and
 [0.85, 1.05] m), `ood_far_start` (start x in [2.3, 3.5] m, y in [−3.5, 3.5] m). Reserved test banks
 (`test_reserved_nominal`, `test_reserved_random_start`, 64 episodes each, split `test`) are only for the final table.
 
