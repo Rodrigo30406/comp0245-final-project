@@ -50,25 +50,27 @@ to the dock, but the arm never starts reaching (end effector stuck ~0.2 m from t
 | same scenarios without DART, MLP-Ego (no copies) | 0.6 ± 0.9 | 27.6 ± 17.2 | 0.2 ± 0.4 | 19.0 ± 8.1 | 0.085 |
 | **nominal starts only** (721 episodes) | 152.4 ± 24.8 (115–178) | 196.8 ± 3.2 | 61.8 ± 14.6 (40–79) | 106.6 ± 20.9 | 0.182 |
 
-Data size (MLP-Ego-IC, seed 0; random subsets of the 3 221 training episodes keeping the mixture's proportions):
+**Validation of the data design** (MLP-Ego-IC, seed 0): the final model trained on evenly spread coarser target grids
+(one target per coarse block, every start pose of each target kept), stable arrivals within 1 cm of 205:
 
-| training episodes | 400 | 800 | 1 600 | 2 400 | 3 221 |
+| targets (episodes) | 128 (506) | 256 (1 011) | 512 (2 000) | 819 (3 221, full) |
+|---|---|---|---|---|
+| nominal 1 cm | 80 | 150 | **190** | 199 (five seeds: 189.0 ± 9.3, 175–199) |
+| random start 1 cm | 92 | 145 | **190** | 200 (five seeds: 192.6 ± 8.7) |
+| offline NRMSE | 0.222 | 0.155 | 0.141 | 0.139 |
+
+The arrivals saturate from ~500 targets: the 16 × 8 × 8 grid is dense enough. Complementary curve, random subsets of the
+episodes (uneven coverage, mixture proportions kept):
+
+| training episodes (distinct targets) | 400 (331) | 800 (553) | 1 600 (772) | 2 400 (818) | 3 221 (819) |
 |---|---|---|---|---|---|
 | nominal 1 cm | 142 | 148 | 177 | 195 | 199 |
 | random start 1 cm | 137 | 127 | 174 | 187 | 200 |
 | offline NRMSE | 0.209 | 0.189 | 0.142 | 0.142 | 0.139 |
 
-Balanced coverage (one target per coarse grid block, every start pose of each target kept; seed 0):
-
-| targets (episodes) | 128 (506) | 256 (1 011) | 512 (2 000) | 819 (3 221, full) |
-|---|---|---|---|---|
-| nominal 1 cm | 80 | 150 | 190 | 199 |
-| random start 1 cm | 92 | 145 | 190 | 200 |
-| offline NRMSE | 0.222 | 0.155 | 0.141 | 0.139 |
-
-At equal episode count, fewer well-spread targets with four start poses each are worse than more scattered targets (506
-balanced: 80; 400 random: 142): the curve is driven by the number of distinct targets. Both curves reach the full-set
-level at ~500 targets / ~2 000 episodes (512 balanced: 190 / 190, inside the five-seed range of the full set, 175–199).
+Together: at a similar number of episodes, more distinct targets beat more start poses per target (400 random episodes
+on 331 targets: 142; 506 balanced on 128 targets: 80); random starts must be present (nominal-only row above: 62 on
+the random-start bank) and three per target are enough.
 
 ### 1.3 Generalisation beyond the training range (three seeds, seeds 0 / 1 / 2; stable arrivals of 205)
 

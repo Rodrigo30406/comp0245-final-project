@@ -244,48 +244,65 @@ levels, not to be confused:
 The closed-loop validation sets are the 205 nominal held-out geometries and the 205 held-out geometries of the
 random-start bank `reaching_validation_random_start_dart`.
 
-### Verification: a learning curve with the final model (ablation, after training)
+### Verification: the data design validated with the final model (ablation, after training)
 
-Whether an amount of data is *enough* can only be judged with the method that will use it, so the check is an ablation
-of the final recipe: retrain it from scratch on growing subsets of the same training episodes and see whether the
-result is still climbing at the full size. If it were, more data would be collected; the validation set (205 fixed
-geometries) is the same for every point.
+Whether the collected data are *enough* can only be judged with the method that will use them, so the check is an
+ablation of the final recipe (MLP-Ego-IC, seed 0): retrain it from scratch on smaller versions of the same data and see
+whether the result is still climbing at the full size. The validation set (205 fixed held-out targets) is the same for
+every point. Two versions were run; the first is the one that validates the design.
 
-Each point is a random subset of the 3 221 training episodes (one fixed permutation, `training_episode_cap` option of
-the trainer), so every point keeps the mixture's proportion of about 22 % nominal and 78 % random-start episodes.
-MLP-Ego-IC, seed 0, stable arrivals within 1 cm of 205:
+**1. Coverage as the parameter: balanced coarser grids (the validation of the data design).** The design of 1.4 and of
+the steps above has two coverage parameters: how densely the target box is covered, and how many start poses each target
+gets. To vary the first without changing the second, the 16 × 8 × 8 grid is grouped into coarse blocks and **one**
+training cell is drawn in each block, giving an evenly spread grid of fewer targets; every start pose of those targets is
+kept (one nominal + three random, as in the full set). Blocks of 2 × 2 × 2, 2 × 1 × 2 and 1 × 1 × 2 fine cells give 128,
+256 and 512 targets, exactly balanced per level of every axis (`scripts/data/make_balanced_target_cells.py`,
+`experiment_specs/data_size/`, trainer option `training_target_cells`):
+
+| targets (coarse grid) | 128 (8 × 4 × 4) | 256 (8 × 8 × 4) | 512 (16 × 8 × 4) | 819 (full 16 × 8 × 8) |
+|---|---|---|---|---|
+| one target per block of (x × y × z, m) | 0.5 × 1 × 0.125 | 0.5 × 0.5 × 0.125 | 0.25 × 0.5 × 0.125 | 0.25 × 0.5 × 0.0625 |
+| training episodes | 506 | 1 011 | 2 000 | 3 221 |
+| **nominal validation, 1 cm** | 80 | 150 | **190** | 199 (five seeds: 189 ± 9, 175–199) |
+| **random-start validation, 1 cm** | 92 | 145 | **190** | 200 (five seeds: 193 ± 9) |
+| offline NRMSE | 0.222 | 0.155 | 0.141 | 0.139 |
+
+- **Saturation.** Halving the target spacing in height from 512 to 819 targets (+61 % episodes) adds 9–10 arrivals,
+  inside the five-seed spread of the full set: the density of the 16 × 8 × 8 grid sits at the knee of the curve. The
+  data are enough, and collecting more targets would bring little.
+- **Below ~500 targets the density matters**: 256 targets (one every 0.5 m in the plane) lose a quarter of the arrivals,
+  128 targets more than half, on both validation banks.
+- The offline error flattens from 512 targets on as well (0.141 → 0.139).
+
+**2. Random subsets of the episodes (complementary).** Each point is a random subset of the 3 221 training episodes
+(one fixed permutation, trainer option `training_episode_cap`): it keeps the mixture's proportion of nominal and
+random-start episodes, but cuts the grid unevenly (holes and repeated regions).
 
 | training episodes | 400 | 800 | 1 600 | 2 400 | 3 221 |
 |---|---|---|---|---|---|
 | nominal / random-start episodes | 93 / 307 | 193 / 607 | 370 / 1230 | 549 / 1851 | 721 / 2500 |
-| distinct target cells (of 819) | 331 | 553 | 772 | 818 | 819 |
-| nominal validation | 142 | 148 | 177 | 195 | 199 |
-| random-start validation | 137 | 127 | 174 | 187 | 200 |
+| distinct targets (of 819) | 331 | 553 | 772 | 818 | 819 |
+| nominal validation, 1 cm | 142 | 148 | 177 | 195 | 199 |
+| random-start validation, 1 cm | 137 | 127 | 174 | 187 | 200 |
 | offline NRMSE | 0.209 | 0.189 | 0.142 | 0.142 | 0.139 |
 
-- **Saturation.** The last 821 episodes (+34 %) add 4 arrivals on the nominal validation (195 → 199), and the offline
-  error stopped improving at 1 600 episodes. The amount sits at the knee of the curve: enough, with little to gain from
-  collecting more.
-- The closed-loop result keeps improving after the offline error has flattened: the extra episodes add coverage of rare
-  states (the arm's ignition, the parked base), which the average error hardly sees.
-- Up to ~2 400 episodes the curve mixes two effects, more distinct targets and more start poses per target; from 2 400
-  on every training cell is covered and the last gain (195 → 199 nominal, 187 → 200 random start) comes from more start
-  poses per target only.
-- Read together with decision 2: at about the same size, 721 nominal-only episodes give 62 ± 15 on the random-start
-  validation while 800 mixed episodes give 127 (nominal validation 152 ± 25 against 148). The diversity of start poses
-  matters more than the number of episodes.
-- The curve is one seed (the end points have five); it is a sizing argument, not a precise scaling law.
-- **Balanced coverage as the parameter** (one target per coarse block of the grid, 128 / 256 / 512 targets, every start
-  pose of each kept, so each point has an even coverage and only the density changes): 1 cm nominal 80 / 150 / 190 for
-  506 / 1 011 / 2 000 episodes. At the small end this is *worse* than the random subsets (400 random episodes: 142),
-  because the random ones spread the same budget over more distinct targets (331 against 128). The number of distinct
-  targets is what drives the curve; both versions reach the full-set level at ~500 targets / ~2 000 episodes, which
-  confirms that the 819 targets × 4 starts of the training set are enough (`experiment_specs/data_size/` and
-  `training_target_cells` option of the trainer; one seed per point).
+**What the two curves say together.**
 
-In one sentence, for the report: *the dataset size was set by coverage (one target per cell of a 16 × 8 × 8 grid, four
-start poses per target), and a learning curve with the final model shows it sits at saturation: 34 % more episodes add
-2 % more arrivals.*
+- **Distinct targets matter more than start poses per target.** At about the same number of episodes, 400 random
+  episodes on 331 targets reach 142, while 506 balanced episodes on 128 targets reach 80: spreading the budget over more
+  targets teaches more than repeating starts on fewer. Both curves meet at the full-set level from ~500 targets / ~2 000
+  episodes on.
+- **Start poses matter as a kind, not as a count** (decision 2): 721 nominal-only episodes give 62 ± 15 on the
+  random-start validation, 800 mixed episodes give 127. Random starts must be present; three per target are enough.
+- The closed-loop result keeps improving after the offline error has flattened (1 600 → 3 221 random episodes: 0.142
+  → 0.139 offline, 177 → 199 closed loop): the extra data add coverage of rare states (the arm's ignition, the parked
+  base), which the average error hardly sees.
+- One seed per point (the full set has five): a sizing argument, not a precise scaling law.
+
+In one sentence, for the report: *the data were designed by coverage (one target per cell of a 16 × 8 × 8 grid, one
+nominal and three random start poses per target), and validated by training the final model on evenly spread coarser
+grids: the arrivals saturate from ~500 targets (190 of 205 at 512 targets against 199 at 819), so the grid is dense
+enough; below that, the number of distinct targets is what limits the policy.*
 
 ---
 
