@@ -1,0 +1,50 @@
+smoke: 12 episodes, success 7, bad stops 0
+2026-11-05T03:32:52+00:00 gate 1 (smoke) passed
+2026-11-05T04:59:56+00:00 step-9 confirm2 chain has exited
+2026-11-05T04:59:56+00:00 running step9_analysis.py --set confirm2
+2026-11-05T05:00:02+00:00 step9 confirm2 analysis done (results/step9/step9_confirm2.txt)
+2026-11-05T05:00:02+00:00 start results/step10_cross/rodrigo-k144_s0_dev
+2026-11-05T05:07:14+00:00 done results/step10_cross/rodrigo-k144_s0_dev (Policy rodrigo-k144_s0_dev on data/dev: success 190/300 = 63.3% [57.7, 68.6] (95% Wilson), settled 187/300)
+2026-11-05T05:07:14+00:00 start results/step10_cross/rodrigo-k144_s1_dev
+2026-11-05T05:15:08+00:00 done results/step10_cross/rodrigo-k144_s1_dev (Policy rodrigo-k144_s1_dev on data/dev: success 181/300 = 60.3% [54.7, 65.7] (95% Wilson), settled 173/300)
+2026-11-05T05:15:08+00:00 start results/step10_cross/rodrigo-k144_s2_dev
+2026-11-05T05:23:19+00:00 done results/step10_cross/rodrigo-k144_s2_dev (Policy rodrigo-k144_s2_dev on data/dev: success 163/300 = 54.3% [48.7, 59.9] (95% Wilson), settled 156/300)
+2026-11-05T05:23:19+00:00 start results/step10_cross/rodrigo-k144_s3_dev
+2026-11-05T05:30:23+00:00 done results/step10_cross/rodrigo-k144_s3_dev (Policy rodrigo-k144_s3_dev on data/dev: success 181/300 = 60.3% [54.7, 65.7] (95% Wilson), settled 176/300)
+2026-11-05T05:30:23+00:00 start results/step10_cross/rodrigo-k144_s4_dev
+2026-11-05T05:38:35+00:00 done results/step10_cross/rodrigo-k144_s4_dev (Policy rodrigo-k144_s4_dev on data/dev: success 169/300 = 56.3% [50.7, 61.8] (95% Wilson), settled 164/300)
+2026-11-05T05:38:35+00:00 start results/step10_cross/rodrigo-gru40_s0_dev
+2026-11-05T05:47:35+00:00 done results/step10_cross/rodrigo-gru40_s0_dev (Policy rodrigo-gru40_s0_dev on data/dev: success 130/300 = 43.3% [37.8, 49.0] (95% Wilson), settled 124/300)
+2026-11-05T05:47:35+00:00 start results/step10_cross/rodrigo-gru40_s1_dev
+2026-11-05T05:57:17+00:00 done results/step10_cross/rodrigo-gru40_s1_dev (Policy rodrigo-gru40_s1_dev on data/dev: success 98/300 = 32.7% [27.6, 38.2] (95% Wilson), settled 98/300)
+2026-11-05T05:57:17+00:00 start results/step10_cross/rodrigo-gru40_s2_dev
+2026-11-05T06:06:25+00:00 done results/step10_cross/rodrigo-gru40_s2_dev (Policy rodrigo-gru40_s2_dev on data/dev: success 129/300 = 43.0% [37.5, 48.7] (95% Wilson), settled 126/300)
+2026-11-05T06:06:25+00:00 start results/step10_cross/rodrigo-gru40_s3_dev
+2026-11-05T06:15:41+00:00 done results/step10_cross/rodrigo-gru40_s3_dev (Policy rodrigo-gru40_s3_dev on data/dev: success 128/300 = 42.7% [37.2, 48.3] (95% Wilson), settled 120/300)
+2026-11-05T06:15:41+00:00 start results/step10_cross/rodrigo-gru40_s4_dev
+2026-11-05T06:24:29+00:00 done results/step10_cross/rodrigo-gru40_s4_dev (Policy rodrigo-gru40_s4_dev on data/dev: success 156/300 = 52.0% [46.4, 57.6] (95% Wilson), settled 154/300)
+2026-11-05T06:24:29+00:00 start results/step10_cross/rodrigo-ctrl_s0_dev
+2026-11-05T06:35:35+00:00 done results/step10_cross/rodrigo-ctrl_s0_dev (Policy rodrigo-ctrl_s0_dev on data/dev: success 4/300 = 1.3% [0.5, 3.4] (95% Wilson), settled 1/300)
+2026-11-05T06:35:45+00:00 analysis dev done
+2026-11-05T06:35:45+00:00 start results/step10_cross/rodrigo-k144_s0_hard
+2026-11-05T06:40:44+00:00 done results/step10_cross/rodrigo-k144_s0_hard (Policy rodrigo-k144_s0_hard on data/hard: success 115/200 = 57.5% [50.6, 64.1] (95% Wilson), settled 112/200)
+2026-11-05T06:40:44+00:00 start results/step10_cross/rodrigo-k144_s1_hard
+2026-11-05T06:46:22+00:00 done results/step10_cross/rodrigo-k144_s1_hard (Policy rodrigo-k144_s1_hard on data/hard: success 112/200 = 56.0% [49.1, 62.7] (95% Wilson), settled 108/200)
+2026-11-05T06:46:22+00:00 start results/step10_cross/rodrigo-k144_s2_hard
+2026-11-05T06:52:14+00:00 done results/step10_cross/rodrigo-k144_s2_hard (Policy rodrigo-k144_s2_hard on data/hard: success 93/200 = 46.5% [39.7, 53.4] (95% Wilson), settled 90/200)
+2026-11-05T06:52:14+00:00 start results/step10_cross/rodrigo-k144_s3_hard
+2026-11-05T06:57:15+00:00 done results/step10_cross/rodrigo-k144_s3_hard (Policy rodrigo-k144_s3_hard on data/hard: success 120/200 = 60.0% [53.1, 66.5] (95% Wilson), settled 114/200)
+2026-11-05T06:57:15+00:00 start results/step10_cross/rodrigo-k144_s4_hard
+2026-11-05T07:02:56+00:00 done results/step10_cross/rodrigo-k144_s4_hard (Policy rodrigo-k144_s4_hard on data/hard: success 94/200 = 47.0% [40.2, 53.9] (95% Wilson), settled 93/200)
+2026-11-05T07:02:56+00:00 start results/step10_cross/rodrigo-gru40_s0_hard
+2026-11-05T07:08:39+00:00 done results/step10_cross/rodrigo-gru40_s0_hard (Policy rodrigo-gru40_s0_hard on data/hard: success 96/200 = 48.0% [41.2, 54.9] (95% Wilson), settled 95/200)
+2026-11-05T07:08:39+00:00 start results/step10_cross/rodrigo-gru40_s1_hard
+2026-11-05T07:15:01+00:00 done results/step10_cross/rodrigo-gru40_s1_hard (Policy rodrigo-gru40_s1_hard on data/hard: success 70/200 = 35.0% [28.7, 41.8] (95% Wilson), settled 69/200)
+2026-11-05T07:15:01+00:00 start results/step10_cross/rodrigo-gru40_s2_hard
+2026-11-05T07:21:04+00:00 done results/step10_cross/rodrigo-gru40_s2_hard (Policy rodrigo-gru40_s2_hard on data/hard: success 87/200 = 43.5% [36.8, 50.4] (95% Wilson), settled 85/200)
+2026-11-05T07:21:04+00:00 start results/step10_cross/rodrigo-gru40_s3_hard
+2026-11-05T07:27:05+00:00 done results/step10_cross/rodrigo-gru40_s3_hard (Policy rodrigo-gru40_s3_hard on data/hard: success 87/200 = 43.5% [36.8, 50.4] (95% Wilson), settled 84/200)
+2026-11-05T07:27:05+00:00 start results/step10_cross/rodrigo-gru40_s4_hard
+2026-11-05T07:32:55+00:00 done results/step10_cross/rodrigo-gru40_s4_hard (Policy rodrigo-gru40_s4_hard on data/hard: success 105/200 = 52.5% [45.6, 59.3] (95% Wilson), settled 101/200)
+2026-11-05T07:33:02+00:00 analysis hard done
+2026-11-05T07:33:02+00:00 chain complete
