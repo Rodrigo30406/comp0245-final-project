@@ -860,3 +860,32 @@ recorded-set model (54 → 57 %). (iii) The their-DART hold seeds disagree stron
 whether the unfaded base noise during the orient phase causes it. Set F collected 14:49 (1998/2000 successes);
 chain 3 trains its three MLP seeds after the GRU their-DART hold seed 1 finishes; GRU hold seed 2 and the no-clock
 seeds 1–2 were dropped (low value: the clock was ruled out with seed 0, 143/300 vs 182).
+
+**5 Nov 20:10 — review of the teammates' `multi-agent` branch (commit 9ee7eb1, `obstacle_task/multi_agent.py`).**
+Goal of the branch: a two-robot version of the step-9 task as a source of "dynamic obstacle" demonstrations. Findings:
+1. The expert never steers around the other robot. `RobotNavigationController._reactive_avoidance` only scales both
+   wheels by a common factor in [0, 1] (or blocks an in-place turn); the geometric path stays the planned
+   start → waypoint → dock polyline. Probe (24 episodes, seed 7, 2 robots, their collector in a scratch worktree with
+   `models/` linked; `$S/ma_out/ma_probe`): max deviation from the planned segments 0.08–0.13 m for both robots (the
+   single-robot tracking error); replaying the logged states through the non-reactive controller shows the layer
+   changed the command in 26 % of robot 1's navigation steps (23/24 episodes, full stops in 10) and 8 % of robot 0's
+   (10/24). So the interaction is real but it is a yield/stop behaviour, not avoidance. Min pair clearance 0.29–0.89 m.
+2. Scenarios are filtered so that braking suffices: `sample_multi_agent_scenario` runs a kinematic preview with the
+   reactive layer and rejects any scenario with pair clearance < 0.30 m, obstacle clearance < 0.20 m or navigation
+   > 40 s (fixed priority: robot 1 yields to robot 0). Realised min clearance matched the planned one in all 24
+   episodes. The dataset cannot contain a detour around a moving object by construction.
+3. Privileged inputs: each controller receives `other_robots` with the other robot's pose, velocity, target,
+   `nav_done` and remaining planned segments; the learner would see only the 64-beam lidar (the other robot as two
+   cylinders). The action (brake or not) depends on the other's intention, which the scan does not carry → irreducible
+   ambiguity for the imitator. Our whole report rests on the state–action pair being reproducible from the policy's
+   observation.
+4. Weak dynamics: the partner follows a straight line at the nominal speed and becomes a static obstacle once parked;
+   no random velocities, course changes or unplanned crossings.
+5. Minor: episodes still end at the reach (no hold tail; the step-9 problem we just fixed), their DART (fades near the
+   goal), the commit adds a `RoboEnv` gitlink to a commit absent from the repo (fresh clones cannot resolve it), and the
+   test checks one episode plus geometry, never that avoidance occurs. The plumbing (N robots in one PyBullet world,
+   per-robot lidar, `(T, N, …)` logs, robot–robot contact, `collect.py --multi-agent`) is sound and reusable.
+Recommendation: a dynamic-obstacle expert for imitation must (a) act on the policy's own observation (lidar-driven
+repulsion / velocity-obstacle steering, not speed scaling from a privileged plan) and (b) leave the detour in the
+data instead of filtering it out; a scripted moving cylinder crossing the corridor at a random speed controls the
+difficulty without a second robot. Not feasible before the 6 Nov deadline; noted as future work.
