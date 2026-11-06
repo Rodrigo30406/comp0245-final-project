@@ -5,8 +5,10 @@ exact order to reproduce the datasets.
 
 The chapter has two kinds of content. Two rules are **definitions** fixed from the start (1.2): the base goal is
 computed from the robot's own start pose, and models only learn from episodes where the expert succeeded. Three
-ingredients were **experimental**, each tested against a control (1.3–1.5): DART noise on the executed command,
-randomised start poses, and the amount of data.
+**decisions** shaped the data (1.3–1.5): DART noise on the executed command, randomised start poses, and the amount
+of data. Each is presented in the same order: the motivation (an observed failure or a requirement of the brief), the
+hypothesis, the design used at collection time, and its verification afterwards as an ablation of the final model
+against a control.
 
 | collector | task | code | output |
 |---|---|---|---|
@@ -83,18 +85,26 @@ gives up, not *why* it fails; a successful drive takes at most 11 s (99th percen
 
 ---
 
-## 1.3 Experiment 1: learning to recover with DART noise
+## 1.3 Decision 1: DART noise, so that the data teach recovery
 
-**Problem.** The expert's trajectories are too clean: every demonstration follows the ideal path, so the data never show
-the expert correcting a deviation. A cloned policy makes small errors, leaves the demonstrated states within a second,
-and has no example of how to come back (the covariate shift of behaviour cloning).
+**Motivation: an observed failure.** The first models were trained on clean demonstrations (the expert's own
+trajectories, nominal start, `reaching_nominal_clean`). In closed loop they did not stay on the expert's path: the
+predicted commands were within the expert's range at the start and left it within the first second, as the rollout
+drifted (torque clipping from 0.35 s, wheel clipping from 0.55 s in the first pilot). The 21-input MLP never arrived;
+the MLP with egocentric inputs arrived within 5 cm in 57–66 of 205 episodes but clipped the command envelope in 27–33 %
+of its steps, and 25 of its 205 runs ended more than 10 m away from the target.
 
-**Idea.** Perturb the command the simulator *executes* while recording the expert's *clean* command as the label
-(DART, Laskey et al. 2017). The expert sees the perturbed state at the next step and corrects it, so the data contain
-the corrections, labelled with what the expert would do from there.
+**Diagnosis.** Clean data contain only states exactly on the expert's path. One centimetre off that path the regression
+has no data and extrapolates; the error then compounds, because each wrong command takes the robot further from the
+demonstrated states (the covariate shift of behaviour cloning).
 
-**Implementation** (`action_noise` in a collection spec; `make_perturbation` in `src/robot_learning/data/worker.py`):
-held Gaussian noise, one new draw every `hold_steps` = 50 steps (50 ms), added to the executed command:
+**Hypothesis and decision.** Perturb the command the simulator *executes* while recording the expert's *clean* command
+as the label (DART, Laskey et al. 2017). The expert sees the perturbed state at the next step and corrects it, so the
+data cover a tube around the path and the label inside the tube is the expert's *correction*: the learned map should
+pull the robot back towards the path instead of extrapolating away from it.
+
+**Design** (`action_noise` in a collection spec; `make_perturbation` in `src/robot_learning/data/worker.py`): held
+Gaussian noise, one new draw every `hold_steps` = 50 steps (50 ms), added to the executed command:
 
 | noise | value | why |
 |---|---|---|
@@ -105,14 +115,17 @@ held Gaussian noise, one new draw every `hold_steps` = 50 steps (50 ms), added t
 
 The noise stream is seeded from (noise seed, scenario seed), so a collection is reproducible bit for bit.
 
-**Noise level.** Doubling the noise (σ 1.0 rad/s / 2.0 N·m, same nominal scenarios) made the expert itself fail in 46 %
-of the episodes (555 / 1024 successes, against 895 / 1024 at the chosen level): with the success rule, the data would
-lose half of the demonstrations, mostly their final approach, which is what the noise is meant to enrich. The lower
-level was kept.
+**Noise level.** Twice this noise (σ 1.0 rad/s / 2.0 N·m, same nominal scenarios) made the expert itself fail in 46 %
+of the episodes (555 / 1024 successes against 895 / 1024): with the success rule the data lose half of the
+demonstrations, mostly their final approach, which is what the noise is meant to enrich, and the models trained on it
+were worse (22 against 100 arrivals within 5 cm with the egocentric MLP). The lower level was kept.
 
-**Result** (five seeds, 205 held-out geometries, stable arrival within 1 cm; the control is the same scenarios
-collected without noise: `reaching_nominal_clean.json`, `reaching_random_start_clean.json`,
-`reaching_validation_random_start_clean.json`):
+**First confirmation** (same egocentric MLP, nominal data): with DART the command never left the envelope (0 % clipping),
+no run ended beyond 10 m, and arrivals within 5 cm rose to 100 of 205.
+
+**Verification with the final model** (ablation; five seeds, 205 held-out geometries, stable arrival within 1 cm; the
+control is the same scenarios collected without noise: `reaching_nominal_clean`, `reaching_random_start_clean`,
+`reaching_validation_random_start_clean`):
 
 | same model, same scenarios | with DART | without DART |
 |---|---|---|
@@ -120,8 +133,9 @@ collected without noise: `reaching_nominal_clean.json`, `reaching_random_start_c
 | MLP-Ego-IC (the report's MLP) | **189 ± 9** | **0.0 ± 0.0** |
 | offline validation error (NRMSE) of MLP-Ego-IC | 0.13–0.14 | **0.09–0.10** |
 
-Without DART the policy fits the demonstrations *better* offline and never arrives in closed loop: its runs leave the
-workspace (median final distance 250–1500 m, wheels at the envelope 75–88 % of the time).
+Without DART the final model fits the demonstrations *better* offline and never arrives in closed loop: its runs leave
+the workspace (median final distance 250–1500 m, wheels at the envelope 75–88 % of the time), the failure that motivated
+DART in the first place.
 
 DART also matters during the final **hold** (base parked, arm reaching): with the noise on, the base keeps being nudged
 while the arm reaches, so the demonstrations show the arm compensating a moving base. That is why the reaching MLP
@@ -130,9 +144,9 @@ kept on during the hold (1.6).
 
 ---
 
-## 1.4 Experiment 2: randomised targets and start poses
+## 1.4 Decision 2: randomised targets and start poses
 
-### Targets: a grid over a bounded box
+### Targets: a grid over a bounded box (design)
 
 **Bounds.** The brief does not fix a range ("generalise to new targets and/or initial conditions"). In the plane the box
 is x, y ∈ [−2, 2] m (drives of up to 2.8 m from the origin). The **height range follows a reachability criterion**: once
@@ -145,7 +159,8 @@ the box is reserved for the generalisation banks (1.7).
 **Target grid** (`experiment_specs/collection/target_grid_16x8x8.json`, made by `robot_learning.data.sampling.stratified_grid`,
 regenerated and checked by `scripts/data/make_target_grid.py`): the box is cut into a **16 × 8 × 8 grid** (cells of
 0.25 m × 0.5 m × 0.0625 m) and one target is drawn uniformly inside each of the 1024 cells. Compared with 1024 uniform
-draws this guarantees that every region of the box is demonstrated (no holes, no clusters).
+draws this guarantees that every region of the box is demonstrated (no holes, no clusters) and makes a balanced
+validation possible.
 
 **Holdout chosen from geometry only.** 205 cells (20 %) are held out for validation, chosen *before* any target is
 jittered or any episode is simulated, so no outcome can influence the choice. The selection is a small integer program
@@ -160,7 +175,20 @@ The validation side is defined by the **target**: an episode whose target lies i
 whatever its start pose (`scripts/data/make_train_val_split.py`). No target geometry is ever seen in both training and
 validation, also across the nominal-start and random-start collections.
 
-### Start poses
+### Start poses (decision)
+
+**Motivation: a requirement of the brief.** The brief asks for a policy that generalises "to new targets and/or initial
+conditions". The lecturer's expert always starts at the origin facing +x, so data collected his way contain a single
+initial condition. A test bank with random start poses was therefore reserved from the start
+(`test_reserved_random_start`), and the random-start validation bank measures the same thing during development.
+
+**Hypothesis.** From the nominal start the first seconds of every episode look alike: an in-place turn from heading +x
+towards the target, then a drive. The expert's turn-and-drive law is demonstrated from one heading only, and a policy
+cannot learn it as a function of the robot's pose. Demonstrations from random positions and headings cover that law over
+the whole range of relative poses, so the policy should work from any start, and the approach phase should improve from
+the nominal start as well.
+
+**Design.**
 
 | condition | spec | bounds |
 |---|---|---|
@@ -168,37 +196,34 @@ validation, also across the nominal-start and random-start collections.
 | random start | `initial_base: {"mode": "uniform_xy", "x": [-2, 2], "y": [-2, 2], "yaw": [-π, π]}`, `"goal_reference": "start"` | position uniform in the same square as the targets, any heading; base goal from the start pose (1.2) |
 
 The random-start collection demonstrates every grid target **three times** with three different start poses
-(`reaching_random_start_dart`: 3 × 1024 episodes, the grid targets repeated three times).
+(`reaching_random_start_dart`: 3 × 1024 episodes, the grid targets repeated three times). The expert handles random
+start poses without extra failures (8.7 % against 12.6 % from the nominal start, 1.2).
 
-**Result** (MLP-Ego-IC, five seeds, 1 cm; control: the nominal-start collection alone):
+**Verification with the final model** (ablation; MLP-Ego-IC, five seeds, 1 cm; control: the nominal-start collection
+alone):
 
 | training data | nominal validation | random-start validation |
 |---|---|---|
 | nominal starts only (721 successful episodes) | 152 ± 25 | **62 ± 15** |
 | nominal + random starts (3 221) | 189 ± 9 | **193 ± 9** |
 
-A policy trained on the lecturer's single start pose does not transfer to other start poses; with the random starts it
-is as good from anywhere as from the origin, and better from the origin too.
+Both parts of the hypothesis hold: trained on the lecturer's single start pose the policy does not transfer to other
+start poses (62 of 205); with the random starts it is as good from anywhere as from the origin, and better from the
+origin too (152 → 189).
 
 ---
 
-## 1.5 Experiment 3: how much data
+## 1.5 Decision 3: how much data
 
-**How the amount was set.** The size is not a free number: it follows from two coverage choices, and a learning curve
-then checks that it is enough.
+### Design: the amount follows from coverage (decided before collecting)
+
+The size was not tuned; it follows from the two coverage choices above:
 
 1. *Target coverage*: one target per cell of the 16 × 8 × 8 grid, i.e. 1024 target positions, one every 25 cm in x,
    50 cm in y and 6 cm in height; 819 of them are for training.
 2. *Start coverage*: each target demonstrated once from the nominal start and three times from random starts, i.e.
    4 × 1024 = 4096 episodes (about 40 min of collection with 28 processes).
 3. Removing the validation cells and the expert failures (re-collected once) leaves **3 221 training episodes**.
-4. *Check*: train the final model on growing random subsets of these 3 221 episodes (below). If the result were still
-   climbing steeply at the full size, more data would be needed; it is not: the last 821 episodes (+34 %) add 4
-   arrivals on the nominal validation (195 → 199) and the offline error stopped improving at 1 600 episodes. The
-   amount is therefore at the knee of the curve: enough, with little to gain from collecting more.
-
-In one sentence, for the report: *the dataset size was set by coverage (one target per cell of a 16 × 8 × 8 grid, four
-start poses per target), and a learning curve shows it sits at saturation: 34 % more episodes add 2 % more arrivals.*
 
 **The training mixture** (every reaching model of the report):
 
@@ -216,13 +241,19 @@ levels, not to be confused:
   start (721 episodes) and three times from random starts (2 500 episodes, re-collections included);
 - **rows** (state → command pairs, what the network is fitted on): about 35 M, since an episode lasts ~12.5 s at 1 kHz.
 
- The closed-loop validation sets are the 205 nominal held-out
-geometries and the 205 held-out geometries of the random-start bank `reaching_validation_random_start_dart`.
-Collection cost: about 10 min per 1024 episodes with 28 worker processes.
+The closed-loop validation sets are the 205 nominal held-out geometries and the 205 held-out geometries of the
+random-start bank `reaching_validation_random_start_dart`.
 
-**Learning curve** with the final recipe (MLP-Ego-IC, seed 0). Each point is a random subset of the 3 221 training
-episodes (one fixed permutation, `training_episode_cap` option of the trainer), so every point keeps the mixture's
-proportion of about 22 % nominal and 78 % random-start episodes; stable arrivals within 1 cm of 205:
+### Verification: a learning curve with the final model (ablation, after training)
+
+Whether an amount of data is *enough* can only be judged with the method that will use it, so the check is an ablation
+of the final recipe: retrain it from scratch on growing subsets of the same training episodes and see whether the
+result is still climbing at the full size. If it were, more data would be collected; the validation set (205 fixed
+geometries) is the same for every point.
+
+Each point is a random subset of the 3 221 training episodes (one fixed permutation, `training_episode_cap` option of
+the trainer), so every point keeps the mixture's proportion of about 22 % nominal and 78 % random-start episodes.
+MLP-Ego-IC, seed 0, stable arrivals within 1 cm of 205:
 
 | training episodes | 400 | 800 | 1 600 | 2 400 | 3 221 |
 |---|---|---|---|---|---|
@@ -232,16 +263,22 @@ proportion of about 22 % nominal and 78 % random-start episodes; stable arrivals
 | random-start validation | 137 | 127 | 174 | 187 | 200 |
 | offline NRMSE | 0.209 | 0.189 | 0.142 | 0.142 | 0.139 |
 
-- The closed-loop result keeps improving up to the full set while the offline error has already flattened at 1 600:
-  the extra episodes add coverage of rare states (the arm's ignition, the parked base), which the average error hardly
-  sees.
+- **Saturation.** The last 821 episodes (+34 %) add 4 arrivals on the nominal validation (195 → 199), and the offline
+  error stopped improving at 1 600 episodes. The amount sits at the knee of the curve: enough, with little to gain from
+  collecting more.
+- The closed-loop result keeps improving after the offline error has flattened: the extra episodes add coverage of rare
+  states (the arm's ignition, the parked base), which the average error hardly sees.
 - Up to ~2 400 episodes the curve mixes two effects, more distinct targets and more start poses per target; from 2 400
   on every training cell is covered and the last gain (195 → 199 nominal, 187 → 200 random start) comes from more start
   poses per target only.
-- Read together with experiment 2: at about the same size, 721 nominal-only episodes give 62 ± 15 on the random-start
+- Read together with decision 2: at about the same size, 721 nominal-only episodes give 62 ± 15 on the random-start
   validation while 800 mixed episodes give 127 (nominal validation 152 ± 25 against 148). The diversity of start poses
   matters more than the number of episodes.
 - The curve is one seed (the end points have five); it is a sizing argument, not a precise scaling law.
+
+In one sentence, for the report: *the dataset size was set by coverage (one target per cell of a 16 × 8 × 8 grid, four
+start poses per target), and a learning curve with the final model shows it sits at saturation: 34 % more episodes add
+2 % more arrivals.*
 
 ---
 
