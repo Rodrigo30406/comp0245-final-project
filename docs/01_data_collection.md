@@ -275,6 +275,13 @@ MLP-Ego-IC, seed 0, stable arrivals within 1 cm of 205:
   validation while 800 mixed episodes give 127 (nominal validation 152 ± 25 against 148). The diversity of start poses
   matters more than the number of episodes.
 - The curve is one seed (the end points have five); it is a sizing argument, not a precise scaling law.
+- **Balanced coverage as the parameter** (one target per coarse block of the grid, 128 / 256 / 512 targets, every start
+  pose of each kept, so each point has an even coverage and only the density changes): 1 cm nominal 80 / 150 / 190 for
+  506 / 1 011 / 2 000 episodes. At the small end this is *worse* than the random subsets (400 random episodes: 142),
+  because the random ones spread the same budget over more distinct targets (331 against 128). The number of distinct
+  targets is what drives the curve; both versions reach the full-set level at ~500 targets / ~2 000 episodes, which
+  confirms that the 819 targets × 4 starts of the training set are enough (`experiment_specs/data_size/` and
+  `training_target_cells` option of the trainer; one seed per point).
 
 In one sentence, for the report: *the dataset size was set by coverage (one target per cell of a 16 × 8 × 8 grid, four
 start poses per target), and a learning curve with the final model shows it sits at saturation: 34 % more episodes add

@@ -58,8 +58,17 @@ Data size (MLP-Ego-IC, seed 0; random subsets of the 3 221 training episodes kee
 | random start 1 cm | 137 | 127 | 174 | 187 | 200 |
 | offline NRMSE | 0.209 | 0.189 | 0.142 | 0.142 | 0.139 |
 
-A balanced-coverage version (one target per coarse grid block, 128 / 256 / 512 targets, all their start poses) is
-running; its rows will be added here.
+Balanced coverage (one target per coarse grid block, every start pose of each target kept; seed 0):
+
+| targets (episodes) | 128 (506) | 256 (1 011) | 512 (2 000) | 819 (3 221, full) |
+|---|---|---|---|---|
+| nominal 1 cm | 80 | 150 | 190 | 199 |
+| random start 1 cm | 92 | 145 | 190 | 200 |
+| offline NRMSE | 0.222 | 0.155 | 0.141 | 0.139 |
+
+At equal episode count, fewer well-spread targets with four start poses each are worse than more scattered targets (506
+balanced: 80; 400 random: 142): the curve is driven by the number of distinct targets. Both curves reach the full-set
+level at ~500 targets / ~2 000 episodes (512 balanced: 190 / 190, inside the five-seed range of the full set, 175–199).
 
 ### 1.3 Generalisation beyond the training range (three seeds, seeds 0 / 1 / 2; stable arrivals of 205)
 
