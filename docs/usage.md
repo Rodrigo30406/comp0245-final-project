@@ -245,7 +245,11 @@ The group's obstacle-task code lives in `controlled_experiments/` (link the robo
 | moving obstacle: watch the expert | `$PY scripts/obstacle/dynamic_obstacle.py --seed 1 --episodes 0-11 --gif --out-dir OUT` |
 | moving obstacle: training collection / policy test | `… dynamic_obstacle.py --seed 3 --episodes 0-1599 --dart --workers 28 --out-dir OUT` / `--seed 4 --episodes 0-99 --policy RUN_DIR` |
 
-Parameters of each: [01_data_collection.md](01_data_collection.md) section 1.8.
+`RUN_DIR` can be any trained model of `weights/obstacle/` (e.g. `weights/obstacle/static_mlp_seed0`,
+`weights/obstacle/dynamic_mlp_seed0`). The report's tables without simulating:
+`python3 scripts/obstacle/dev2_table.py` (static, from `results/obstacle/static_dev2/`) and the per-scene rows of
+`results/obstacle/dynamic_test/` (moving). Parameters of each: [01_data_collection.md](01_data_collection.md) section 1.8;
+what the tasks and the data changes are: [07_obstacles.md](07_obstacles.md).
 
 ---
 

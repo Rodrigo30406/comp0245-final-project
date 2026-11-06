@@ -21,8 +21,7 @@ Two properties of the simulator shaped the design: the base slides sideways when
 driving (straight, heading held); and the base keeps rotating after an in-place turn, so a yaw-rate feedback is added.
 The expert reads the cylinder's position and velocity from the scenario (privileged); a learner sees them only through
 the 64-beam lidar (velocity needs two scans or memory). Mode "blind" is the plain reaching template (control).
-Design history of the expert (single-scan repulsion, then the template with a velocity-obstacle override, then one
-cost): see docs/08_dynamic_obstacles.md.
+Documented in docs/07_obstacles.md, section 7.2.
 
 Modes of use (default pixi env of RoboEnv, from the project root; the group's obstacle task code must be importable,
 see OBSTACLE_TASK_DIR below):

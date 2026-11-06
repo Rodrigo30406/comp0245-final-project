@@ -88,7 +88,7 @@ for another start pose, `--dead-band 0.45` for the +DB variant and `--headless` 
 | train a policy | `scripts/train_mlp.py`, `train_gru.py`, `train_transformer.py` (`$PYML`) | [02 inputs](docs/02_inputs_and_outputs.md), [03 models](docs/03_models.md) |
 | evaluate in closed loop | `scripts/evaluate_policy.py --split BANK.json --model LABEL=RUN --workers 16` | [04 evaluation](docs/04_evaluation.md) |
 | statistics over seeds | `scripts/evaluation/seed_stats.py EVAL_DIR [...]` | [04](docs/04_evaluation.md) |
-| obstacle tasks | `scripts/obstacle/` | [01](docs/01_data_collection.md) 1.6, 1.8; [results](docs/results.md) 2–3 |
+| obstacle tasks | `scripts/obstacle/` | [07 obstacles](docs/07_obstacles.md); [results](docs/results.md) 2–3 |
 
 **[`docs/usage.md`](docs/usage.md) is the task-by-task guide** (collect, split, train, evaluate, tables and figures,
 obstacles: each with its command, parameters and what to choose), ending with what to run for every table and
@@ -106,8 +106,8 @@ src/robot_learning/
 scripts/                  entry points (collect, train, evaluate, run_policy, simulate) and data/, evaluation/,
                           figures/, obstacle/ tools
 experiment_specs/         expert rules, collection specs, training recipes, evaluation protocols, data-size subsets
-weights/                  the 55 trained models of the report (portable NumPy files)
-results/evaluations/      summaries of the 85 closed-loop evaluations behind the tables
+weights/                  the 55 reaching and 14 obstacle models of the report (portable NumPy files)
+results/                  evaluations/: summaries of the 85 reaching evaluations; obstacle/: per-scene rows of the obstacle tests
 docs/                     one chapter per part of the report, results.md, usage.md, figures/
 controlled_experiments/   the group's controlled experiments and obstacle-task code (own README)
 final/robotnik_arm_task/  the lecturer's starter code, unchanged

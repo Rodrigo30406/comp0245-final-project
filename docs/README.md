@@ -15,7 +15,6 @@ Reading order, following the structure of the report. Each chapter states the cr
 | 4 | [Evaluation](04_evaluation.md): closed-loop protocol, metrics, banks, offline error vs closed-loop success, commands | done |
 | 5 | [Arm ignition](05_arm_ignition.md): the arm that never starts, the ignition copies, memory | done |
 | 6 | [Base drift](06_base_drift.md): park, creep and restart; dead band, categorical wheels, memory | done |
-| 7 | Static obstacle avoidance (lidar) | to do |
-| 8 | Dynamic obstacles | to do |
+| 7 | [Obstacles](07_obstacles.md): static (what we changed in the recordings, 54 → 80 %) and moving (our avoidance expert, preliminary clone) | done |
 
 The full research log (every experiment in the order it was run) is in the `rodrigo` branch.

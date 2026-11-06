@@ -1,0 +1,15 @@
+Protocol v2.0 (T_MAX 60 s, contact ends the run)
+Policy tf28lidar_p40_seed2 on /home/labia10/repos/comp0245-step9/final/robotnik_arm_task/data/obstacle/dev2: success 43/300 = 14.3% [10.8, 18.8] (95% Wilson), settled 19/300
+Stop reasons: collision 2, reached 43, stalled 46, timeout 209
+Policy step time: mean 0.223 ms, p99 1.520 ms (median over episodes; control period 1 ms)
+Recorded clean expert reached / this policy succeeded (300 episodes): both 43, expert only 257, policy only 0, neither 0
+v1.1 held_10s (EE < 15 mm for 10 s after the first reach): 0/300 = 0.0% [0.0, 1.3]; extended hold ended: completed 43, not reached 257
+v1.1 stable arrival (EE within tol for >= 0.5 s, ending by 40 s): 5cm 173/300 = 57.7% [52.0, 63.1], 2cm 74, 1cm 22
+v1.1 parked (ring distance < 0.2 m and base still for >= 1.0 s): 292/300 = 97.3% [94.8, 98.6]; arm extended (EE > 0.1 m from its start in the base frame): 282/300 = 94.0% [90.7, 96.2] (both up to the v1 stop point)
+v2.0 collision: 2/300 = 0.7% [0.2, 2.4]; links robot_back_right_wheel 1, robot_j2s7s300_link_finger_tip_2 1
+v2.0 passed_obstacle: 300/300 = 100.0% [98.7, 100.0]; no_pass (never passed, no collision): 0/300 = 0.0% [0.0, 1.3]
+v2.0 side_taken == scenario_side among passes: 227/300
+v2.0 docked (= v1.1 parked): 292/300 = 97.3% [94.8, 98.6]; docked_clean: 292/300 = 97.3% [94.8, 98.6] (95% Wilson)
+v2.0 min_clearance (m): min 0.000, median 0.376
+v2.0 inside the ambiguous band: success 14/137 = 10.2% [6.2, 16.4], docked_clean 134/137 = 97.8% [93.8, 99.3]
+v2.0 outside the ambiguous band: success 29/163 = 17.8% [12.7, 24.4], docked_clean 158/163 = 96.9% [93.0, 98.7]

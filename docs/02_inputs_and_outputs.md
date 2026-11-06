@@ -103,4 +103,4 @@ Same recipe, same data; MLP-Base = 21 inputs + clock (22), MLP-Ego = + the six e
   in 199. The arm can only finish from a base parked at the right place, and placing the base needs the target in the
   robot's frame.
 - The lidar variant (92 inputs: the 28 + 64 ranges in the base frame, beam 0 forward, counter-clockwise, clipped at 4 m)
-  is used for the obstacle tasks only ([07_static_obstacle.md](07_static_obstacle.md)).
+  is used for the obstacle tasks only ([07_obstacles.md](07_obstacles.md)).

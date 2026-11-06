@@ -105,4 +105,4 @@ report's runs: identical traces and metrics for the expert and MLP-Ego-IC.
 
 Static and moving obstacles are evaluated in the group's harness (`controlled_experiments/obstacle_task/evaluate.py`,
 with `scripts/obstacle/rl_obstacle_policy.py:make_policy` as the policy) and with `scripts/obstacle/dynamic_obstacle.py
---policy`; see [07](07_static_obstacle.md) and [08](08_dynamic_obstacles.md).
+--policy`; see [07](07_obstacles.md).

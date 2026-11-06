@@ -127,9 +127,10 @@ the dataset in float32.
 
 **Task** (the group's obstacle task, protocol v2.0): one cylinder between the start and a target 3.5–5 m away, a 64-beam
 planar lidar added to the observations (variant `raw21_targetpolar_clock_lidar64_v1`, 92 inputs); the expert drives
-around it through a waypoint, docks and reaches. **Evaluation bank dev2**: 300 scenes (seed 300), 60 s episodes. Training
-set train2: 2000 scenes (seed 3), collected with the hold (10 s after the first reach) and our DART noise (sets D / B / F,
-[01_data_collection.md](01_data_collection.md) section 1.6). Three seeds per row unless marked.
+around it, docks and reaches. **Evaluation**: 300 unseen scenes (dev2, seed 300), 60 s episodes. **Training**: 2000
+scenes. *Original recordings*: the group's collection (stops at the first reach). *Improved recordings*: the expert kept
+running 10 s after the reach, DART perturbations on the executed commands, and the base still perturbed during that hold
+([07_obstacles.md](07_obstacles.md)). Three seeds per row.
 
 | metric | definition |
 |---|---|
@@ -137,30 +138,23 @@ set train2: 2000 scenes (seed 3), collected with the hold (10 s after the first 
 | held 10 s | after reaching, within 15 mm for 10 s |
 | stable 1 cm | within 1 cm for 0.5 s |
 | docked clean | base within 0.2 m of the docking ring and still for 1 s, before any contact |
-| collisions | robot-cylinder contacts |
+| contacts | robot-cylinder contacts |
 
-Percent of the 300 dev2 scenes, mean ± sd (min–max):
+Percent of the 300 scenes, mean ± sd (min–max):
 
-| model, training set | success | held 10 s | stable 1 cm | docked clean | collisions |
+| model, training data | success | held 10 s | stable 1 cm | docked clean | contacts |
 |---|---|---|---|---|---|
 | expert | 100 | 100 | 100 | 100 | 0 |
 | group's baseline L2 (side classifier + base and arm networks), seed 0 | 60.0 | 9 | 49 | 97 | 0 |
-| MLP-Ego-IC + lidar, recorded set (stops at the reach) | 54 ± 6 (48–61) | 8 ± 4 | 45 ± 8 | 93 ± 5 | 0 |
-| MLP-Ego-IC + lidar, hold, group's noise | 62 ± 14 (53–78) | 18 ± 17 | 55 ± 16 | 97 ± 2 | 3 ± 3 |
-| MLP-Ego-IC + lidar, set D (hold, our DART) | 73 ± 2 (70–74) | 59 ± 3 | 71 ± 3 | 89 ± 5 | 1 ± 2 |
-| **MLP-Ego-IC + lidar, set B (hold, our DART + base noise in the hold)** | **80 ± 8 (71–87)** | **77 ± 9 (67–85)** | 80 ± 8 | 90 ± 5 | 1 ± 0 |
-| MLP-Ego-IC + lidar, set F (B + base noise faded near the dock) | 77 ± 26 (47–97) | 71 ± 26 (44–96) | 76 ± 26 | 93 ± 3 | 1 ± 1 |
-| MLP-Ego-IC + lidar, set B + DB 0.45 | 47 ± 22 (26–71) | 45 ± 23 | 47 ± 22 | 89 ± 5 | 0 |
-| GRU-Ego + lidar, recorded set | 13 ± 3 (9–15) | 1 ± 1 | 7 ± 2 | 97 ± 1 | 8 ± 8 |
-| GRU-Ego + lidar, set B | 55 ± 9 (45–60) | 38 ± 5 (32–42) | 51 ± 8 | 99 ± 1 | 0 |
-| TF-Ego + lidar, recorded set (700 training episodes, memory) | 12 ± 4 (7–15) | 0 | 8 ± 3 | 97 ± 2 | 0 |
+| MLP-Ego-IC + lidar, original recordings | 54 ± 6 (48–61) | 8 ± 4 | 45 ± 8 | 93 ± 5 | 0 |
+| **MLP-Ego-IC + lidar, improved recordings** | **80 ± 8 (71–87)** | **77 ± 9 (67–85)** | 80 ± 8 | 90 ± 5 | 1 ± 0 |
+| GRU-Ego + lidar, improved recordings | 55 ± 9 (45–60) | 38 ± 5 (32–42) | 51 ± 8 | 99 ± 1 | 0 |
+| TF-Ego + lidar, original recordings | 12 ± 4 (7–15) | 0 | 8 ± 3 | 97 ± 2 | 0 |
 
 Reading: the obstacle itself is solved (0–1 % contacts, docked in 90–99 %); the failures are the last centimetre and the
-hold, as in reaching. The hold data alone do not fix the hold (18 %); keeping the base perturbed during the hold, so the
-demonstrations show the arm compensating a moving base, does (8 → 77 % held). Set F has the best single run (seed 1:
-290 / 300 = 97 %) and the widest spread; set B is the stable choice. The wheel dead band, which helps in reaching, hurts
-here (80 → 47 %): it removes the small final turn and the base parks misaligned. Limitations and untried fixes:
-[07_static_obstacle.md](07_static_obstacle.md).
+hold, as in reaching, and what fixes them is the data (8 → 77 % held), not a memory model. Regenerate:
+`python3 scripts/obstacle/dev2_table.py --runs results/obstacle/static_dev2`. Discussion and limitations:
+[07_obstacles.md](07_obstacles.md).
 
 ---
 
@@ -185,7 +179,8 @@ contacts).
 | the 54 scenes where the blind template collides (avoidance needed) | 16 | 22 |
 | the 46 scenes where it does not | 18 | 4 |
 
-Offline validation NRMSE: MLP 0.239, GRU 0.200 (static obstacle: MLP 0.11–0.16, GRU 0.08–0.10).
+Offline validation NRMSE: MLP 0.239, GRU 0.200 (static obstacle: MLP 0.11–0.16, GRU 0.08–0.10). Per-scene rows:
+`results/obstacle/dynamic_test/`.
 
 Reading: the expert solves the task (100 / 100, 0 contacts); a single-scan MLP learns part of the avoidance (it halves
 the contacts of the blind template and succeeds in 16 scenes that need avoidance), but it does not learn the recovery

@@ -67,7 +67,7 @@ rows of the expert's arm tracking the target while its base is being pushed (the
 the reach rows of the nominal data), and the policy learned that compensation. What the residual still costs is the
 **hold**: the base keeps moving and the end effector drifts away again after reaching (at 40 s only 25 % of the episodes
 are within 1 cm, [05_arm_ignition.md](05_arm_ignition.md), first figure). The same mechanism, without the DART noise in
-the hold, broke the static-obstacle task ([07_static_obstacle.md](07_static_obstacle.md)).
+the hold, broke the static-obstacle task ([07_obstacles.md](07_obstacles.md)).
 
 ## 6.4 Making the zero exact
 

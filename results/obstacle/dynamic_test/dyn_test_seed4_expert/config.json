@@ -1,0 +1,18 @@
+{
+ "set_name": "dyn_test_seed4_expert",
+ "seed": 4,
+ "mode": "dwa",
+ "episodes": "0-99",
+ "hold_s": 10.0,
+ "policy": null,
+ "noise_frac": 0.0,
+ "noise_v": 0.0,
+ "noise_w": 0.0,
+ "noise_torque": 0.0,
+ "noise_hold": 0.05,
+ "noise_fade_base": 0.5,
+ "noise_fade_arm": 0.0,
+ "hold_wheel_noise": 0.0,
+ "max_steps": 75000,
+ "collector": "scripts/obstacle/dynamic_expert.py"
+}

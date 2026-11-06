@@ -1,7 +1,7 @@
 """Summarise the obstacle-task (step 9) dev2 evaluations of this project's policies: per family mean +- sd and range
 over seeds of the harness metrics (protocol v2.0 rollouts.csv), plus a failure anatomy per family.
 
-  python scripts/obstacle/dev2_table.py [--runs runs/obstacle] [--eval-set dev2]
+  python scripts/obstacle/dev2_table.py [--runs results/obstacle/static_dev2] [--eval-set dev2]
 Families are the run directories runs/obstacle/step9_<tag>_seed<k>_<set>; the expert and other single runs are listed
 alone. Nothing is recomputed from the simulation: every number comes from the harness's per-episode rows.
 """
@@ -16,13 +16,13 @@ import numpy as np
 
 ROOT = Path(__file__).resolve().parents[2]
 LABELS = {"expert": "expert v2 (recorded clean)",
-          "mlp28lidar_trig144": "MLP-Ego-IC+lidar, recorded", "gru28lidar_patience40": "GRU-Ego+lidar, recorded",
-          "tf28lidar_p40": "TF-Ego+lidar, recorded",
+          "mlp28lidar_trig144": "MLP-Ego-IC+lidar, original recordings", "gru28lidar_patience40": "GRU-Ego+lidar, original recordings",
+          "tf28lidar_p40": "TF-Ego+lidar, original recordings",
           "mlp28lidarnoclock_trig144": "MLP-Ego-IC+lidar, recorded, no clock",
           "mlp28lidarhold_trig144": "MLP, hold, their DART", "gru28lidarhold_patience40": "GRU, hold, their DART",
           "mlp28lidarholdD_trig144": "MLP, hold, our DART (D)", "gru28lidarholdD_patience40": "GRU, hold, our DART (D)",
-          "mlp28lidarholdB_trig144": "MLP, hold, our DART+base noise (B)",
-          "gru28lidarholdB_patience40": "GRU, hold, our DART+base noise (B)",
+          "mlp28lidarholdB_trig144": "MLP-Ego-IC+lidar, improved recordings",
+          "gru28lidarholdB_patience40": "GRU-Ego+lidar, improved recordings",
           "mlp28lidarholdF_trig144": "MLP, hold, our DART+base noise+fade (F)",
           "gru28lidarholdF_patience40": "GRU, hold, our DART+base noise+fade (F)"}
 # tag suffixes after _seedN that name an evaluation variant of the same model family (appended to the label)
@@ -78,7 +78,7 @@ def metrics(rows):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--runs", default=str(ROOT / "runs/obstacle"))
+    ap.add_argument("--runs", default=str(ROOT / "results/obstacle/static_dev2"))
     ap.add_argument("--eval-set", default="dev2")
     args = ap.parse_args()
     families = defaultdict(dict)

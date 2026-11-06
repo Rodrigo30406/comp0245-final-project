@@ -30,6 +30,19 @@ Single seed (seed 0): `v2_mlp28_trig144_bal{128,256,512}` (data design validatio
 `v2_mlp28_trig144_cap{400,800,1600,2400}` (random subsets), `v2_mlp28_trig16`, `v2_mlp28_trig512` (number of ignition
 copies), `v2_mlp22raw_trig144` (raw inputs with copies).
 
+Obstacle tasks (`obstacle/`, 92 inputs: the 21 observations + a 64-beam lidar scan; [docs/07_obstacles.md](../docs/07_obstacles.md)):
+
+| directory | report name | training data |
+|---|---|---|
+| `obstacle/static_mlp_seed{0,1,2}` | MLP-Ego-IC + lidar (best static model) | improved recordings (`splits/static_obstacle_split.json`) |
+| `obstacle/static_gru_seed{0,1,2}` | GRU-Ego + lidar | improved recordings |
+| `obstacle/static_tf_seed{0,1,2}` | TF-Ego + lidar | original recordings (`splits/static_obstacle_recorded_split.json`) |
+| `obstacle/static_mlp_untreated_seed{0,1,2}` | MLP-Ego-IC + lidar, before the data changes | original recordings |
+| `obstacle/dynamic_mlp_seed0`, `obstacle/dynamic_gru_seed0` | moving obstacle, MLP-Ego-IC / GRU-Ego + lidar | 1600 avoidance-expert episodes (`splits/dynamic_obstacle_split.json`) |
+
+They run inside the obstacle harnesses (they need the lidar scan), not with `run_policy.py`: see
+[docs/usage.md](../docs/usage.md) section 7.
+
 Splits: `splits/training_mixture_split.json` (the training mixture of every model except the controls),
 `clean_mixture_split.json` (no DART), `nominal_only_split.json`.
 
