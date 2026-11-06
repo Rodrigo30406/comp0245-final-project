@@ -1,0 +1,110 @@
+{
+  "expert": {
+    "arm_joint_limit_violation_steps": 1429956,
+    "attempted": 205,
+    "invalid_or_missing": 0,
+    "mean_final_clipping_fraction_per_command": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "mean_final_distance_valid_only_m": 0.0027700859954238144,
+    "mean_penalized_final_distance_m": 0.0027700859954238144,
+    "mean_penalized_time_average_distance_m": 0.1425422630782568,
+    "success_by_tolerance": {
+      "0.01": 205,
+      "0.02": 205,
+      "0.05": 205
+    },
+    "valid_full_horizon": 205
+  },
+  "mlp28_trig144_seed0": {
+    "arm_joint_limit_violation_steps": 1573266,
+    "attempted": 205,
+    "invalid_or_missing": 0,
+    "mean_final_clipping_fraction_per_command": [
+      0.019309390243902436,
+      0.018840853658536588,
+      0.018840853658536588,
+      0.019309390243902436,
+      0.01923987804878049,
+      0.023326951219512195,
+      0.01999256097560976,
+      0.018602926829268274,
+      0.018483414634146343,
+      0.018813414634146347,
+      0.01848621951219512
+    ],
+    "mean_final_distance_valid_only_m": 1.5831533604832946,
+    "mean_penalized_final_distance_m": 1.5831533604832946,
+    "mean_penalized_time_average_distance_m": 0.5527785268764955,
+    "success_by_tolerance": {
+      "0.01": 50,
+      "0.02": 186,
+      "0.05": 202
+    },
+    "valid_full_horizon": 205
+  },
+  "mlp28_trig144_seed1": {
+    "arm_joint_limit_violation_steps": 2162449,
+    "attempted": 205,
+    "invalid_or_missing": 0,
+    "mean_final_clipping_fraction_per_command": [
+      0.06072146341463416,
+      0.058874390243902425,
+      0.058874390243902425,
+      0.06072146341463416,
+      0.031095365853658536,
+      0.04772560975609757,
+      0.034338292682926826,
+      0.042258658536585364,
+      0.03583280487804879,
+      0.04191463414634149,
+      0.02739060975609755
+    ],
+    "mean_final_distance_valid_only_m": 1.9117696108241924,
+    "mean_penalized_final_distance_m": 1.9117696108241924,
+    "mean_penalized_time_average_distance_m": 0.4634607940413877,
+    "success_by_tolerance": {
+      "0.01": 36,
+      "0.02": 196,
+      "0.05": 200
+    },
+    "valid_full_horizon": 205
+  },
+  "mlp28_trig144_seed2": {
+    "arm_joint_limit_violation_steps": 2172367,
+    "attempted": 205,
+    "invalid_or_missing": 0,
+    "mean_final_clipping_fraction_per_command": [
+      0.01815256097560975,
+      0.0197480487804878,
+      0.0197480487804878,
+      0.01815256097560975,
+      0.008603414634146343,
+      0.021096341463414648,
+      0.018170487804878045,
+      0.009433902439024377,
+      0.010727804878048783,
+      0.01094378048780488,
+      0.010733536585365853
+    ],
+    "mean_final_distance_valid_only_m": 0.2955000357930376,
+    "mean_penalized_final_distance_m": 0.2955000357930376,
+    "mean_penalized_time_average_distance_m": 0.23636190718670497,
+    "success_by_tolerance": {
+      "0.01": 37,
+      "0.02": 184,
+      "0.05": 199
+    },
+    "valid_full_horizon": 205
+  }
+}

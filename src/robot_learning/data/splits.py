@@ -6,17 +6,35 @@ Trainers remove the expert failures afterwards with `drop_expert_failures` (rule
 """
 import hashlib
 import json
+import os
 from pathlib import Path
 
 import numpy as np
 
+from robot_learning.settings import PROJECT_ROOT
 from .schema import dataset_schema
 from .storage import read_json, sha256
 
 
+def resolve_dataset(path):
+    """The directory of a dataset recorded in a split or a training run. Splits store absolute paths of the machine that
+    made them; when that path does not exist, the dataset is looked up by its directory name (unique: timestamp, name and
+    hash) under $DATASETS_ROOT and under datasets/ of this project, so copied datasets work on any machine."""
+    path = Path(path)
+    if path.is_dir():
+        return path.resolve()
+    roots = [Path(os.environ["DATASETS_ROOT"])] if os.environ.get("DATASETS_ROOT") else []
+    roots.append(PROJECT_ROOT / "datasets")
+    found = [d for root in roots if root.is_dir() for d in root.rglob(path.name) if (d / "dataset.json").is_file()]
+    if len(found) != 1:
+        raise FileNotFoundError(f"dataset {path.name} not found (recorded at {path}); copy it under datasets/ or set "
+                                f"DATASETS_ROOT" if not found else f"dataset {path.name} found more than once: {found}")
+    return found[0].resolve()
+
+
 def inventory(directory):
     """One validated record per episode of a complete dataset (raises on any incomplete or altered episode)."""
-    directory = Path(directory).resolve()
+    directory = resolve_dataset(directory)
     schema, expected = read_json(directory / "schema.json"), dataset_schema()
     if (schema["version"] != expected["version"] or schema["observation_names"] != expected["observation_names"]
             or schema["action_names"] != expected["action_names"]):
@@ -60,16 +78,18 @@ def extra_inventory(saved):
         raise ValueError("extra_datasets must be a list of distinct dataset directories")
     records = []
     for extra in extras:
-        directory = Path(extra).resolve()
-        if str(directory) == str(Path(saved["dataset"]).resolve()):
+        # the tag is the path as recorded (records are compared as written in the split); the data are read from
+        # wherever the dataset is found (resolve_dataset)
+        tag = str(Path(extra).resolve())
+        if resolve_dataset(extra) == resolve_dataset(saved["dataset"]):
             raise ValueError("extra_datasets must not repeat the primary dataset")
-        records.extend({**r, "dataset": str(directory)} for r in inventory(directory))
+        records.extend({**r, "dataset": tag} for r in inventory(extra))
     return records
 
 
 def record_directory(record, default):
     """Directory an inventory record was read from (the primary dataset unless tagged)."""
-    return Path(record["dataset"]) if "dataset" in record else Path(default)
+    return resolve_dataset(record["dataset"]) if "dataset" in record else Path(default)
 
 
 def inventory_fingerprint(records):

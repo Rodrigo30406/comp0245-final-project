@@ -28,7 +28,7 @@ import numpy as np
 from robot_learning.data.storage import read_json, write_json, sha256, utc_now, git_info
 from robot_learning.settings import PROJECT_ROOT
 from robot_learning.simulation.config import episode_defaults, resolve_episode_config
-from robot_learning.data.splits import drop_expert_failures, extra_inventory, inventory, validate_partition
+from robot_learning.data.splits import drop_expert_failures, extra_inventory, inventory, resolve_dataset, validate_partition
 from .episodes import first_rows as x_check, load_episode_features
 from .features import EGO, INPUT_NAMES, VARIANTS, encode, spec_from_episode_config, validate_spec
 from .metrics import errors, aggregate
@@ -252,7 +252,7 @@ def train(dataset, split_path, config_path, output, horizon_s=40.0, device_name=
         config["training"]["seed"] = int(seed)
     hp = config["training"]
     saved = read_json(split_path)
-    if Path(saved["dataset"]).resolve() != dataset:
+    if resolve_dataset(saved["dataset"]) != dataset:
         raise ValueError("Split belongs to another dataset")
     records = inventory(dataset) + extra_inventory(saved)
     split = validate_partition(records, {k: saved[k] for k in ["training", "validation"]})

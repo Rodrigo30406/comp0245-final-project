@@ -1,0 +1,196 @@
+{
+  "backend": "pytorch",
+  "closed_loop_evaluation": "not run by the trainer",
+  "command": [
+    "scripts/train_egocentric.py",
+    "--dataset",
+    "datasets/stratified1024/20261027T050956Z_stratified1024_nominal_1a307d1a",
+    "--split",
+    "runs/splits/v2_clean_mixture.json",
+    "--config",
+    "experiment_specs/training/mlp_pytorch_successes.json",
+    "--output-dir",
+    "runs/training/v2_mlp28clean_control_seed0",
+    "--horizon-s",
+    "40",
+    "--device",
+    "cuda",
+    "--inputs",
+    "raw21_targetpolar_clock_v1"
+  ],
+  "created_at": "2026-11-04T10:36:56.796806+00:00",
+  "dataset": "/home/labia10/repos/comp0245-final-project/datasets/stratified1024/20261027T050956Z_stratified1024_nominal_1a307d1a",
+  "dataset_hashes": {
+    "config.json": "a4712f9bce9ad6403a56ab38b09cc229eedd2b3fd79611e1cefe6c9c3d90cdcf",
+    "dataset.json": "c84ef0abeeafc7d4a13059fdbcc44a13260d49397e3b79aac897a734d4b89301",
+    "provenance.json": "a879581a76af497be6d7b36928a3552499e4d4b5347aa2400cf92e4a5562266b",
+    "scenarios.json": "bf8cc920ce6492830dae058e2c05653ec7f6899a21db6140c18fa32f480e385d",
+    "schema.json": "f7644a23ae776119f84e77604fda2d7c98036671a309506bc58bd0d9face716c"
+  },
+  "egocentric_options": {
+    "action_chunk": 1,
+    "action_chunk_stride": 20,
+    "prev_wheel_noise_std": 0.0,
+    "prev_wheel_shuffle_p": 0.0,
+    "stop_weight": 1.0,
+    "training_episode_cap": 0,
+    "trigger_copies": 0,
+    "trigger_qd_jitter": "auto",
+    "trigger_weight": 1.0,
+    "wheel_bins": 41,
+    "wheel_loss": "l2",
+    "wheel_output": "regression"
+  },
+  "episode_filter": {
+    "keep_expert_failures": false,
+    "training": {
+      "dropped_expert_failures": 95,
+      "kept": 4000
+    },
+    "validation": {
+      "dropped_expert_failures": 22,
+      "kept": 1003
+    }
+  },
+  "extra_datasets": {
+    "/home/labia10/repos/comp0245-final-project/datasets/20261104T025558Z_e1_randompose_v2_startgoal_clean_87d43d7f": {
+      "config.json": "2abe7f1e7d1251ab62396e90e504d01e0deeb387edec513306d18ae94fbde9dc",
+      "dataset.json": "8f129a746c6610b738a71092e74f6d37039b40b36a5f7d808354ec9274269eae",
+      "provenance.json": "6e51caeecd29da1a64bec8511589306e771c3bfedee3215f7b63b623e6009e92",
+      "scenarios.json": "40ca6dc16506bb2fb2762a263a794fb156ed512209979954fc6e0df450793fbd",
+      "schema.json": "500860d262e9554cbacc6284b6ddc9d1ef58656ef48b02ae3171f03e5dec0f83"
+    },
+    "/home/labia10/repos/comp0245-final-project/datasets/20261104T030205Z_e3_multistart3x_v2_startgoal_clean_ddbbfe12": {
+      "config.json": "036d17587acefdea258e67d97d1ea037b7893ccc7451b1d732a8300641cfc9a9",
+      "dataset.json": "b4d9664cdc4ad32802ed8c5930c600286a194623e5f5b30782de0b468c83766c",
+      "provenance.json": "0f2d0aa99a09d63939ebc7114e382850dd85d5b93334d584c92e00042dc31bb4",
+      "scenarios.json": "0548b71504e475a7bb1fad4daff460978e4a0bd143ef3959de5dc05f8140403b",
+      "schema.json": "500860d262e9554cbacc6284b6ddc9d1ef58656ef48b02ae3171f03e5dec0f83"
+    }
+  },
+  "feature_spec": {
+    "dt_s": 0.001,
+    "horizon_s": 40.0,
+    "standoff_distances": [
+      0.8,
+      0.65,
+      0.65,
+      0.35
+    ],
+    "standoff_heights": [
+      0.1,
+      0.5,
+      1.1,
+      1.25
+    ],
+    "variant": "raw21_targetpolar_clock_v1"
+  },
+  "finished_at": "2026-11-04T11:25:16.164381+00:00",
+  "input_names": [
+    "base_position_x",
+    "base_position_y",
+    "base_position_z",
+    "base_bearing",
+    "arm_q_1",
+    "arm_q_2",
+    "arm_q_3",
+    "arm_q_4",
+    "arm_q_5",
+    "arm_q_6",
+    "arm_q_7",
+    "arm_qd_1",
+    "arm_qd_2",
+    "arm_qd_3",
+    "arm_qd_4",
+    "arm_qd_5",
+    "arm_qd_6",
+    "arm_qd_7",
+    "target_x",
+    "target_y",
+    "target_z",
+    "target_in_base_x",
+    "target_in_base_y",
+    "target_height_above_base",
+    "target_distance_xy",
+    "cos_heading_error_to_target",
+    "sin_heading_error_to_target",
+    "episode_clock_fraction"
+  ],
+  "metrics_sha256": "be54aabe9bd42bb94a84170f24f5cc0ab620baca01bfda9a5a8b31ef4def9215",
+  "model_sha256": "5b2b366f94d6b856f18155078338bbf5d35c734f6d4295e08c24430acc7b1374",
+  "output_names": [
+    "wheel_right",
+    "wheel_left",
+    "arm_torque_1",
+    "arm_torque_2",
+    "arm_torque_3",
+    "arm_torque_4",
+    "arm_torque_5",
+    "arm_torque_6",
+    "arm_torque_7"
+  ],
+  "project": {
+    "commit": "35abf30dacc04e688c735732cc76e3d4cc64b9e9",
+    "remote": "https://github.com/Rodrigo30406/comp0245-final-project.git",
+    "status": ""
+  },
+  "python": "3.14.7 | packaged by conda-forge | (main, Sep  2 2026, 21:08:32) [GCC 15.3.0]",
+  "raw_observation_names": [
+    "base_position_x",
+    "base_position_y",
+    "base_position_z",
+    "base_bearing",
+    "arm_q_1",
+    "arm_q_2",
+    "arm_q_3",
+    "arm_q_4",
+    "arm_q_5",
+    "arm_q_6",
+    "arm_q_7",
+    "arm_qd_1",
+    "arm_qd_2",
+    "arm_qd_3",
+    "arm_qd_4",
+    "arm_qd_5",
+    "arm_qd_6",
+    "arm_qd_7",
+    "target_x",
+    "target_y",
+    "target_z"
+  ],
+  "source_hashes": {
+    "src/robot_learning/learning/__init__.py": "021679edeef7aeb9b413e114d0a120271fbc7b36a34b25cb20b8e9d74e1be2bc",
+    "src/robot_learning/learning/architecture_comparison.py": "9d4150a39c3a1b04c47a105f986e615d6cc45287a52558a38a1369a7a7619180",
+    "src/robot_learning/learning/dataset.py": "1450527a187c45a70f37033fa819afc89e97513fd840aa0d5f928b575d41fef1",
+    "src/robot_learning/learning/egocentric.py": "f507255f83027b456d261b98eb802af3876d488dd41582d4f2b8eece2bf2d94f",
+    "src/robot_learning/learning/error_scaling.py": "78742b587735af4c6c3b888dfc93d62bff5c5af2088445c2a7e19ca322025161",
+    "src/robot_learning/learning/fidelity.py": "2af78df1755c41858d7d082eb95e62be8bce297ae30ef4374eb96db636db5b2e",
+    "src/robot_learning/learning/fitting.py": "2f6ae65d3d8783742ce0b229d0ac605d2f85e4dd3849331de259302f7246709b",
+    "src/robot_learning/learning/gated_policy.py": "c28f8ea95dafc08e244020202da9ad58659edae3cdc2a6b228b4b737eabc51cb",
+    "src/robot_learning/learning/gru_policy.py": "b524aca54b837d92dd395e82245ba87501ddad9a0f59a0824011bb6114803e62",
+    "src/robot_learning/learning/metrics.py": "077b7f4fb750f5ca515c93765dab0fc71bd7790fbc321ea4369fba700a236d4d",
+    "src/robot_learning/learning/model.py": "02491359437959317f0510c5a5d45efc639dd2e94ee1c097d556e50c2ee88700",
+    "src/robot_learning/learning/patience_series.py": "d63f698067b32a170021e5aa195ec9011003e3fb2b11e849a33907968800d540",
+    "src/robot_learning/learning/privileged_ablation.py": "2e27a226c7157763012e18fd0ca9e103a823f63adddf7d9ef55846b3967480e4",
+    "src/robot_learning/learning/report.py": "34a92f8d1a992145622a227753d289dbc2e95268041e394da0b3f303834051cd",
+    "src/robot_learning/learning/sampling_comparison.py": "1f76810e0eaa78b91d08946c1c667550515bdeb27c49971ea03f13f0ae29b2ec",
+    "src/robot_learning/learning/sampling_series.py": "5c85f28097a1bee4365f2482ed828bcdc6d882a0d3c44d6fdf8b23bef63ad83c",
+    "src/robot_learning/learning/scaling.py": "822768f1e1a55b5d5e7ddccc28c1da59e70a559ffc71037e5361293e36c3faa8",
+    "src/robot_learning/learning/streaming_comparison.py": "7465c9fda4dc65ffbcf641703bbfa9aeafe02fb6652c5db749e9f5e7f74e467e",
+    "src/robot_learning/learning/temporal_comparison.py": "7fe4cc9e18609870e62189d390d4ad70ac47797ff4548882c80b9976ca675d1b",
+    "src/robot_learning/learning/torch_fitting.py": "70054a55c72275cf9bf59a2d1f02325398dbe35199ddbc16d6edf2600df8603d",
+    "src/robot_learning/learning/train.py": "c5a2803374e64e563d07c4520f37a58fb631d7bfe5681bb67a1b9eba6e5ca71c",
+    "src/robot_learning/learning/transformer_policy.py": "a5597d4857b0f7f6dbca9a46e454bd1b861ea520464fc1db9efd6b305926b5b4",
+    "src/robot_learning/learning/windows.py": "a06634907090e14d0cff57b55c17dc9cbdcc6938fb33d8d3896afb132503fd45",
+    "src/robot_learning/learning/workspace.py": "bd5fb1b9fa677f174d284e56a06d735095033c90de77b70596558c2174b0c7a0"
+  },
+  "split_sha256": "65d756ba57dcb88d6b5df91ca3ec9be59fc6baf8bba00714315166fc6a3229e6",
+  "status": "complete",
+  "test_set": "none; development train/validation only",
+  "versions": {
+    "numpy": "2.5.3",
+    "scipy": "1.18.1",
+    "torch": "2.14.1"
+  },
+  "wall_s": 2899.3580037950305
+}

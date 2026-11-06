@@ -1,0 +1,11 @@
+{
+  "expert": {
+    "kind": "expert"
+  },
+  "mlp28_trig512_seed0": {
+    "artifact": "models/mlp28_trig512_seed0.npz",
+    "kind": "egocentric_mlp_regressor",
+    "sha256": "ba57ffa5b1b61a2b19e98b905d4e73decb3ac6c209fdcdf10ad95975586c2e67",
+    "training_run": "/home/labia10/repos/comp0245-final-project/runs/training/v2_mlp28_trig512_seed0"
+  }
+}

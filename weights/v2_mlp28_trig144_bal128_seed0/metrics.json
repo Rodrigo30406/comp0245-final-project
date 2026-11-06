@@ -1,0 +1,410 @@
+{
+  "training": {
+    "mean_baseline": {
+      "balanced_nrmse_episode_median": 0.9597603245086914,
+      "balanced_nrmse_episode_p90": 1.165883111857092,
+      "episode_macro": {
+        "arm_macro_mae_nm": 1.2861258132794278,
+        "arm_macro_rmse_nm": 1.9045621264713657,
+        "balanced_nrmse": 0.9828519857627388,
+        "wheels_macro_mae_rad_s": 1.3318547821739288,
+        "wheels_macro_rmse_rad_s": 1.5295018504619917
+      },
+      "episodes": 506,
+      "per_output_episode_macro": {
+        "arm_torque_1": {
+          "mae": 2.0094517142083346,
+          "nrmse_train_std": 1.008915124443554,
+          "rmse": 2.795821739693486,
+          "unit": "N*m"
+        },
+        "arm_torque_2": {
+          "mae": 1.225595633633589,
+          "nrmse_train_std": 1.010772072714933,
+          "rmse": 1.6814611510268098,
+          "unit": "N*m"
+        },
+        "arm_torque_3": {
+          "mae": 1.0455746679020868,
+          "nrmse_train_std": 0.9296123246514729,
+          "rmse": 1.4988979242690694,
+          "unit": "N*m"
+        },
+        "arm_torque_4": {
+          "mae": 1.4428674202463698,
+          "nrmse_train_std": 0.9924492751375755,
+          "rmse": 2.226331258375659,
+          "unit": "N*m"
+        },
+        "arm_torque_5": {
+          "mae": 1.3071216311772438,
+          "nrmse_train_std": 1.003342833268465,
+          "rmse": 1.7948595250038246,
+          "unit": "N*m"
+        },
+        "arm_torque_6": {
+          "mae": 1.130316252782425,
+          "nrmse_train_std": 1.0199503837684896,
+          "rmse": 2.141946152020141,
+          "unit": "N*m"
+        },
+        "arm_torque_7": {
+          "mae": 0.8419533730059462,
+          "nrmse_train_std": 0.9560737495064001,
+          "rmse": 1.1926171349105716,
+          "unit": "N*m"
+        },
+        "wheel_left": {
+          "mae": 1.3285307277132778,
+          "nrmse_train_std": 0.9748639627257565,
+          "rmse": 1.5276310766415537,
+          "unit": "rad/s"
+        },
+        "wheel_right": {
+          "mae": 1.3351788366345798,
+          "nrmse_train_std": 0.9790823336135157,
+          "rmse": 1.5313726242824295,
+          "unit": "rad/s"
+        }
+      }
+    },
+    "model": {
+      "balanced_nrmse_episode_median": 0.1674581684958547,
+      "balanced_nrmse_episode_p90": 0.281073725126631,
+      "episode_macro": {
+        "arm_macro_mae_nm": 0.19240414709988665,
+        "arm_macro_rmse_nm": 0.38691259314401866,
+        "balanced_nrmse": 0.1816187661696153,
+        "wheels_macro_mae_rad_s": 0.15256876461605884,
+        "wheels_macro_rmse_rad_s": 0.257284320284277
+      },
+      "episodes": 506,
+      "per_output_episode_macro": {
+        "arm_torque_1": {
+          "mae": 0.21186709870115444,
+          "nrmse_train_std": 0.14480074413756835,
+          "rmse": 0.40125978744434715,
+          "unit": "N*m"
+        },
+        "arm_torque_2": {
+          "mae": 0.2753111946184625,
+          "nrmse_train_std": 0.29874641763604803,
+          "rmse": 0.4969770226379386,
+          "unit": "N*m"
+        },
+        "arm_torque_3": {
+          "mae": 0.15501643089597206,
+          "nrmse_train_std": 0.2134899525021049,
+          "rmse": 0.3442291352770957,
+          "unit": "N*m"
+        },
+        "arm_torque_4": {
+          "mae": 0.26467296389548883,
+          "nrmse_train_std": 0.2272197459020241,
+          "rmse": 0.5097151416143927,
+          "unit": "N*m"
+        },
+        "arm_torque_5": {
+          "mae": 0.15674342693905058,
+          "nrmse_train_std": 0.18191362906249842,
+          "rmse": 0.32542157976771396,
+          "unit": "N*m"
+        },
+        "arm_torque_6": {
+          "mae": 0.22553394703797522,
+          "nrmse_train_std": 0.2626048491492327,
+          "rmse": 0.5514831457377073,
+          "unit": "N*m"
+        },
+        "arm_torque_7": {
+          "mae": 0.057683967611102914,
+          "nrmse_train_std": 0.06357353326450713,
+          "rmse": 0.0793023395289349,
+          "unit": "N*m"
+        },
+        "wheel_left": {
+          "mae": 0.1648589064315933,
+          "nrmse_train_std": 0.17514837468592692,
+          "rmse": 0.27446096114309837,
+          "unit": "rad/s"
+        },
+        "wheel_right": {
+          "mae": 0.14027862280052447,
+          "nrmse_train_std": 0.15351272666282467,
+          "rmse": 0.24010767942545572,
+          "unit": "rad/s"
+        }
+      }
+    },
+    "pooled_transitions": {
+      "model": {
+        "arm_macro_mae_nm": 0.1841507251892687,
+        "arm_macro_rmse_nm": 0.43518542873818505,
+        "balanced_nrmse": 0.19918855926318657,
+        "per_output": {
+          "arm_torque_1": {
+            "mae": 0.20093664334301958,
+            "nrmse_train_std": 0.1615232058572239,
+            "rmse": 0.4475996835211265,
+            "unit": "N*m"
+          },
+          "arm_torque_2": {
+            "mae": 0.26265679661583297,
+            "nrmse_train_std": 0.31314428284075463,
+            "rmse": 0.5209284669377482,
+            "unit": "N*m"
+          },
+          "arm_torque_3": {
+            "mae": 0.14775008856983946,
+            "nrmse_train_std": 0.27719096014531464,
+            "rmse": 0.4469400241049226,
+            "unit": "N*m"
+          },
+          "arm_torque_4": {
+            "mae": 0.25022457786240193,
+            "nrmse_train_std": 0.23484733959560522,
+            "rmse": 0.5268258904371522,
+            "unit": "N*m"
+          },
+          "arm_torque_5": {
+            "mae": 0.1498765386542751,
+            "nrmse_train_std": 0.25392026857735045,
+            "rmse": 0.4542327881716589,
+            "unit": "N*m"
+          },
+          "arm_torque_6": {
+            "mae": 0.22002638226863283,
+            "nrmse_train_std": 0.27103943173208217,
+            "rmse": 0.5691961855038958,
+            "unit": "N*m"
+          },
+          "arm_torque_7": {
+            "mae": 0.057584049010879,
+            "nrmse_train_std": 0.06459374450517563,
+            "rmse": 0.08057496249079094,
+            "unit": "N*m"
+          },
+          "wheel_left": {
+            "mae": 0.15684912947945007,
+            "nrmse_train_std": 0.18333513854391248,
+            "rmse": 0.287289781742453,
+            "unit": "rad/s"
+          },
+          "wheel_right": {
+            "mae": 0.13235196303529365,
+            "nrmse_train_std": 0.16305931757926057,
+            "rmse": 0.2550394042485329,
+            "unit": "rad/s"
+          }
+        },
+        "rows": 5634920,
+        "wheels_macro_mae_rad_s": 0.14460054625737184,
+        "wheels_macro_rmse_rad_s": 0.27116459299549295
+      }
+    }
+  },
+  "validation": {
+    "mean_baseline": {
+      "balanced_nrmse_episode_median": 0.9551046912562389,
+      "balanced_nrmse_episode_p90": 1.1780716668164681,
+      "episode_macro": {
+        "arm_macro_mae_nm": 1.290209312359094,
+        "arm_macro_rmse_nm": 1.9069259309241389,
+        "balanced_nrmse": 0.9818566784092045,
+        "wheels_macro_mae_rad_s": 1.3279568171591583,
+        "wheels_macro_rmse_rad_s": 1.5252853605805083
+      },
+      "episodes": 802,
+      "per_output_episode_macro": {
+        "arm_torque_1": {
+          "mae": 2.014667736355312,
+          "nrmse_train_std": 1.0098857618615957,
+          "rmse": 2.798511489434543,
+          "unit": "N*m"
+        },
+        "arm_torque_2": {
+          "mae": 1.2472570317538694,
+          "nrmse_train_std": 1.0248782146450057,
+          "rmse": 1.7049273015928603,
+          "unit": "N*m"
+        },
+        "arm_torque_3": {
+          "mae": 1.0488129627093181,
+          "nrmse_train_std": 0.9197750148800125,
+          "rmse": 1.4830363411060428,
+          "unit": "N*m"
+        },
+        "arm_torque_4": {
+          "mae": 1.4383614001231046,
+          "nrmse_train_std": 0.9909863166516946,
+          "rmse": 2.223049448122564,
+          "unit": "N*m"
+        },
+        "arm_torque_5": {
+          "mae": 1.3135659947493596,
+          "nrmse_train_std": 1.0049379996560388,
+          "rmse": 1.7977130856111954,
+          "unit": "N*m"
+        },
+        "arm_torque_6": {
+          "mae": 1.1262613729786144,
+          "nrmse_train_std": 1.0283788515437151,
+          "rmse": 2.159646350388484,
+          "unit": "N*m"
+        },
+        "arm_torque_7": {
+          "mae": 0.8425386878440799,
+          "nrmse_train_std": 0.9472397464094896,
+          "rmse": 1.1815975002132821,
+          "unit": "N*m"
+        },
+        "wheel_left": {
+          "mae": 1.3372567689939712,
+          "nrmse_train_std": 0.9794044554154046,
+          "rmse": 1.5347461183306284,
+          "unit": "rad/s"
+        },
+        "wheel_right": {
+          "mae": 1.3186568653243456,
+          "nrmse_train_std": 0.9691417137506847,
+          "rmse": 1.5158246028303883,
+          "unit": "rad/s"
+        }
+      }
+    },
+    "model": {
+      "balanced_nrmse_episode_median": 0.18504970831048778,
+      "balanced_nrmse_episode_p90": 0.3811643287889695,
+      "episode_macro": {
+        "arm_macro_mae_nm": 0.22636271781781145,
+        "arm_macro_rmse_nm": 0.495693430229251,
+        "balanced_nrmse": 0.22221559599590146,
+        "wheels_macro_mae_rad_s": 0.17815174868456538,
+        "wheels_macro_rmse_rad_s": 0.2983893993202004
+      },
+      "episodes": 802,
+      "per_output_episode_macro": {
+        "arm_torque_1": {
+          "mae": 0.23342002554321917,
+          "nrmse_train_std": 0.1581322431791631,
+          "rmse": 0.4382029295780826,
+          "unit": "N*m"
+        },
+        "arm_torque_2": {
+          "mae": 0.31844420849564403,
+          "nrmse_train_std": 0.4071824416741406,
+          "rmse": 0.6773648338109572,
+          "unit": "N*m"
+        },
+        "arm_torque_3": {
+          "mae": 0.17250897546114696,
+          "nrmse_train_std": 0.23059128337849577,
+          "rmse": 0.37180315583719437,
+          "unit": "N*m"
+        },
+        "arm_torque_4": {
+          "mae": 0.3254865003008006,
+          "nrmse_train_std": 0.31631028426158503,
+          "rmse": 0.7095692352635731,
+          "unit": "N*m"
+        },
+        "arm_torque_5": {
+          "mae": 0.17649006649962945,
+          "nrmse_train_std": 0.20525937496307953,
+          "rmse": 0.36718430832728005,
+          "unit": "N*m"
+        },
+        "arm_torque_6": {
+          "mae": 0.29571685905321726,
+          "nrmse_train_std": 0.3900914312907237,
+          "rmse": 0.8192112611419445,
+          "unit": "N*m"
+        },
+        "arm_torque_7": {
+          "mae": 0.062472389371022764,
+          "nrmse_train_std": 0.06935827202962676,
+          "rmse": 0.08651828764572495,
+          "unit": "N*m"
+        },
+        "wheel_left": {
+          "mae": 0.19307306055668377,
+          "nrmse_train_std": 0.20327684873965507,
+          "rmse": 0.3185388353347294,
+          "unit": "rad/s"
+        },
+        "wheel_right": {
+          "mae": 0.163230436812447,
+          "nrmse_train_std": 0.1778925835934323,
+          "rmse": 0.2782399633056715,
+          "unit": "rad/s"
+        }
+      }
+    },
+    "pooled_transitions": {
+      "model": {
+        "arm_macro_mae_nm": 0.215164690521407,
+        "arm_macro_rmse_nm": 0.5903618595336159,
+        "balanced_nrmse": 0.2660862792311306,
+        "per_output": {
+          "arm_torque_1": {
+            "mae": 0.22022014876106447,
+            "nrmse_train_std": 0.17967679107976506,
+            "rmse": 0.49790539010526697,
+            "unit": "N*m"
+          },
+          "arm_torque_2": {
+            "mae": 0.3044791670709996,
+            "nrmse_train_std": 0.47171517097753324,
+            "rmse": 0.7847176982425281,
+            "unit": "N*m"
+          },
+          "arm_torque_3": {
+            "mae": 0.16386604944662345,
+            "nrmse_train_std": 0.30088162744715247,
+            "rmse": 0.4851386270081136,
+            "unit": "N*m"
+          },
+          "arm_torque_4": {
+            "mae": 0.3052789129518824,
+            "nrmse_train_std": 0.37512328636369796,
+            "rmse": 0.8415026531812764,
+            "unit": "N*m"
+          },
+          "arm_torque_5": {
+            "mae": 0.16748447751325643,
+            "nrmse_train_std": 0.28559703544670123,
+            "rmse": 0.5108987101791639,
+            "unit": "N*m"
+          },
+          "arm_torque_6": {
+            "mae": 0.2833422531679352,
+            "nrmse_train_std": 0.4377239542582842,
+            "rmse": 0.9192419105784521,
+            "unit": "N*m"
+          },
+          "arm_torque_7": {
+            "mae": 0.06148182473808738,
+            "nrmse_train_std": 0.0746570376802948,
+            "rmse": 0.09312802744051048,
+            "unit": "N*m"
+          },
+          "wheel_left": {
+            "mae": 0.1854975371520968,
+            "nrmse_train_std": 0.24541870812524846,
+            "rmse": 0.3845759610121315,
+            "unit": "rad/s"
+          },
+          "wheel_right": {
+            "mae": 0.15467727920605176,
+            "nrmse_train_std": 0.21167643644115153,
+            "rmse": 0.33108094063476046,
+            "unit": "rad/s"
+          }
+        },
+        "rows": 8836209,
+        "wheels_macro_mae_rad_s": 0.17008740817907428,
+        "wheels_macro_rmse_rad_s": 0.35782845082344594
+      }
+    }
+  }
+}

@@ -1,0 +1,136 @@
+{
+  "action_chunk": null,
+  "activation": "relu",
+  "backend": "pytorch",
+  "best_epoch": 22,
+  "best_validation_episode_macro_balanced_nrmse": 0.14168985889319163,
+  "checkpoint_selection": "minimum validation episode-macro balanced NRMSE",
+  "constant_training_inputs": [],
+  "egocentric_options": {
+    "action_chunk": 1,
+    "action_chunk_stride": 20,
+    "prev_wheel_noise_std": 0.0,
+    "prev_wheel_shuffle_p": 0.0,
+    "stop_weight": 1.0,
+    "training_episode_cap": 2400,
+    "trigger_copies": 144,
+    "trigger_qd_jitter": "auto",
+    "trigger_weight": 1.0,
+    "wheel_bins": 41,
+    "wheel_loss": "l2",
+    "wheel_output": "regression"
+  },
+  "episode_filter": {
+    "keep_expert_failures": false,
+    "training": {
+      "dropped_expert_failures": 341,
+      "kept": 3221
+    },
+    "training_episode_cap": {
+      "cap": 2400,
+      "kept": 2400,
+      "rng_seed": 0
+    },
+    "validation": {
+      "dropped_expert_failures": 85,
+      "kept": 802
+    }
+  },
+  "epochs_completed": 30,
+  "feature_provenance": "Deterministic functions of the 21 baseline inputs, the expert standoff table and the controller clock; no expert memory or actions",
+  "feature_spec": {
+    "dt_s": 0.001,
+    "horizon_s": 40.0,
+    "standoff_distances": [
+      0.8,
+      0.65,
+      0.65,
+      0.35
+    ],
+    "standoff_heights": [
+      0.1,
+      0.5,
+      1.1,
+      1.25
+    ],
+    "variant": "raw21_targetpolar_clock_v1"
+  },
+  "fit_and_transform_seconds": 738.2282359109959,
+  "hidden_layer_sizes": [
+    128,
+    128
+  ],
+  "independent_outputs": 9,
+  "inference_single_observation_us": {
+    "median": 35.2295,
+    "p95": 36.5231,
+    "samples": 2000
+  },
+  "input_features": 28,
+  "input_names": [
+    "base_position_x",
+    "base_position_y",
+    "base_position_z",
+    "base_bearing",
+    "arm_q_1",
+    "arm_q_2",
+    "arm_q_3",
+    "arm_q_4",
+    "arm_q_5",
+    "arm_q_6",
+    "arm_q_7",
+    "arm_qd_1",
+    "arm_qd_2",
+    "arm_qd_3",
+    "arm_qd_4",
+    "arm_qd_5",
+    "arm_qd_6",
+    "arm_qd_7",
+    "target_x",
+    "target_y",
+    "target_z",
+    "target_in_base_x",
+    "target_in_base_y",
+    "target_height_above_base",
+    "target_distance_xy",
+    "cos_heading_error_to_target",
+    "sin_heading_error_to_target",
+    "episode_clock_fraction"
+  ],
+  "kind": "egocentric_mlp_regressor",
+  "output_activation": "identity",
+  "output_limits": "none applied; the evaluator clips to the declared envelope",
+  "prev_wheel_augmentation": null,
+  "regression_parameters": 21385,
+  "stop_reason": "patience",
+  "stop_rows_in_training": 7444939,
+  "training_device": "cuda",
+  "training_episodes": 2400,
+  "training_loss": "l2 on the two wheel outputs; half-sum MSE on the seven arm outputs; alpha/(2*batch_rows) weight L2 (sklearn convention)",
+  "training_rows": 26670037,
+  "trigger_copies": {
+    "copies_per_episode": 144,
+    "episodes_with_trigger_row": 2400,
+    "episodes_without": 0,
+    "jitter_rule": "auto",
+    "jitter_seed": 0,
+    "qd_jitter_rad_s": [
+      0.084945734203086,
+      0.047503374766339805,
+      0.03468321983633792,
+      0.038085088600711726,
+      0.051925039577418806,
+      0.0040035825896725325,
+      0.03160411803746886
+    ],
+    "recorded_rows": 26324437,
+    "rows_added": 345600,
+    "rule": "per training episode, the first row of the terminal run of exactly-zero wheel labels, copied with its recorded features and labels; N(0, sigma_j) added to the seven arm-velocity features only; input/output scaler computed from the recorded rows before the copies were appended"
+  },
+  "trigger_weight": null,
+  "validation_episodes": 802,
+  "variant": "raw21_targetpolar_clock_v1",
+  "weight_dtype": "float32",
+  "wheel_bin_centres": null,
+  "wheel_output": "regression"
+}

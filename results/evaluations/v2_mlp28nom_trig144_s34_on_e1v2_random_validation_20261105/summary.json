@@ -1,0 +1,83 @@
+{
+  "expert": {
+    "arm_joint_limit_violation_steps": 1880423,
+    "attempted": 205,
+    "invalid_or_missing": 0,
+    "mean_final_clipping_fraction_per_command": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "mean_final_distance_valid_only_m": 0.04004890760226299,
+    "mean_penalized_final_distance_m": 0.04004890760226299,
+    "mean_penalized_time_average_distance_m": 0.2827972550319965,
+    "success_by_tolerance": {
+      "0.01": 200,
+      "0.02": 200,
+      "0.05": 200
+    },
+    "valid_full_horizon": 205
+  },
+  "mlp28nom_trig144_seed3": {
+    "arm_joint_limit_violation_steps": 3520910,
+    "attempted": 205,
+    "invalid_or_missing": 0,
+    "mean_final_clipping_fraction_per_command": [
+      0.03226414634146339,
+      0.035680853658536585,
+      0.035680853658536585,
+      0.03226414634146339,
+      0.022222926829268297,
+      0.0292580487804878,
+      0.038653658536585346,
+      0.019564512195121963,
+      0.03447512195121951,
+      0.02120609756097562,
+      0.025190975609756104
+    ],
+    "mean_final_distance_valid_only_m": 1.3207643196970735,
+    "mean_penalized_final_distance_m": 1.3207643196970735,
+    "mean_penalized_time_average_distance_m": 1.1840320530275525,
+    "success_by_tolerance": {
+      "0.01": 79,
+      "0.02": 97,
+      "0.05": 120
+    },
+    "valid_full_horizon": 205
+  },
+  "mlp28nom_trig144_seed4": {
+    "arm_joint_limit_violation_steps": 4788840,
+    "attempted": 205,
+    "invalid_or_missing": 0,
+    "mean_final_clipping_fraction_per_command": [
+      0.06133682926829266,
+      0.12427000000000003,
+      0.12427000000000003,
+      0.06133682926829266,
+      0.016358170731707315,
+      0.017805609756097556,
+      0.01975780487804878,
+      0.026701951219512205,
+      0.011896951219512194,
+      0.01745548780487804,
+      0.011889146341463415
+    ],
+    "mean_final_distance_valid_only_m": 2.9885794041934632,
+    "mean_penalized_final_distance_m": 2.9885794041934632,
+    "mean_penalized_time_average_distance_m": 1.8968367930716694,
+    "success_by_tolerance": {
+      "0.01": 70,
+      "0.02": 100,
+      "0.05": 118
+    },
+    "valid_full_horizon": 205
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "expert": {
+    "kind": "expert"
+  },
+  "mlp22raw_trig144_seed0": {
+    "artifact": "models/mlp22raw_trig144_seed0.npz",
+    "kind": "egocentric_mlp_regressor",
+    "sha256": "6f485ca3850fa4c2aad38697b212be8ca144b9a57180d960dafa5f5d732f8436",
+    "training_run": "/home/labia10/repos/comp0245-final-project/runs/training/v2_mlp22raw_trig144_seed0"
+  }
+}

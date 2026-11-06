@@ -14,7 +14,7 @@ import numpy as np
 from robot_learning.settings import PROJECT_ROOT, get_roboenv_root
 from robot_learning.data.storage import read_json, write_json, sha256, provenance, snapshot_sources, utc_now
 from robot_learning.data.scheduler import THREAD_VARIABLES, stop_processes, validate_workers
-from robot_learning.data.splits import extra_inventory, inventory, record_directory, validate_partition
+from robot_learning.data.splits import extra_inventory, inventory, record_directory, resolve_dataset, validate_partition
 from robot_learning.simulation.config import resolve_episode_config, episode_defaults, same_expert_configuration
 from robot_learning.evaluation.adversity import ADVERSITY_KEYS, validate_adversities
 
@@ -55,7 +55,7 @@ def validate_protocol(cfg):
 
 def validate_common_validation(directory, selected, model_split, *, allow_external=False):
     """Cross-dataset comparison only on physical scenarios held out by every model."""
-    model_directory = Path(model_split['dataset'])
+    model_directory = resolve_dataset(model_split['dataset'])
     validate_partition(inventory(model_directory) + extra_inventory(model_split), {k:model_split[k] for k in ['training','validation']})
     def condition(root, record):
         meta = read_json(record_directory(record, root)/'episodes'/f"{record['episode_id']}.json")
@@ -70,7 +70,7 @@ def validate_common_validation(directory, selected, model_split, *, allow_extern
 def prepare(split_path, model_arguments, protocol, output, limit=None, *, allow_cross_split=False, allow_external_holdout=False):
     validate_protocol(protocol)
     split_path=Path(split_path).resolve();split=read_json(split_path)
-    dataset=Path(split['dataset']);records=inventory(dataset)
+    dataset=resolve_dataset(split['dataset']);records=inventory(dataset)
     lookup={r['episode_id']:r for r in records}
     selected=split['validation']
     if not selected or any(lookup.get(r['episode_id'])!=r for r in split['training']+selected):
@@ -97,7 +97,7 @@ def prepare(split_path, model_arguments, protocol, output, limit=None, *, allow_
         model_split = read_json(run/'split.json')
         if sha256(run/'split.json') != manifest['split_sha256']:
             raise ValueError('Model split artifact changed')
-        model_dataset = Path(model_split['dataset'])
+        model_dataset = resolve_dataset(model_split['dataset'])
         if model_split != split:
             if not (allow_cross_split or allow_external_holdout):
                 raise ValueError('Policies must share this exact source split')

@@ -1,0 +1,83 @@
+{
+  "expert": {
+    "arm_joint_limit_violation_steps": 1416047,
+    "attempted": 205,
+    "invalid_or_missing": 0,
+    "mean_final_clipping_fraction_per_command": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "mean_final_distance_valid_only_m": 0.002928246593260305,
+    "mean_penalized_final_distance_m": 0.002928246593260305,
+    "mean_penalized_time_average_distance_m": 0.1427662768424453,
+    "success_by_tolerance": {
+      "0.01": 205,
+      "0.02": 205,
+      "0.05": 205
+    },
+    "valid_full_horizon": 205
+  },
+  "tf28_p40_seed3": {
+    "arm_joint_limit_violation_steps": 2079245,
+    "attempted": 205,
+    "invalid_or_missing": 0,
+    "mean_final_clipping_fraction_per_command": [
+      0.0001648780487804878,
+      0.00023560975609756096,
+      0.00023560975609756096,
+      0.0001648780487804878,
+      0.0,
+      0.0003020731707317075,
+      8.902439024390244e-06,
+      0.0002813414634146345,
+      0.0,
+      9.365853658536587e-05,
+      0.0
+    ],
+    "mean_final_distance_valid_only_m": 0.06235340773954784,
+    "mean_penalized_final_distance_m": 0.06235340773954784,
+    "mean_penalized_time_average_distance_m": 0.17037539998375492,
+    "success_by_tolerance": {
+      "0.01": 172,
+      "0.02": 194,
+      "0.05": 201
+    },
+    "valid_full_horizon": 205
+  },
+  "tf28_p40_seed4": {
+    "arm_joint_limit_violation_steps": 1666034,
+    "attempted": 205,
+    "invalid_or_missing": 0,
+    "mean_final_clipping_fraction_per_command": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.00023743902439024385,
+      4.878048780487805e-07,
+      0.00012317073170731705,
+      0.0,
+      0.0004347560975609756,
+      0.0
+    ],
+    "mean_final_distance_valid_only_m": 0.0857593050337305,
+    "mean_penalized_final_distance_m": 0.0857593050337305,
+    "mean_penalized_time_average_distance_m": 0.16219294592187242,
+    "success_by_tolerance": {
+      "0.01": 200,
+      "0.02": 204,
+      "0.05": 205
+    },
+    "valid_full_horizon": 205
+  }
+}

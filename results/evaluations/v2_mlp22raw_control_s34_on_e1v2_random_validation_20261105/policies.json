@@ -1,0 +1,17 @@
+{
+  "expert": {
+    "kind": "expert"
+  },
+  "mlp22raw_control_seed3": {
+    "artifact": "models/mlp22raw_control_seed3.npz",
+    "kind": "egocentric_mlp_regressor",
+    "sha256": "b61ee620fdc5b0c497c8e155a4c295d2b324ba1471883bb2d746e7d8f71b3a6a",
+    "training_run": "/home/labia10/repos/comp0245-final-project/runs/training/v2_mlp22raw_control_seed3"
+  },
+  "mlp22raw_control_seed4": {
+    "artifact": "models/mlp22raw_control_seed4.npz",
+    "kind": "egocentric_mlp_regressor",
+    "sha256": "dd4b4d65ba149a405e0282737635265e5761b7d5960a0601ff7ffe2517eb9d87",
+    "training_run": "/home/labia10/repos/comp0245-final-project/runs/training/v2_mlp22raw_control_seed4"
+  }
+}

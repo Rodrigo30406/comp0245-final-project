@@ -1,0 +1,14 @@
+{
+  "action_delay_steps": 50,
+  "dwell_s": 0.5,
+  "failure_distance_penalty_m": 10.0,
+  "horizon_s": 40.0,
+  "limits": "expert_command_envelope",
+  "name": "development_validation_closed_loop_delay50ms",
+  "tolerances_m": [
+    0.01,
+    0.02,
+    0.05
+  ],
+  "trace_every_steps": 100
+}

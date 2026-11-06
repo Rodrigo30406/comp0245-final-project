@@ -33,7 +33,7 @@ import time
 
 import numpy as np
 
-from robot_learning.data.splits import drop_expert_failures, extra_inventory, inventory, validate_partition
+from robot_learning.data.splits import drop_expert_failures, extra_inventory, inventory, resolve_dataset, validate_partition
 from robot_learning.data.storage import git_info, read_json, sha256, utc_now, write_json
 from robot_learning.settings import PROJECT_ROOT
 from robot_learning.simulation.config import episode_defaults, resolve_episode_config, same_expert_configuration
@@ -293,7 +293,7 @@ def train(dataset, split_path, config_path, output, horizon_s=40.0, device_name=
     opts = resolve_options(config, options)
     categorical = opts["wheel_output"] == "categorical"
     saved = read_json(split_path)
-    if Path(saved["dataset"]).resolve() != dataset:
+    if resolve_dataset(saved["dataset"]) != dataset:
         raise ValueError("Split belongs to another dataset")
     records = inventory(dataset) + extra_inventory(saved)
     split = validate_partition(records, {k: saved[k] for k in ["training", "validation"]})
@@ -309,7 +309,7 @@ def train(dataset, split_path, config_path, output, horizon_s=40.0, device_name=
     dt = read_json(dataset / "episodes" / f"{records[0]['episode_id']}.json")["dt"]
     extra_hashes = {}
     for extra in saved.get("extra_datasets", []):
-        extra = Path(extra).resolve()
+        extra = resolve_dataset(extra)
         extra_cfg = resolve_episode_config({k: v for k, v in read_json(extra / "config.json").items() if k in episode_defaults()})
         extra_dt = read_json(extra / "episodes" / f"{inventory(extra)[0]['episode_id']}.json")["dt"]
         if not same_expert_configuration(extra_cfg, episode_cfg) or extra_dt != dt:

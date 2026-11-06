@@ -1,0 +1,46 @@
+{
+  "backend": "pytorch",
+  "clock_horizon_s": 40.0,
+  "egocentric_options": {
+    "action_chunk": 1,
+    "action_chunk_stride": 20,
+    "prev_wheel_noise_std": 0.0,
+    "prev_wheel_shuffle_p": 0.0,
+    "stop_weight": 1.0,
+    "training_episode_cap": 0,
+    "trigger_copies": 144,
+    "trigger_qd_jitter": "auto",
+    "trigger_weight": 1.0,
+    "wheel_bins": 41,
+    "wheel_loss": "l2",
+    "wheel_output": "regression"
+  },
+  "input_features": "raw21_targetpolar_clock_v1",
+  "keep_expert_failures": false,
+  "mlp": {
+    "alpha": 0.0001,
+    "batch_size": 1024,
+    "hidden_layer_sizes": [
+      128,
+      128
+    ],
+    "learning_rate": 0.001,
+    "max_epochs": null,
+    "min_delta": 0.0001,
+    "patience": 8,
+    "seed": 20261025
+  },
+  "model": "mlp",
+  "name": "mlp_128_128_pytorch_cuda_patience_only_expert_successes_only",
+  "normalization": "standard_scaler_training_only",
+  "primary_metric": "episode_macro_balanced_nrmse",
+  "sample_weighting": "uniform_transition",
+  "split_seed": 20261025,
+  "torch": {
+    "data_placement": "auto",
+    "deterministic": true,
+    "device": "cuda",
+    "validation_batch_size": 16384
+  },
+  "validation_fraction": 0.2
+}
