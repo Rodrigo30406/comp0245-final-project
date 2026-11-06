@@ -4,6 +4,17 @@ Group project for Machine Learning for Robotics, MSc Robotics and AI, UCL.
 Goal: behaviour cloning of a mobile manipulator controller, learning arm torques
 and wheel commands from the robot state and target.
 
+## Branch clean-code (in progress)
+
+Curated version of the project for the report: only the v2 pipeline, organised by chapter. Start with
+[`docs/README.md`](docs/README.md). Layout so far:
+
+- `src/robot_learning/`: simulation (the lecturer's episode, unchanged), expert controllers, data collection and splits.
+- `scripts/collect_dataset.py`: A-to-B collector; `scripts/data/`: target plan and splits; `scripts/obstacle/`: the
+  static- and dynamic-obstacle collectors (need the group's `obstacle_task`, see `docs/01_data_collection.md`).
+- `experiment_specs/`: the expert rules and every collection spec used by the report.
+- `tests/`: `python scripts/run_tests.py` in the RoboEnv environment.
+
 ## Project files
 
 - `docs/COMP0245-Assignment-2026-2.pdf`: assignment slides.
