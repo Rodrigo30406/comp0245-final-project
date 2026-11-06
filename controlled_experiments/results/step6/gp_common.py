@@ -38,8 +38,21 @@ def write_json(path, obj):
     os.replace(tmp, path)
 
 
+POST_HOC_NOTE = ("post-hoc re-run: the frozen plan is not in this copy (the code comments and report.txt were "
+                 "translated after the experiment), so the freeze hashes are not checked; the frozen state is "
+                 "branch feature/experimental-line-final (commit 71ea436)")
+
+
+def post_hoc():
+    """True in the cleaned copy of the experiments, where the frozen plan is absent."""
+    return not (SOURCE_TASK / "STEP6_PLAN_PROMPT.md").exists()
+
+
 def check_freeze():
     j = json.loads((SOURCE_HERE / "prereg_GP_frozen.json").read_text())
+    if post_hoc():
+        print("G/P " + POST_HOC_NOTE, flush=True)
+        return j
     if sha(SOURCE_TASK / "STEP6_PLAN_PROMPT.md") != j["plan_sha256"]:
         raise RuntimeError("Step 6 frozen plan has changed")
     if sha(SOURCE_HERE / "prereg_GP_frozen.txt") != j["frozen_sha256"]:

@@ -381,6 +381,11 @@ def check_freeze(require_implementation: bool = True, repo: Path | str | None = 
     """Check source preregistration, timestamp, all frozen artifacts and code."""
     root, output = _locations(repo)
     manifest = json.loads((output / "prereg_PC_frozen.json").read_text(encoding="utf-8"))
+    if not (root / "STEP7_PLAN_PROMPT.md").exists():
+        print("PC post-hoc re-run: the frozen plan is not in this copy (the code comments and report.txt were "
+              "translated after the experiment), so the freeze hashes are not checked; the frozen state is "
+              "branch feature/experimental-line-final (commit 71ea436)", flush=True)
+        return manifest
     plan = (root / "STEP7_PLAN_PROMPT.md").read_bytes()
     section = _section(plan)
     report = (root / "report.txt").read_bytes()

@@ -436,6 +436,8 @@ def complete_set(path):
 
 
 @unittest.skipUnless(complete_set(PILOT2_DIR), "Track A's pilot2 recordings missing or still being collected")
+@unittest.skipUnless(os.path.exists(os.path.join(PILOT2_DIR, "ep_0000.npz")),
+                     "needs the step-9 pilot2 recordings (not in git; results/step9/run_step9_sets.sh)")
 class TestPilot2Parity(unittest.TestCase):
     """Gate B1 on Track A's recordings (results/step9/smoke/pilot2): split and a small subset cache in a temporary
     directory; training features of sampled rows == deployment features of the same recorded steps."""

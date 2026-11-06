@@ -13,7 +13,7 @@ from pathlib import Path
 import numpy as np
 
 from gp_common import (HERE, TASK, OLD, MODELS, SEEDS, ar, check_freeze, sha, write_json,
-                       dev_pass, hard_pass, pilot_choice)
+                       dev_pass, hard_pass, pilot_choice, post_hoc)
 import train_policy as tp
 
 WORKERS = int(os.environ.get("WORKERS", "22"))
@@ -534,7 +534,8 @@ def stage(experiment, name, fn):
                 "smoke_epochs": SMOKE_EPOCHS if SMOKE_ROOT else None}
     if marker.exists():
         previous = json.loads(marker.read_text())
-        if previous.get("implementation_sha256") != code or previous.get("settings") != settings:
+        if previous.get("settings") != settings or (previous.get("implementation_sha256") != code
+                                                    and not post_hoc()):
             raise RuntimeError("Implementation hash of a completed stage has changed; refusing to resume silently")
         event(experiment, name, "skip_complete")
         return

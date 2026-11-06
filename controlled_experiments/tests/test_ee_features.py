@@ -159,6 +159,9 @@ class TestClipAndFeatures(unittest.TestCase):
             self.assertLess(np.abs(got - ref).max(), 1e-9, k)
 
 
+@unittest.skipUnless(os.path.exists(os.path.join(TASK_DIR, "results", "step3", "cache", "manifest.json"))
+                     and os.path.exists(os.path.join(TASK_DIR, "results", "step3", "cache", "trigger", "manifest.json")),
+                     "needs the step-3 feature caches (train_policy.py build-cache, build-trigger-cache)")
 class TestDeployment(unittest.TestCase):
     """Forward kinematics of BCPolicy vs the recorded ee_pos; train / deploy consistency; refusals."""
 
@@ -327,6 +330,9 @@ class TestEeCacheAndTraining(unittest.TestCase):
             with np.load(os.path.join(tp.TRAIN_DIR, self.split["episodes"][str(e)]["file"])) as d:
                 np.testing.assert_array_equal(ee_t[i], d["ee_pos"][int(trig["step"][i])])
 
+    @unittest.skipUnless(os.path.exists(os.path.join(TASK_DIR, "results", "step3", "cache", "manifest.json"))
+                         and os.path.exists(os.path.join(TASK_DIR, "results", "step3", "cache", "trigger", "manifest.json")),
+                         "needs the step-3 feature caches (train_policy.py build-cache, build-trigger-cache)")
     def test_refusals(self):
         with self.assertRaises(RuntimeError):   # a subset side cache never feeds an official model
             tp.load_ee("train", self.cache_dir, self.split_path)
