@@ -1,0 +1,7 @@
+Policy hybrid.py on data/pilot: success 63/100 = 63.0% [53.2, 71.8] (95% Wilson), settled 53/100
+Stop reasons: reached 63, timeout 36, tipped 1
+Policy step time: mean 0.154 ms, p99 0.222 ms (median over episodes; control period 1 ms)
+Recorded clean expert reached / this policy succeeded (52 episodes): both 31, expert only 19, policy only 1, neither 1
+v1.1 held_10s (EE < 15 mm for 10 s after the first reach): 48/100 = 48.0% [38.5, 57.7]; extended hold ended: completed 63, not reached 37
+v1.1 stable arrival (EE within tol for >= 0.5 s, ending by 40 s): 5cm 85/100 = 85.0% [76.7, 90.7], 2cm 73, 1cm 55
+v1.1 parked (ring distance < 0.2 m and base still for >= 1.0 s): 97/100 = 97.0% [91.5, 99.0]; arm extended (EE > 0.1 m from its start in the base frame): 77/100 = 77.0% [67.8, 84.2] (both up to the v1 stop point)

@@ -1,0 +1,16 @@
+Protocol v2.0 (T_MAX 60 s, contact ends the run)
+Policy expert on /home/w/comp0245/LAB_SESSION_COMP_0245_2026_PUBLIC/.claude/worktrees/eval-protocol/final/robotnik_arm_task/results/step9/smoke/collision_check/set: success 1/4 = 25.0% [4.6, 69.9] (95% Wilson), settled 1/4
+Stop reasons: collision 3, reached 1
+Policy step time: mean 0.034 ms, p99 0.042 ms (median over episodes; control period 1 ms)
+Recorded clean expert reached / this policy succeeded (4 episodes): both 1, expert only 0, policy only 0, neither 3
+Recorded comparison: 4/4 episodes identical over the common length (float32), max differences: base_pos 0, q_mes 0, qd_mes 0, wheel_cmds 0, torque_arm 0
+v1.1 held_10s (EE < 15 mm for 10 s after the first reach): 1/4 = 25.0% [4.6, 69.9]; extended hold ended: completed 1, not reached 3
+v1.1 stable arrival (EE within tol for >= 0.5 s, ending by 40 s): 5cm 1/4 = 25.0% [4.6, 69.9], 2cm 1, 1cm 1
+v1.1 parked (ring distance < 0.2 m and base still for >= 1.0 s): 1/4 = 25.0% [4.6, 69.9]; arm extended (EE > 0.1 m from its start in the base frame): 1/4 = 25.0% [4.6, 69.9] (both up to the v1 stop point)
+v2.0 collision: 3/4 = 75.0% [30.1, 95.4]; links robot_front_left_wheel 1, robot_j2s7s300_link_finger_tip_1 1, robot_j2s7s300_link_finger_tip_3 1
+v2.0 passed_obstacle: 1/4 = 25.0% [4.6, 69.9]; no_pass (never passed, no collision): 0/4 = 0.0% [0.0, 49.0]
+v2.0 side_taken == scenario_side among passes: 1/1
+v2.0 docked (= v1.1 parked): 1/4 = 25.0% [4.6, 69.9]; docked_clean: 1/4 = 25.0% [4.6, 69.9] (95% Wilson)
+v2.0 min_clearance (m): min 0.000, median 0.002
+v2.0 inside the ambiguous band: success 1/2 = 50.0% [9.5, 90.5], docked_clean 1/2 = 50.0% [9.5, 90.5]
+v2.0 outside the ambiguous band: success 0/2 = 0.0% [0.0, 65.8], docked_clean 0/2 = 0.0% [0.0, 65.8]

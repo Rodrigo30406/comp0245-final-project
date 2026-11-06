@@ -1,0 +1,137 @@
+Step-2 data-level analysis (2026-10-29 01:58), sets: data/train, data/dev, data/hard
+Calibration (data/pilot): {'settle': {'start': 0.127, 'align>drive': 0.055, 'drive>orient': 0.234, 'drive>reach': 0.072, 'orient>reach': 0.38, 'noise': 0.0}, 'chatter_s': 1.0, 'v_drive': 0.065}
+
+== Behaviour modes (task parameters only; descriptive) ==
+M0 |d0| < pos_tol 0.08 m (no drive), M1 d0 <= -0.08 (drive away, turn around), M2 d0 >= 0.08 (normal); 'boundary' = 0.08 <= |d0| < 0.15 (both sides)
+train stratum group      n  kept  kept % [Wilson 95%]    reached % nav t/o
+M0            clean     61    61  100.0 [ 94.1, 100.0]     100.0       0
+M0            noisy     56    56  100.0 [ 93.6, 100.0]     100.0       0
+M1            clean    164   156   95.1 [ 90.7,  97.5]      96.3       8
+M1            noisy    150   120   80.0 [ 72.9,  85.6]      80.7      30
+M2 0.08-0.5   clean    152   142   93.4 [ 88.3,  96.4]      94.7       9
+M2 0.08-0.5   noisy    143   123   86.0 [ 79.4,  90.8]      86.7      20
+M2 0.5-1.0    clean    178   175   98.3 [ 95.2,  99.4]      98.3       3
+M2 0.5-1.0    noisy    174   143   82.2 [ 75.8,  87.2]      82.2      31
+M2 >= 1.0     clean    487   487  100.0 [ 99.2, 100.0]     100.0       0
+M2 >= 1.0     noisy    435   434   99.8 [ 98.7, 100.0]      99.8       1
+boundary      clean     51    45   88.2 [ 76.6,  94.5]      96.1       6
+boundary      noisy     50    48   96.0 [ 86.5,  98.9]     100.0       2
+DEV strata: n (Wilson 95% half-width of one success rate at p = 0.80 / 0.95)
+  M0 12 (+-21 / +-15), M1 48 (+-11 / +-7), M2 0.08-0.5 46 (+-11 / +-7), M2 0.5-1.0 56 (+-10 / +-6), M2 >= 1.0 138 (+-7 / +-4), boundary 8 (+-25 / +-19)
+HARD strata: n (Wilson 95% half-width of one success rate at p = 0.80 / 0.95)
+  M0 29 (+-14 / +-9), M1 66 (+-10 / +-6), M2 0.08-0.5 58 (+-10 / +-6), M2 0.5-1.0 46 (+-11 / +-7), M2 >= 1.0 1 (+-43 / +-41), boundary 19 (+-17 / +-12)
+Mode check (kept train): M0 with drive steps 0, M1 with orient turn <= 120 deg 3, M2 with orient turn >= 60 deg 4
+Measured - required align turn (deg), median [p10, p90] by |d0|: 0.08-0.3 m 12.0 [2.4, 29.8], 0.3-0.6 m 2.6 [-1.7, 6.7], 0.6-1.0 m 0.3 [-2.0, 2.0], 1.0-4.0 m -1.4 [-2.4, -0.1]
+Base displacement during align (m): median 0.094, p90 0.130, max 0.286
+  |d0| 0.08-0.4 m: distance to the goal at drive start - |d0| (m) median +0.072, p90 +0.125 (n 393)
+  |d0| 0.4-1.0 m: distance to the goal at drive start - |d0| (m) median +0.055, p90 +0.123 (n 465)
+  |d0| 1.0-4.0 m: distance to the goal at drive start - |d0| (m) median +0.067, p90 +0.126 (n 921)
+
+== Phase shares (descriptive) ==
+subset                per             align       drive      orient  reach_move  reach_hold
+all                   sample          16.7%       49.4%        6.7%       21.7%        5.5%
+                      episode         16.6%       44.6%        8.2%       23.2%        7.4%
+kept                  sample          17.0%       45.8%        7.8%       23.1%        6.3%
+                      episode         16.7%       43.0%        8.7%       23.8%        7.8%
+kept clean            sample          16.9%       45.7%        8.2%       23.1%        6.0%
+                      episode         16.7%       43.0%        9.1%       23.8%        7.4%
+kept noisy            sample          17.1%       45.9%        7.2%       23.1%        6.6%
+                      episode         16.8%       43.2%        8.1%       23.8%        8.1%
+Duration per kept episode (s), median [p10, p90] over episodes with that class: align 1.82 [0.62, 2.82] (n 1749), drive 4.61 [1.39, 8.75] (n 1779), orient 0.52 [0.17, 2.62] (n 1693), reach_move 2.28 [1.33, 3.27] (n 1897), reach_hold 1.48 [0.25, 4.06] (n 641)
+Hold tail: 641 of 1897 kept episodes have steps after the first reach (first reach before 8 s: 640); 6 of them leave 15 mm again (3294 steps)
+Phase sequences (kept; 0 align, 1 drive, 2 orient, 3 reach): 0123 1564, 013 184, 23 115, 13 18, 123 13, 3 2, 023 1
+
+== Copycat baseline: measured wheel speeds as the wheel-command prediction (kept train) ==
+Label std (pooled, kept train): v 0.1172 m/s, w 0.4302 rad/s. Pooled R^2: v 0.9910, w 0.9930 (mostly variance between phases). Per-episode R^2 of the 4 wheel speeds, median: clean 0.9932, noisy 0.9848 (earlier check on train ep 0-59: 0.995 / 0.986; 2 kept episodes never move the wheels)
+settle time per event type (s, calibrated on data/pilot): start 0.127, align>drive 0.055, drive>orient 0.234, drive>reach 0.072, orient>reach 0.380, noise 0.000
+class       group        steps   RMSE v   RMSE w  nRMSE v  nRMSE w  steady v  steady w  window v  window w  RMS label change+noise / tracking (v; w)
+align       clean      1691738   0.0107   0.0531    0.091    0.124    0.0110    0.0375    0.0027    0.1460  0.0000 / 0.0107; 0.0230 / 0.0479
+align       noisy      1482378   0.0205   0.0663    0.175    0.154    0.0206    0.0555    0.0194    0.1460  0.0179 / 0.0107; 0.0496 / 0.0476
+drive       clean      4590242   0.0052   0.0256    0.045    0.060    0.0021    0.0255    0.0441    0.0330  0.0036 / 0.0038; 0.0011 / 0.0256
+drive       noisy      3968864   0.0175   0.0343    0.149    0.080    0.0168    0.0339    0.0433    0.0527  0.0173 / 0.0043; 0.0424 / 0.0249
+orient      clean       828028   0.0095   0.0574    0.081    0.133    0.0098    0.0328    0.0086    0.0973  0.0026 / 0.0092; 0.0286 / 0.0502
+orient      noisy       623000   0.0107   0.0567    0.091    0.132    0.0110    0.0352    0.0095    0.0995  0.0045 / 0.0097; 0.0286 / 0.0495
+reach_move  clean      2321007   0.0017   0.0088    0.014    0.021    0.0005    0.0002    0.0039    0.0217  0.0002 / 0.0017; 0.0031 / 0.0083
+reach_move  noisy      2001539   0.0024   0.0084    0.020    0.019    0.0014    0.0003    0.0054    0.0225  0.0008 / 0.0023; 0.0029 / 0.0079
+reach_hold  clean       606767   0.0007   0.0001    0.006    0.000    0.0007    0.0001    0.0004    0.0001  0.0000 / 0.0007; 0.0000 / 0.0001
+reach_hold  noisy       571316   0.0009   0.0003    0.008    0.001    0.0009    0.0002    0.0042    0.0065  0.0000 / 0.0009; 0.0000 / 0.0003
+(RMSE v in m/s, w in rad/s; nRMSE = RMSE / pooled label std; steady = outside the event windows; copycat error = (label - executed command of the previous step) + (previous executed command - measured))
+Event windows [0, settle time], all kept: 7.3 [7.2, 7.4]% of the steps hold 23.5 [22.9, 24.1]% of the normalised squared error (ratio 3.22)
+Event windows [0, settle time], kept clean: 7.8 [7.6, 7.9]% of the steps hold 41.2 [40.6, 41.8]% of the normalised squared error (ratio 5.31)
+Event windows [0, settle time], kept noisy: 6.8 [6.6, 7.0]% of the steps hold 16.2 [15.6, 16.8]% of the normalised squared error (ratio 2.39)
+Sensitivity, fixed windows after every event (incl. noise redraws): 50 ms: 7.3% steps, 24.8% error, 200 ms: 27.5% steps, 63.7% error, 400 ms: 42.5% steps, 85.6% error
+Excess copycat error after an event (normalised v + w), share by time since the event:
+  start          0 ms 37%, 1-9 ms 3%, 10-99 ms 41%, 100-400 ms 19% (event step = 159x the post-event level)
+  align>drive    0 ms 51%, 1-9 ms 17%, 10-99 ms 32%, 100-400 ms 1% (event step = 266x the post-event level)
+  drive>orient   0 ms 34%, 1-9 ms 9%, 10-99 ms 36%, 100-400 ms 20% (event step = 620x the post-event level)
+  drive>reach    0 ms 25%, 1-9 ms 40%, 10-99 ms 13%, 100-400 ms 22% (event step = 1591x the post-event level)
+  orient>reach   0 ms 9%, 1-9 ms 23%, 10-99 ms 42%, 100-400 ms 27% (event step = 4676x the post-event level)
+  noise          0 ms 0%, 1-9 ms 0%, 10-99 ms 16%, 100-400 ms 84% (event step = 1x the post-event level)
+Decision steps kept per event after downsampling (mean over events), strides 1/5/10/20/50:
+  start            1897 events: 128.0 / 26.0 / 13.0 / 7.0 / 3.0
+  align>drive      1748 events: 56.0 / 11.2 / 5.6 / 2.8 / 1.1
+  drive>orient     1577 events: 235.0 / 47.0 / 23.5 / 11.7 / 4.7
+  drive>reach       202 events: 72.6 / 14.6 / 7.3 / 3.6 / 1.4
+  orient>reach     1693 events: 380.7 / 76.1 / 38.1 / 19.0 / 7.6
+  noise           16851 events: 1.0 / 1.0 / 1.0 / 1.0 / 1.0
+
+== Restarted expert: base commands that are not a function of the current observation (kept train) ==
+Every 10th step, base_controller is called with a fresh FSM state and compared with the label; inconsistent = |dv| > 0.02 m/s or |dw| > 0.05 rad/s.
+variant                                                      align                 drive                orient                 reach                   all
+true goal                                          0.0 [0.0, 0.0]%    14.7 [13.9, 15.6]%    29.1 [27.3, 31.3]%    20.4 [18.3, 22.6]%    15.0 [14.1, 16.0]%
+current-position goal                           19.2 [16.9, 21.7]%    41.7 [40.4, 43.2]%    40.8 [38.6, 42.8]%    28.9 [26.7, 31.4]%    34.1 [33.1, 35.1]%
+true goal + wheel-speed rule                       0.1 [0.0, 0.1]%       0.0 [0.0, 0.0]%    29.1 [27.3, 31.3]%    20.4 [18.3, 22.6]%       8.3 [7.5, 9.2]%
+current-position goal + wheel-speed rule        19.2 [16.9, 21.7]%    41.4 [40.0, 42.8]%    40.8 [38.6, 42.8]%    28.9 [26.7, 31.4]%    33.9 [32.9, 35.0]%
+(inconsistent steps in % [episode-bootstrap 95% CI])
+drive steps with heading error >= ang_tol to the current-position goal 20.4%, to the true goal 14.7% (fresh FSM state would turn on the spot)
+orient / reach steps where 'facing the goal' differs between the true and the current-position goal: 12.1% / 23.9%
+At nav_done: current-position goal - true goal 1.3 cm median, p90 4.2 cm, > pos_tol in 0.0%; bearing offset median 1.10 deg, > ang_tol in 18.8%
+Prediction 1, current-position goal (main), unseen kept train episodes:
+  1a drive+orient share of inconsistent steps / their share of steps: 1.22 [1.19, 1.26]  (rule: CI lo > 1) -> supported; all kept: 1.22 [1.19, 1.25]
+  1b inconsistency rate |d0| < 1 / |d0| >= 1: 2.56 [2.43, 2.69]  (rule: CI lo > 1) -> supported; all kept: 2.57 [2.45, 2.70]
+  1c drive: with rule / without: 0.99 [0.99, 1.00]  (rule: CI hi < 0.5) -> not supported; all kept: 0.99 [0.99, 0.99]
+  1d orient: with rule / without: 1.00 [1.00, 1.00]  (rule: CI in [0.8, 1.25]) -> supported; all kept: 1.00 [1.00, 1.00]
+Prediction 1, true goal (FSM memory only), unseen kept train episodes:
+  1a drive+orient share of inconsistent steps / their share of steps: 1.12 [1.07, 1.16]  (rule: CI lo > 1) -> supported; all kept: 1.12 [1.08, 1.16]
+  1b inconsistency rate |d0| < 1 / |d0| >= 1: 9.37 [8.47, 10.37]  (rule: CI lo > 1) -> supported; all kept: 9.37 [8.51, 10.28]
+  1c drive: with rule / without: 0.00 [0.00, 0.00]  (rule: CI hi < 0.5) -> supported; all kept: 0.00 [0.00, 0.00]
+  1d orient: with rule / without: 1.00 [1.00, 1.00]  (rule: CI in [0.8, 1.25]) -> supported; all kept: 1.00 [1.00, 1.00]
+
+== Arm label quality (kept train) ==
+Joint 6 start angle [1.] rad, URDF lower limit 1.1345 rad: below the limit in a median 76% of the steps; IK reference clamped at lower + margin in a median 40% [p10 1, p90 100] of the reach steps
+Torque jump at reach onset: largest joint median 19.9 N m [p10 18.4, p90 28.4]; joint 6 median +18.4 N m
+Torque samples at the 30 N m limit: 105914, of which 26232 (25%) within 0.2 s after reach onset
+Chatter index (power share above 250 Hz of the reach torques; white noise 0.5, pure period-2 1):
+  z 0.20-0.30: n  189, median 0.349, episodes > 0.05: 138 (73%)
+  z 0.30-0.45: n  256, median 0.330, episodes > 0.05: 171 (67%)
+  z 0.45-0.60: n  281, median 0.012, episodes > 0.05: 21 (7%)
+  z 0.60-0.90: n  564, median 0.009, episodes > 0.05: 1 (0%)
+  z 0.90-1.21: n  605, median 0.007, episodes > 0.05: 0 (0%)
+Prediction 2 (chatter step: amplitude > 1.0 N m; 1698 unseen kept episodes with reach steps above 0.3 N m, 1894 in all):
+  IK replication: recomputed qd_des within 1e-3 rad/s of the recorded one in 99.99% of 5492621 tested reach steps (99.95% of the chattering ones)
+  H-limit: chattering steps with a joint within the limit margin: 90.9 [87.1, 93.8]%, enrichment over calm reach steps of the same episodes 1.60 [1.52, 1.69] (rule: fraction CI lo >= 0.8 and enrichment CI lo > 1) -> supported
+  H-limit (toggle): chattering steps with the frozen joint set changed since the previous step: 28.6 [25.8, 31.6]%, enrichment over calm reach steps of the same episodes 131.06 [84.67, 232.75] (rule: enrichment CI lo > 1) -> supported
+  H-singular: chattering steps with sigma_min < 0.15: 0.0 [0.0, 0.0]%, enrichment over calm reach steps of the same episodes nan [nan, nan] (rule: fraction CI lo >= 0.8 and enrichment CI lo > 1) -> not supported
+  242205 chattering steps; per joint, share near a limit: j1 0%, j2 69%, j3 0%, j4 2%, j5 0%, j6 74%, j7 0%; frozen by the IK: j1 0%, j2 68%, j3 0%, j4 2%, j5 0%, j6 65%, j7 0%
+  sensitivity, chatter step amplitude > 0.3 N m (296744 steps):
+    H-limit: chattering steps with a joint within the limit margin: 88.7 [85.6, 91.1]%, enrichment over calm reach steps of the same episodes 1.57 [1.50, 1.65] (rule: fraction CI lo >= 0.8 and enrichment CI lo > 1) -> supported
+    H-limit (toggle): chattering steps with the frozen joint set changed since the previous step: 24.7 [22.7, 27.0]%, enrichment over calm reach steps of the same episodes 182.55 [111.63, 435.82] (rule: enrichment CI lo > 1) -> supported
+    H-singular: chattering steps with sigma_min < 0.15: 0.0 [0.0, 0.0]%, enrichment over calm reach steps of the same episodes nan [nan, nan] (rule: fraction CI lo >= 0.8 and enrichment CI lo > 1) -> not supported
+  sensitivity, chatter step amplitude > 3.0 N m (190643 steps):
+    H-limit: chattering steps with a joint within the limit margin: 91.3 [86.7, 94.8]%, enrichment over calm reach steps of the same episodes 1.60 [1.51, 1.69] (rule: fraction CI lo >= 0.8 and enrichment CI lo > 1) -> supported
+    H-limit (toggle): chattering steps with the frozen joint set changed since the previous step: 31.7 [28.4, 35.4]%, enrichment over calm reach steps of the same episodes 79.01 [58.26, 114.45] (rule: enrichment CI lo > 1) -> supported
+    H-singular: chattering steps with sigma_min < 0.15: 0.0 [0.0, 0.0]%, enrichment over calm reach steps of the same episodes nan [nan, nan] (rule: fraction CI lo >= 0.8 and enrichment CI lo > 1) -> not supported
+
+== Prediction 3 (exploratory): expert failure vs required align turn, 0.08 <= |d0| < 1 m (all train) ==
+n 961 episodes, 102 filtered. Logistic fail ~ noisy + M1 + rcs(|d0|, 4 knots) + align_req + noisy:align_req. LR test of the two align terms: chi2(2) = 51.92, p = 5.3e-12 (significant at 0.05). Log-odds: align_req (per rad) +0.86 [+0.29, +1.42]; noisy x align_req +0.10 [-0.55, +0.74]
+  clean filtered by align_req tercile: tercile 1: 6/165 (3.6%), tercile 2: 0/164 (0.0%), tercile 3: 15/165 (9.1%)
+  noisy filtered by align_req tercile: tercile 1: 11/156 (7.1%), tercile 2: 23/155 (14.8%), tercile 3: 47/156 (30.1%)
+  mechanism links (kept, descriptive): Spearman(align_req, align displacement) 0.91; Spearman(align displacement, |distance at drive start - |d0||) 0.97
+
+== Coverage of the task space by the kept train episodes (descriptive) ==
+Nearest-neighbour distance (m; yaw as a unit vector, i.e. 1 m per rad), median [p90]:
+  world 7-D: train LOO 0.766 [1.024]; DEV 0.751 [1.022], beyond train-LOO p95: 4.3% [2.5, 7.3]; HARD 0.681 [0.901], beyond train-LOO p95: 0.0% [0.0, 1.9]
+  relative 3-D: train LOO 0.127 [0.215]; DEV 0.126 [0.208], beyond train-LOO p95: 7.0% [4.6, 10.5]; HARD 0.106 [0.169], beyond train-LOO p95: 1.0% [0.3, 3.6]
+  median train-LOO distance world / relative: 6.0x (same 1897 episodes)
+  (test: computed with the same code when the test set is opened at the end, see report.txt)
+

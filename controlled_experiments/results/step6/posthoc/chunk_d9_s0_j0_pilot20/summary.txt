@@ -1,0 +1,7 @@
+Policy chunk_variants.py on data/pilot: success 9/20 = 45.0% [25.8, 65.8] (95% Wilson), settled 8/20
+Stop reasons: reached 9, timeout 11
+Policy step time: mean 0.185 ms, p99 0.387 ms (median over episodes; control period 1 ms)
+Recorded clean expert reached / this policy succeeded (10 episodes): both 5, expert only 5, policy only 0, neither 0
+v1.1 held_10s (EE < 15 mm for 10 s after the first reach): 0/20 = 0.0% [-0.0, 16.1]; extended hold ended: completed 9, not reached 11
+v1.1 stable arrival (EE within tol for >= 0.5 s, ending by 40 s): 5cm 17/20 = 85.0% [64.0, 94.8], 2cm 13, 1cm 8
+v1.1 parked (ring distance < 0.2 m and base still for >= 1.0 s): 18/20 = 90.0% [69.9, 97.2]; arm extended (EE > 0.1 m from its start in the base frame): 18/20 = 90.0% [69.9, 97.2] (both up to the v1 stop point)

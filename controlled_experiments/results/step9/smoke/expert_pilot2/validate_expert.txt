@@ -1,0 +1,5 @@
+Classifier validation of results/step9/smoke/expert_pilot2 (eval set results/step9/smoke/pilot2)
+[PASS] no harness_error: none
+[PASS] 100 successes: no failure predicate fires (fired: none)
+[INFO] 0 failures, classes {}
+[PASS] arm_extend_time >= recorded nav_done time: 0 of 82 extend earlier; lag median 0.464 s, max 1.861 s

@@ -1,0 +1,35 @@
+{
+ "rule": "amended rule 1",
+ "grid": [
+  16,
+  64,
+  256
+ ],
+ "complete": true,
+ "per_k": {
+  "16": {
+   "gate_ii": true,
+   "pilot_arm_extended_toward": 0.76,
+   "n": 100,
+   "passes": true
+  },
+  "64": {
+   "gate_ii": true,
+   "pilot_arm_extended_toward": 0.79,
+   "n": 100,
+   "passes": true
+  },
+  "256": {
+   "gate_ii": true,
+   "pilot_arm_extended_toward": 0.79,
+   "n": 100,
+   "passes": true
+  }
+ },
+ "passing": [
+  16,
+  64,
+  256
+ ],
+ "chosen_k": 16
+}

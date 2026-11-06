@@ -1,0 +1,42 @@
+Step 4 E (descriptive): learning curve and stride on the C3 recipe, DEV, seeds 0-2, no early stop
+  f 1/8      episodes 201, rows 216846: success 37.1% [17.3, 54.3] (per seed 39.7/16.3/55.3); arm_extended_toward 83.2%; fine 46.2%; held_10s 6.6%; val loss 0.1263/0.1282/0.1411; classes success 37.1, extended_not_reached 23.6, circling 19.9, approached_other 10.9
+  f 1/4      episodes 404, rows 441780: success 38.8% [23.3, 52.4] (per seed 41.3/52.7/22.3); arm_extended_toward 82.9%; fine 48.7%; held_10s 3.2%; val loss 0.0896/0.0942/0.0969; classes success 38.8, circling 33.3, extended_not_reached 23.2, approached_other 3.6
+  f 1/2      episodes 807, rows 883009: success 50.1% [38.0, 63.3] (per seed 38.3/47.7/64.3); arm_extended_toward 79.3%; fine 59.3%; held_10s 15.4%; val loss 0.0642/0.0681/0.0644; classes success 50.1, circling 19.7, extended_not_reached 17.7, left_or_overshot 5.8
+  f 1 (s 9)  episodes 1613, rows 1764684: success 62.2% [53.0, 71.0] (per seed 70.0/53.0/63.7); arm_extended_toward 80.6%; fine 72.3%; held_10s 26.0%; val loss 0.0604/0.0612/0.0618; classes success 62.2, extended_not_reached 16.2, circling 12.3, crash 4.2
+  s 27       episodes 1613, rows 588213: success 51.1% [39.9, 62.3] (per seed 62.3/50.7/40.3); arm_extended_toward 81.4%; fine 62.5%; held_10s 18.4%; val loss 0.0577/0.0495/0.0548; classes success 51.1, extended_not_reached 21.4, circling 14.9, crash 10.0
+  s 81       episodes 1613, rows 196057: success 52.3% [43.0, 61.0] (per seed 59.3/54.7/43.0); arm_extended_toward 83.7%; fine 62.5%; held_10s 14.0%; val loss 0.0631/0.0627/0.0603; classes success 52.3, extended_not_reached 26.9, circling 14.6, left_or_overshot 2.4
+P-E1 success per doubling of the training episodes: +8.7 pp [+0.9, +16.4] (t, 12 models)
+P-E1 1/2 -> 1: success bootstrap +12.1 [-3.1, +26.7] pp, Welch +12.1 [-14.8, +39.0] pp
+P-E2 equal rows: 1613 episodes (s 81) - 201 episodes (f 1/8): success bootstrap +15.2 [-4.4, +35.2] pp, Welch +15.2 [-26.5, +56.9] pp
+P-E3 s 27 - s 9: success bootstrap -11.1 [-24.7, +2.7] pp, Welch -11.1 [-34.0, +11.8] pp
+P-E3 s 81 - s 9: success bootstrap -9.9 [-21.9, +2.1] pp, Welch -9.9 [-29.2, +9.4] pp
+P-E4 Spearman(val loss, DEV success) over 18 models: -0.34 (p 0.16)
+Pre-registered secondary quantities (per seed; two-level bootstrap 95% CI; with 3 seeds the bootstrap CI is close to the seed range)
+  f 1/8      fine 46.2 [27.9, 64.6] (45.8/26.7/66.0); held_10s 6.6 [1.0, 15.3] (1.3/2.3/16.0); reach_5cm 78.4 [60.0, 91.7] (85.0/58.7/91.7)
+             classes: success 37.1 [17.3, 54.3] (39.7/16.3/55.3); extended_not_reached 23.6 [12.0, 38.7] (12.3/40.0/18.3); circling 19.9 [11.0, 32.3] (33.3/14.0/12.3); approached_other 10.9 [3.0, 20.7] (8.7/21.3/2.7); crash 4.1 [0.0, 10.7] (0.0/1.0/11.3); left_or_overshot 2.4 [0.0, 5.6] (5.3/2.0/0.0); parked_no_arm 2.0 [0.0, 5.3] (0.7/5.3/0.0)
+  f 1/4      fine 48.7 [34.7, 65.3] (44.7/66.4/35.1); held_10s 3.2 [1.0, 5.7] (4.0/4.7/1.0); reach_5cm 89.2 [85.3, 92.8] (91.7/87.3/88.7)
+             classes: success 38.8 [23.3, 52.4] (41.3/52.7/22.3); circling 33.3 [22.7, 42.7] (40.0/21.3/38.7); extended_not_reached 23.2 [14.7, 34.3] (15.7/18.7/35.3); approached_other 3.6 [1.4, 6.1] (1.7/5.3/3.7); left_or_overshot 0.7 [0.0, 1.8] (0.7/1.3/0.0); crash 0.4 [0.0, 1.3] (0.7/0.7/0.0)
+  f 1/2      fine 59.3 [43.9, 75.4] (43.5/58.0/76.3); held_10s 15.4 [5.2, 31.0] (6.0/7.7/32.7); reach_5cm 88.1 [82.3, 93.3] (88.3/83.0/93.0)
+             classes: success 50.1 [38.0, 63.3] (38.3/47.7/64.3); circling 19.7 [9.8, 33.0] (34.0/10.3/14.7); extended_not_reached 17.7 [13.4, 22.3] (15.0/21.3/16.7); left_or_overshot 5.8 [1.9, 11.0] (4.3/11.0/2.0); approached_other 3.0 [1.1, 5.6] (1.7/5.0/2.3); crash 2.2 [0.0, 6.7] (6.7/0.0/0.0); parked_no_arm 1.6 [0.0, 4.7] (0.0/4.7/0.0)
+  f 1 (s 9)  fine 72.3 [64.8, 79.3] (76.7/65.3/74.8); held_10s 26.0 [14.7, 39.3] (39.7/14.3/24.0); reach_5cm 92.3 [89.7, 94.8] (92.3/91.7/93.0)
+             classes: success 62.2 [53.0, 71.0] (70.0/53.0/63.7); extended_not_reached 16.2 [7.0, 24.2] (6.3/23.3/19.0); circling 12.3 [7.9, 16.9] (15.0/14.0/8.0); crash 4.2 [1.6, 8.0] (7.7/2.3/2.7); approached_other 2.6 [0.0, 5.2] (0.0/3.3/4.3); left_or_overshot 2.4 [0.7, 4.7] (1.0/4.0/2.3)
+  s 27       fine 62.5 [46.6, 75.3] (67.2/74.8/45.4); held_10s 18.4 [12.0, 26.0] (25.7/17.3/12.3); reach_5cm 94.1 [91.6, 96.3] (94.3/95.0/93.0)
+             classes: success 51.1 [39.9, 62.3] (62.3/50.7/40.3); extended_not_reached 21.4 [13.8, 31.3] (16.3/16.0/32.0); circling 14.9 [8.7, 21.0] (19.7/16.7/8.3); crash 10.0 [0.0, 17.6] (0.0/13.3/16.7); left_or_overshot 1.3 [0.2, 2.8] (0.3/2.3/1.3); approached_other 1.0 [0.2, 2.0] (1.3/0.7/1.0); no_progress 0.1 [0.0, 0.7] (0.0/0.3/0.0); parked_no_arm 0.1 [0.0, 0.7] (0.0/0.0/0.3)
+  s 81       fine 62.5 [50.0, 72.9] (71.4/66.8/49.2); held_10s 14.0 [10.9, 17.1] (14.7/14.0/13.3); reach_5cm 92.4 [88.8, 95.8] (90.7/95.7/91.0)
+             classes: success 52.3 [43.0, 61.0] (59.3/54.7/43.0); extended_not_reached 26.9 [15.0, 36.3] (14.3/32.0/34.3); circling 14.6 [9.4, 20.2] (19.3/10.0/14.3); left_or_overshot 2.4 [0.4, 5.3] (1.7/0.7/5.0); approached_other 2.1 [0.6, 4.0] (0.7/2.7/3.0); crash 1.7 [0.0, 4.7] (4.7/0.0/0.3)
+Post hoc (descriptive, not pre-registered; added after the audit of the E results, 2026-11-01)
+  f 1 (s 9) - f 1/8 success: bootstrap +25.1 [+5.4, +45.6] pp, Welch +25.1 [-16.5, +66.7] pp
+  s 81 - f 1/8 fine: bootstrap +16.3 [-5.7, +37.2] pp, Welch +16.3 [-23.9, +56.5] pp
+  s 81 - f 1/8 reach_5cm: bootstrap +14.0 [+0.3, +31.8] pp, Welch +14.0 [-27.9, +55.9] pp
+  f 1 (s 9) - f 1/2 fine: bootstrap +13.0 [-4.1, +29.3] pp, Welch +13.0 [-22.8, +48.7] pp
+  f 1 (s 9) - f 1/2 held_10s: bootstrap +10.6 [-8.6, +28.0] pp, Welch +10.6 [-21.3, +42.4] pp
+  s 27 - f 1 (s 9) crash: bootstrap +5.8 [-3.7, +14.1] pp, Welch +5.8 [-13.7, +25.3] pp
+  s 81 - s 27 success: bootstrap +1.2 [-12.7, +14.9] pp, Welch +1.2 [-21.6, +24.0] pp
+  class shares f 1 (s 9) - f 1/8: approached_other -8.3, circling -7.6, extended_not_reached -7.3, parked_no_arm -2.0, success +25.1 pp
+  class shares f 1 (s 9) - f 1/2: circling -7.3, left_or_overshot -3.3, parked_no_arm -1.6, extended_not_reached -1.4, crash +2.0, success +12.1 pp
+  held_10s / success (pooled): f 1/8 17.7, f 1/4 8.3, f 1/2 30.8, f 1 (s 9) 41.8, s 27 36.1, s 81 26.8
+  success | reach_5cm (pooled): f 1/8 47.3, f 1/4 43.5, f 1/2 56.9, f 1 (s 9) 67.4, s 27 54.3, s 81 56.6
+  P-E1 slope, leave one setting out (pp per doubling, t): without f 1/8 +11.7 [+0.4, +23.1]; without f 1/4 +8.1 [-0.5, +16.7]; without f 1/2 +8.8 [-0.3, +18.0]; without f 1 (s 9) +6.5 [-8.2, +21.2]
+  Spearman(val loss, success), learning curve f 1/8..1: -0.55 (p 0.067, 12 models)
+  Spearman(val loss, success), 1613 episodes, s 9 / 27 / 81: +0.47 (p 0.21, 9 models)
+  within a setting (3 seeds): f 1/8 +0.5, f 1/4 -0.5, f 1/2 +0.5, f 1 (s 9) -0.5, s 27 +0.5, s 81 +1.0

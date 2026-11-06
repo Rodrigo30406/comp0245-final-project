@@ -1,0 +1,32 @@
+C3 pilot diagnostic: EM cell (expert base, model arm, --no-early-stop) on data/pilot; descriptive only
+reading (written before the runs): arm_extended_toward > 30% = triggers in closed loop, < 20% = does not, otherwise uncertain (one seed, 100 episodes; Wilson 95%)
+episodes common to all runs: 100; integrity: ok
+== control ego-novw_s0 (B-EM_ego-novw_s0_pilot)
+  arm_extended_toward    0/100 =   0.0% [Wilson 0.0, 3.7]  -> does not trigger (< 20%)
+  arm_extended           0/100 =   0.0% [Wilson 0.0, 3.7]
+  success                0/100 =   0.0% [Wilson 0.0, 3.7]
+  reach_5cm              8/100 =   8.0% [Wilson 4.1, 15.0]
+  reach_2cm              1/100 =   1.0% [Wilson 0.2, 5.4]
+  parked                96/100 =  96.0% [Wilson 90.2, 98.4]
+  classes: all {'parked_no_arm': 75, 'extended_not_reached': 8, 'approached_other': 12, 'circling': 5}; extended cells {}
+  min_error of the extended cells (m): -
+== K 64 seed 0 (B-EM_ego-novw-trig-k64_s0_pilot)
+  arm_extended_toward   79/100 =  79.0% [Wilson 70.0, 85.8]  -> triggers (> 30%)
+  arm_extended          79/100 =  79.0% [Wilson 70.0, 85.8]
+  success               52/100 =  52.0% [Wilson 42.3, 61.5]
+  reach_5cm             86/100 =  86.0% [Wilson 77.9, 91.5]
+  reach_2cm             73/100 =  73.0% [Wilson 63.6, 80.7]
+  parked                96/100 =  96.0% [Wilson 90.2, 98.4]
+  arm_extend_time - shadow FSM nav_done: n 79, median 0.33 s [p10 0.03, p90 0.58], min -6.49, max 1.23; before nav_done 6; no nav_done event 0 (expert 0.33-2.7 s, median 0.47 s)
+  classes: all {'approached_other': 12, 'extended_not_reached': 33, 'success': 52, 'circling': 3}; extended cells {'approached_other': 10, 'extended_not_reached': 32, 'success': 35, 'circling': 2}
+  min_error of the extended cells (m): median 0.013
+== K 256 seed 0 (B-EM_ego-novw-trig-k256_s0_pilot)
+  arm_extended_toward   79/100 =  79.0% [Wilson 70.0, 85.8]  -> triggers (> 30%)
+  arm_extended          80/100 =  80.0% [Wilson 71.1, 86.7]
+  success               36/100 =  36.0% [Wilson 27.3, 45.8]
+  reach_5cm             94/100 =  94.0% [Wilson 87.5, 97.2]
+  reach_2cm             57/100 =  57.0% [Wilson 47.2, 66.3]
+  parked                96/100 =  96.0% [Wilson 90.2, 98.4]
+  arm_extend_time - shadow FSM nav_done: n 80, median 0.36 s [p10 0.25, p90 0.68], min -0.39, max 3.64; before nav_done 2; no nav_done event 0 (expert 0.33-2.7 s, median 0.47 s)
+  classes: all {'success': 36, 'extended_not_reached': 56, 'approached_other': 3, 'circling': 3, 'crash': 2}; extended cells {'success': 22, 'extended_not_reached': 54, 'approached_other': 2, 'crash': 2}
+  min_error of the extended cells (m): median 0.016

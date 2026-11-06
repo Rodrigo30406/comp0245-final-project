@@ -1,0 +1,15 @@
+Protocol v2.0 (T_MAX 60 s, contact ends the run)
+Policy policies.py on data/obstacle/dev2: success 125/300 = 41.7% [36.2, 47.3] (95% Wilson), settled 82/300
+Stop reasons: collision 2, reached 125, timeout 173
+Policy step time: mean 0.252 ms, p99 0.301 ms (median over episodes; control period 1 ms)
+Recorded clean expert reached / this policy succeeded (300 episodes): both 125, expert only 175, policy only 0, neither 0
+v1.1 held_10s (EE < 15 mm for 10 s after the first reach): 7/300 = 2.3% [1.1, 4.7]; extended hold ended: completed 125, not reached 175
+v1.1 stable arrival (EE within tol for >= 0.5 s, ending by 40 s): 5cm 238/300 = 79.3% [74.4, 83.5], 2cm 175, 1cm 98
+v1.1 parked (ring distance < 0.2 m and base still for >= 1.0 s): 253/300 = 84.3% [79.8, 88.0]; arm extended (EE > 0.1 m from its start in the base frame): 210/300 = 70.0% [64.6, 74.9] (both up to the v1 stop point)
+v2.0 collision: 2/300 = 0.7% [0.2, 2.4]; links robot_back_right_wheel 1, robot_j2s7s300_link_finger_tip_1 1
+v2.0 passed_obstacle: 259/300 = 86.3% [82.0, 89.8]; no_pass (never passed, no collision): 40/300 = 13.3% [9.9, 17.6]
+v2.0 side_taken == scenario_side among passes: 197/259
+v2.0 docked (= v1.1 parked): 253/300 = 84.3% [79.8, 88.0]; docked_clean: 253/300 = 84.3% [79.8, 88.0] (95% Wilson)
+v2.0 min_clearance (m): min 0.001, median 0.394
+v2.0 inside the ambiguous band: success 51/137 = 37.2% [29.6, 45.6], docked_clean 112/137 = 81.8% [74.4, 87.3]
+v2.0 outside the ambiguous band: success 74/163 = 45.4% [37.9, 53.1], docked_clean 141/163 = 86.5% [80.4, 90.9]

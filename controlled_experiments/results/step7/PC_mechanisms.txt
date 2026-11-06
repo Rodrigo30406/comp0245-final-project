@@ -1,0 +1,95 @@
+Experiment PC: frozen pre-registered numbers and verdict; differences are P minus C3; 95% CI.
+Formal HARD + CONFIRM analysis
+10000 paired two-level draws; base seed 0; independent HARD/CONFIRM streams np.random.SeedSequence(0).spawn(2), spawn_key (0,) and (1,); one episode resample shared between arms within each set; arms' seeds independent
+This experiment was designed after seeing P's DEV results; the hypothesis comes from DEV; DEV is presented together with this experiment.
+
+HARD
+ego-novw-trig_s0_hard: replaced 6 stalled rows from results/step7/nostall/ego-novw-trig_s0_hard
+ego-novw-trig_s1_hard: replaced 16 stalled rows from results/step7/nostall/ego-novw-trig_s1_hard
+ego-novw-trig_s2_hard: replaced 28 stalled rows from results/step7/nostall/ego-novw-trig_s2_hard
+ego-novw-trig_s3_hard: replaced 3 stalled rows from results/step7/nostall/ego-novw-trig_s3_hard
+ego-novw-trig_s4_hard: replaced 8 stalled rows from results/step7/nostall/ego-novw-trig_s4_hard
+success: C3 57.200000%, P 62.700000%; Δ +5.500000 pp; bootstrap 95% [-7.700000, +16.400000], Welch 95% [-10.967200, +21.967200] pp
+reach_2cm: C3 73.900000%, P 83.100000%; Δ +9.200000 pp; bootstrap 95% [+2.300000, +15.600000], Welch 95% [+1.099706, +17.300294] pp
+reach_5cm: C3 89.400000%, P 93.100000%; Δ +3.700000 pp; bootstrap 95% [-0.800000, +7.900000], Welch 95% [-0.121355, +7.521355] pp
+held_10s: C3 25.600000%, P 24.900000%; Δ -0.700000 pp; bootstrap 95% [-14.600000, +12.600000], Welch 95% [-19.916776, +18.516776] pp
+arm_extended_toward: C3 86.300000%, P 86.900000%; Δ +0.600000 pp; bootstrap 95% [-3.100000, +4.500000], Welch 95% [-2.721547, +3.921547] pp
+crash: C3 4.400000%, P 6.500000%; Δ +2.100000 pp; bootstrap 95% [-2.600000, +6.700000], Welch 95% [-3.075045, +7.275045] pp
+no_start: C3 0.000000%, P 0.000000%; Δ +0.000000 pp; bootstrap 95% [+0.000000, +0.000000], Welch 95% [+0.000000, +0.000000] pp
+runaway: C3 0.000000%, P 0.000000%; Δ +0.000000 pp; bootstrap 95% [+0.000000, +0.000000], Welch 95% [+0.000000, +0.000000] pp
+no_progress: C3 0.000000%, P 0.000000%; Δ +0.000000 pp; bootstrap 95% [+0.000000, +0.000000], Welch 95% [+0.000000, +0.000000] pp
+never_other: C3 0.000000%, P 0.000000%; Δ +0.000000 pp; bootstrap 95% [+0.000000, +0.000000], Welch 95% [+0.000000, +0.000000] pp
+circling: C3 16.500000%, P 8.600000%; Δ -7.900000 pp; bootstrap 95% [-15.500000, +0.900000], Welch 95% [-17.717058, +1.917058] pp
+left_or_overshot: C3 1.800000%, P 2.800000%; Δ +1.000000 pp; bootstrap 95% [-1.900000, +4.100000], Welch 95% [-2.190532, +4.190532] pp
+parked_no_arm: C3 0.200000%, P 0.400000%; Δ +0.200000 pp; bootstrap 95% [-0.700000, +1.200000], Welch 95% [-0.634059, +1.034059] pp
+extended_not_reached: C3 17.400000%, P 17.100000%; Δ -0.300000 pp; bootstrap 95% [-9.800000, +9.300000], Welch 95% [-11.944836, +11.344836] pp
+approached_other: C3 2.500000%, P 1.900000%; Δ -0.600000 pp; bootstrap 95% [-3.200000, +1.800000], Welch 95% [-2.980540, +1.780540] pp
+risk: C3 6.200000%, P 9.300000%; Δ +3.100000 pp; bootstrap 95% [-2.000000, +8.200000], Welch 95% [-2.449865, +8.649865] pp
+policy_ms: C3 0.127862ms, P 0.192350ms; Δ +0.064488 ms; bootstrap 95% [+0.058862, +0.069851], Welch 95% [+0.057380, +0.071597] ms
+low_z success: C3 22.307692%, P 42.307692%; Δ +20.000000 pp; bootstrap 95% [+7.692308, +32.692308], Welch 95% [+10.083117, +29.916883] pp
+low_z circling: C3 21.923077%, P 12.307692%; Δ -9.615385 pp; bootstrap 95% [-26.153846, +7.307692], Welch 95% [-28.503603, +9.272834] pp
+low_z reach_2cm: C3 42.692308%, P 70.000000%; Δ +27.307692 pp; bootstrap 95% [+11.923077, +41.923077], Welch 95% [+13.979586, +40.635799] pp
+low_z extended_not_reached: C3 33.461538%, P 23.461538%; Δ -10.000000 pp; bootstrap 95% [-33.846154, +12.307692], Welch 95% [-39.560737, +19.560737] pp
+
+CONFIRM
+ego-novw-trig_s100_confirm: replaced 6 stalled rows from results/step7/nostall/ego-novw-trig_s100_confirm
+ego-novw-trig_s101_confirm: replaced 12 stalled rows from results/step7/nostall/ego-novw-trig_s101_confirm
+ego-novw-trig_s102_confirm: replaced 3 stalled rows from results/step7/nostall/ego-novw-trig_s102_confirm
+ego-novw-trig_s103_confirm: replaced 18 stalled rows from results/step7/nostall/ego-novw-trig_s103_confirm
+ego-novw-trig_s104_confirm: replaced 32 stalled rows from results/step7/nostall/ego-novw-trig_s104_confirm
+success: C3 64.533333%, P 65.200000%; Δ +0.666667 pp; bootstrap 95% [-11.866667, +12.466667], Welch 95% [-15.022005, +16.355339] pp
+reach_2cm: C3 81.733333%, P 82.066667%; Δ +0.333333 pp; bootstrap 95% [-6.400000, +6.666667], Welch 95% [-7.285202, +7.951868] pp
+reach_5cm: C3 92.866667%, P 91.733333%; Δ -1.133333 pp; bootstrap 95% [-6.066667, +3.533333], Welch 95% [-6.976330, +4.709663] pp
+held_10s: C3 26.533333%, P 26.800000%; Δ +0.266667 pp; bootstrap 95% [-14.800000, +15.533333], Welch 95% [-19.598799, +20.132133] pp
+arm_extended_toward: C3 84.266667%, P 81.466667%; Δ -2.800000 pp; bootstrap 95% [-6.200000, +0.666667], Welch 95% [-6.197251, +0.597251] pp
+crash: C3 1.400000%, P 2.333333%; Δ +0.933333 pp; bootstrap 95% [-1.800000, +3.266667], Welch 95% [-2.115843, +3.982510] pp
+no_start: C3 0.000000%, P 0.000000%; Δ +0.000000 pp; bootstrap 95% [+0.000000, +0.000000], Welch 95% [+0.000000, +0.000000] pp
+runaway: C3 0.000000%, P 0.000000%; Δ +0.000000 pp; bootstrap 95% [+0.000000, +0.000000], Welch 95% [+0.000000, +0.000000] pp
+no_progress: C3 0.000000%, P 0.000000%; Δ +0.000000 pp; bootstrap 95% [+0.000000, +0.000000], Welch 95% [+0.000000, +0.000000] pp
+never_other: C3 0.000000%, P 0.000000%; Δ +0.000000 pp; bootstrap 95% [+0.000000, +0.000000], Welch 95% [+0.000000, +0.000000] pp
+circling: C3 14.400000%, P 6.933333%; Δ -7.466667 pp; bootstrap 95% [-15.133333, +0.066667], Welch 95% [-17.130709, +2.197376] pp
+left_or_overshot: C3 1.666667%, P 3.466667%; Δ +1.800000 pp; bootstrap 95% [-0.200000, +3.933333], Welch 95% [-0.140797, +3.740797] pp
+parked_no_arm: C3 0.066667%, P 0.000000%; Δ -0.066667 pp; bootstrap 95% [-0.400000, +0.000000], Welch 95% [-0.251763, +0.118430] pp
+extended_not_reached: C3 15.866667%, P 17.200000%; Δ +1.333333 pp; bootstrap 95% [-7.800000, +10.468333], Welch 95% [-9.794626, +12.461293] pp
+approached_other: C3 2.066667%, P 4.866667%; Δ +2.800000 pp; bootstrap 95% [-0.200000, +6.200000], Welch 95% [-1.110320, +6.710320] pp
+risk: C3 3.066667%, P 5.800000%; Δ +2.733333 pp; bootstrap 95% [-1.000000, +6.266667], Welch 95% [-1.455877, +6.922544] pp
+policy_ms: C3 0.128115ms, P 0.192814ms; Δ +0.064699 ms; bootstrap 95% [+0.060894, +0.068440], Welch 95% [+0.061052, +0.068345] ms
+low_z success: C3 32.000000%, P 24.000000%; Δ -8.000000 pp; bootstrap 95% [-22.400000, +5.866667], Welch 95% [-26.074485, +10.074485] pp
+low_z circling: C3 34.133333%, P 10.400000%; Δ -23.733333 pp; bootstrap 95% [-39.733333, -8.800000], Welch 95% [-44.323219, -3.143448] pp
+low_z reach_2cm: C3 53.066667%, P 48.800000%; Δ -4.266667 pp; bootstrap 95% [-22.666667, +14.666667], Welch 95% [-27.072970, +18.539636] pp
+low_z extended_not_reached: C3 17.866667%, P 34.133333%; Δ +16.266667 pp; bootstrap 95% [-0.273333, +32.266667], Welch 95% [-2.476273, +35.009607] pp
+
+COMBINED (200 HARD + 300 CONFIRM)
+success: C3 61.600000%, P 64.200000%; Δ +2.600000 pp; bootstrap 95% [-6.400000, +11.120000], Welch 95% [-7.772791, +12.972791] pp
+reach_2cm: C3 78.600000%, P 82.480000%; Δ +3.880000 pp; bootstrap 95% [-1.000000, +8.600000], Welch 95% [-1.173260, +8.933260] pp
+reach_5cm: C3 91.480000%, P 92.280000%; Δ +0.800000 pp; bootstrap 95% [-2.600000, +4.120000], Welch 95% [-2.818740, +4.418740] pp
+held_10s: C3 26.160000%, P 26.040000%; Δ -0.120000 pp; bootstrap 95% [-10.840000, +10.440000], Welch 95% [-13.078505, +12.838505] pp
+arm_extended_toward: C3 85.080000%, P 83.640000%; Δ -1.440000 pp; bootstrap 95% [-3.920000, +1.120000], Welch 95% [-3.702340, +0.822340] pp
+crash: C3 2.600000%, P 4.000000%; Δ +1.400000 pp; bootstrap 95% [-1.040000, +3.760000], Welch 95% [-1.126770, +3.926770] pp
+no_start: C3 0.000000%, P 0.000000%; Δ +0.000000 pp; bootstrap 95% [+0.000000, +0.000000], Welch 95% [+0.000000, +0.000000] pp
+runaway: C3 0.000000%, P 0.000000%; Δ +0.000000 pp; bootstrap 95% [+0.000000, +0.000000], Welch 95% [+0.000000, +0.000000] pp
+no_progress: C3 0.000000%, P 0.000000%; Δ +0.000000 pp; bootstrap 95% [+0.000000, +0.000000], Welch 95% [+0.000000, +0.000000] pp
+never_other: C3 0.000000%, P 0.000000%; Δ +0.000000 pp; bootstrap 95% [+0.000000, +0.000000], Welch 95% [+0.000000, +0.000000] pp
+circling: C3 15.240000%, P 7.600000%; Δ -7.640000 pp; bootstrap 95% [-13.280000, -2.040000], Welch 95% [-13.994018, -1.285982] pp
+left_or_overshot: C3 1.720000%, P 3.200000%; Δ +1.480000 pp; bootstrap 95% [-0.160000, +3.240000], Welch 95% [-0.091456, +3.051456] pp
+parked_no_arm: C3 0.120000%, P 0.160000%; Δ +0.040000 pp; bootstrap 95% [-0.320000, +0.480000], Welch 95% [-0.297702, +0.377702] pp
+extended_not_reached: C3 16.480000%, P 17.160000%; Δ +0.680000 pp; bootstrap 95% [-5.960000, +7.400000], Welch 95% [-6.844928, +8.204928] pp
+approached_other: C3 2.240000%, P 3.680000%; Δ +1.440000 pp; bootstrap 95% [-0.640000, +3.720000], Welch 95% [-0.951152, +3.831152] pp
+risk: C3 4.320000%, P 7.200000%; Δ +2.880000 pp; bootstrap 95% [-0.080000, +5.840000], Welch 95% [-0.205889, +5.965889] pp
+policy_ms: C3 0.128014ms, P 0.192629ms; Δ +0.064615 ms; bootstrap 95% [+0.061439, +0.067737], Welch 95% [+0.061402, +0.067827] ms
+low_z: n=127; weighted by each set's number of low-z episodes.
+low_z success: C3 28.031496%, P 31.496063%; Δ +3.464567 pp; bootstrap 95% [-6.456693, +13.228346], Welch 95% [-7.037259, +13.966393] pp
+low_z circling: C3 29.133858%, P 11.181102%; Δ -17.952756 pp; bootstrap 95% [-29.452756, -6.771654], Welch 95% [-30.794169, -5.111342] pp
+low_z reach_2cm: C3 48.818898%, P 57.480315%; Δ +8.661417 pp; bootstrap 95% [-3.937008, +21.417323], Welch 95% [-5.166433, +22.489268] pp
+low_z extended_not_reached: C3 24.251969%, P 29.763780%; Δ +5.511811 pp; bootstrap 95% [-8.503937, +18.740157], Welch 95% [-9.267613, +20.291235] pp
+
+§3 item-by-item verdict:
+(1) pooled Δsuccess bootstrap lower bound -6.400000 pp, Welch lower bound -7.772791 pp, both > 0: False
+(2) HARD Δsuccess +5.500000 pp, CONFIRM +0.666667 pp, both > 0: True
+(3) pooled crash + left_or_overshot Δ +2.880000 pp ≤ +3 pp: True
+Verdict: 没有得到确认 (not confirmed), KEEP C3
+Mirror: bootstrap upper bound +11.120000 pp, Welch upper bound +12.972791 pp, both < 0: False
+Main model after confirmation: C3
+Descriptive predictions (not part of the verdict): {"descriptive_only": true, "low_z_success_increase": true, "circling_decrease": true, "reach_2cm_increase": true, "low_z_circling_decrease": true, "low_z_reach_2cm_increase": true, "extended_not_reached": "no direction was pre-registered"}
+Step 6 DEV verdict: KEEP C3 (unchanged); in the report DEV is presented together with this experiment.
+Pre-registered power and limitations: 10 vs 10 seeds after pooling; the HARD distribution differs from DEV; the effect is the pooled average over the two sets; second test of the same change.

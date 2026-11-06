@@ -1,0 +1,39 @@
+{
+  "set_name": "pilot2",
+  "seed": 3000,
+  "n_episodes": 100,
+  "noise_frac": 0.0,
+  "workers": 20,
+  "out_dir": "results/step9/smoke/sets_check/pilot2",
+  "resume": true,
+  "episodes": "50-99",
+  "allow_test2": false,
+  "no_obstacle": false,
+  "noise_v": 0.02,
+  "noise_w": 0.05,
+  "noise_torque": 2.0,
+  "noise_hold": 0.3,
+  "noise_fade_base": 0.5,
+  "noise_fade_arm": 0.15,
+  "max_steps": 60000,
+  "log_every": 1,
+  "r_range": [
+    0.1,
+    3.0
+  ],
+  "theta_range": [
+    -180.0,
+    180.0
+  ],
+  "z_range": [
+    0.2,
+    1.2
+  ],
+  "init_radius": 0.0,
+  "init_yaw_range": [
+    0.0,
+    0.0
+  ],
+  "protocol": "v2.0",
+  "format": "obstacle_collection_v1"
+}

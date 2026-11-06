@@ -1,0 +1,22 @@
+{
+  "new_model_sha256": "c2b7c81a226f11db4a9c8f701d86c6425a96b6978385f75e9805b26bdb4cdec1",
+  "original_model_sha256": "63c61a9399fbeaa459fb788610ecc72da56eddaf2c6d27be9d691a8687b789a4",
+  "arrays_bit_identical": {
+    "W0": true,
+    "W1": true,
+    "W2": true,
+    "b0": true,
+    "b1": true,
+    "b2": true,
+    "feature_names": true,
+    "feature_set": true,
+    "format_version": true,
+    "n_layers": true,
+    "output_names": true,
+    "x_mean": true,
+    "x_scale": true,
+    "y_mean": true,
+    "y_scale": true
+  },
+  "passed": true
+}
