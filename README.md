@@ -54,7 +54,9 @@ for another start pose, `--dead-band 0.45` for the +DB variant and `--headless` 
 | statistics over seeds | `scripts/evaluation/seed_stats.py EVAL_DIR [...]` | [04](docs/04_evaluation.md) |
 | obstacle tasks | `scripts/obstacle/` | [01](docs/01_data_collection.md) 1.6, 1.8; [results](docs/results.md) 2–3 |
 
-[`docs/reproduce.md`](docs/reproduce.md) lists, for every table and figure of the report, what to run.
+**[`docs/usage.md`](docs/usage.md) is the task-by-task guide** (collect, split, train, evaluate, tables and figures,
+obstacles: each with its command, parameters and what to choose). [`docs/reproduce.md`](docs/reproduce.md) lists, for
+every table and figure of the report, what to run.
 
 ## 4. Repository layout
 
