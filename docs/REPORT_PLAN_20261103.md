@@ -889,3 +889,20 @@ Recommendation: a dynamic-obstacle expert for imitation must (a) act on the poli
 repulsion / velocity-obstacle steering, not speed scaling from a privileged plan) and (b) leave the detour in the
 data instead of filtering it out; a scripted moving cylinder crossing the corridor at a random speed controls the
 difficulty without a second robot. Not feasible before the 6 Nov deadline; noted as future work.
+
+**5 Nov 21:20 — prototype of a dynamic-obstacle task and expert (`scripts/obstacle/dynamic_expert.py`).** Built on the
+group's step-9 code (their simulation setup, controllers, analytic lidar, obstacle helpers; nothing edited). One
+scripted cylinder (r 0.25–0.35 m, 0.15–0.45 m/s) crosses the start → dock corridor at 60–120° timed to meet the
+robot (± 2 s jitter), its path ≥ 1 m from the start and the dock. Same 10 scenarios (seed 1) for every expert:
+| expert | success | collisions | note |
+|---|---|---|---|
+| blind (plain A-to-B) | 1/10 | 9 | the scenario forces an interaction |
+| single-scan lidar repulsion (turn away from the closest beams, slow when ahead) | 1/10 | 8 | all hits on a rear wheel: turning away swings the rear into a crossing body; one scan has no velocity |
+| velocity obstacle v2 (constant (v, w) candidates, 3 s horizon, re-align after avoiding) | 8/10 | 2 | both collisions: re-aligning in place in the cylinder's way; 3 episodes hit the 45 s navigation timeout |
+| velocity obstacle v3 (5 s horizon, re-align only when conflict-free) | 7/10 | 2 | a chasing cylinder (faster than the base) catches it: constant-command rollouts cannot "turn then flee sideways" |
+| velocity obstacle v4 (+ turn-then-drive candidates, hysteresis) | running | | |
+Design rule kept throughout: the expert's action depends only on quantities the learner can observe, the cylinder's
+position and velocity (two consecutive scans; the learner needs a scan history or a recurrent policy), never on a
+plan. Known physics caveat: a sustained turn while driving (v 0.25 m/s, w 0.3 rad/s for > 10 s, which the
+template's drive phase does when it starts far from the goal heading) makes the base slide sideways with growing
+speed (1.5 m/s at t = 45 s, wheels at 0.24 m/s): the re-align rule avoids that regime.
